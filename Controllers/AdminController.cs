@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using VeSuKienWeb.Data;
 using VeSuKienWeb.Models;
 using VeSuKienWeb.Models.Admin;
-
+using VeSuKienWeb.Helpers;
 namespace VeSuKienWeb.Controllers
 {
     [Authorize(Roles = "Admin")]
@@ -231,5 +231,171 @@ namespace VeSuKienWeb.Controllers
             TempData["ThongBao"] = "Đã từ chối yêu cầu hủy/hoàn vé.";
             return RedirectToAction("YeuCauHoanHuy");
         }
-    }
+    
+    
+        // ============================================================
+        // ========== QUẢN LÝ NGƯỜI DÙNG ==============================
+        // ============================================================
+
+        [HttpGet("/Admin/NguoiDung")]
+        public async Task<IActionResult> NguoiDung()
+        {
+            var list = await _db.NguoiDung
+                .OrderByDescending(n => n.NgayTao)
+                .ToListAsync();
+
+            return View(list);
+        }
+
+        [HttpGet("/Admin/TaoBanToChuc")]
+        public IActionResult TaoBanToChuc()
+        {
+            return View();
+        }
+
+        [HttpPost("/Admin/TaoBanToChuc")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TaoBanToChuc(NguoiDung model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var emailDaTonTai = await _db.NguoiDung
+                .AnyAsync(n => n.Email == model.Email);
+
+            if (emailDaTonTai)
+            {
+                ModelState.AddModelError("Email", "Email này đã được sử dụng.");
+                return View(model);
+            }
+
+            model.VaiTro = "ToChuc";
+            model.NgayTao = DateTime.Now;
+            model.MatKhau = MatKhauHelper.BamMatKhau(model.MatKhau);
+
+            _db.NguoiDung.Add(model);
+            await _db.SaveChangesAsync();
+
+            TempData["ThongBao"] = "Đã tạo tài khoản ban tổ chức thành công.";
+            return RedirectToAction("NguoiDung");
+        }
+[HttpGet("/Admin/SuaNguoiDung/{id}")]
+public async Task<IActionResult> SuaNguoiDung(int id)
+{
+    var user = await _db.NguoiDung.FindAsync(id);
+    if (user == null) return NotFound();
+
+    return View(user);
+}
+
+[HttpPost("/Admin/SuaNguoiDung/{id}")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> SuaNguoiDung(int id, NguoiDung model)
+{
+    var user = await _db.NguoiDung.FindAsync(id);
+    if (user == null) return NotFound();
+
+    user.HoTen = model.HoTen;
+    user.Email = model.Email;
+    user.DienThoai = model.DienThoai;
+    user.VaiTro = model.VaiTro;
+
+    await _db.SaveChangesAsync();
+
+    TempData["ThongBao"] = "Đã cập nhật thông tin người dùng.";
+    return RedirectToAction("NguoiDung");
+}
+
+[HttpPost("/Admin/KhoaMoKhoaNguoiDung")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> KhoaMoKhoaNguoiDung(int id)
+{
+    var user = await _db.NguoiDung.FindAsync(id);
+    if (user == null) return NotFound();
+
+    user.TrangThai = user.TrangThai == "BiKhoa" ? "HoatDong" : "BiKhoa";
+
+    await _db.SaveChangesAsync();
+
+    TempData["ThongBao"] = "Đã cập nhật trạng thái tài khoản.";
+    return RedirectToAction("NguoiDung");
+}
+[HttpGet("/Admin/ThongKe")]
+public async Task<IActionResult> ThongKe()
+{
+    var theoLoai = await _db.SuKien
+        .Include(x => x.LoaiSuKien)
+        .GroupBy(x => x.LoaiSuKien!.TenLoai)
+        .Select(g => new
+        {
+            TenLoai = g.Key ?? "Khác",
+            SoLuong = g.Count()
+        })
+        .ToListAsync();
+
+    var suKienTheoThang = await _db.SuKien
+        .GroupBy(x => new { x.NgayDang.Year, x.NgayDang.Month })
+        .OrderBy(g => g.Key.Year)
+        .ThenBy(g => g.Key.Month)
+        .Select(g => new
+        {
+            Thang = $"{g.Key.Month:00}/{g.Key.Year}",
+            SoLuong = g.Count()
+        })
+        .ToListAsync();
+
+    var nguoiDungTheoThang = await _db.NguoiDung
+        .GroupBy(x => new { x.NgayTao.Year, x.NgayTao.Month })
+        .OrderBy(g => g.Key.Year)
+        .ThenBy(g => g.Key.Month)
+        .Select(g => new
+        {
+            Thang = $"{g.Key.Month:00}/{g.Key.Year}",
+            SoLuong = g.Count()
+        })
+        .ToListAsync();
+
+    var soTrucTiep = await _db.DiaDiem
+        .Select(x => x.SuKienId)
+        .Distinct()
+        .CountAsync();
+
+    var soTrucTuyen = await _db.SuKienTrucTuyen
+        .Select(x => x.SuKienId)
+        .Distinct()
+        .CountAsync();
+
+    var hybridIds = await _db.DiaDiem
+        .Select(x => x.SuKienId)
+        .Intersect(_db.SuKienTrucTuyen.Select(x => x.SuKienId))
+        .CountAsync();
+
+    var vm = new AdminDashboardVM
+    {
+        TongNguoiDung = await _db.NguoiDung.CountAsync(),
+        TongBanToChuc = await _db.NguoiDung.CountAsync(x => x.VaiTro == "ToChuc"),
+        TongSuKien = await _db.SuKien.CountAsync(),
+        SuKienChoDuyet = await _db.SuKien.CountAsync(x => x.TrangThaiDuyet == "ChoDuyet"),
+        SuKienDaDuyet = await _db.SuKien.CountAsync(x => x.TrangThaiDuyet == "DaDuyet"),
+        SuKienTuChoi = await _db.SuKien.CountAsync(x => x.TrangThaiDuyet == "TuChoi"),
+
+        TenLoaiSuKien = theoLoai.Select(x => x.TenLoai).ToList(),
+        SoLuongTheoLoai = theoLoai.Select(x => x.SoLuong).ToList(),
+
+        SuKienHybrid = hybridIds,
+        SuKienTrucTiep = soTrucTiep - hybridIds,
+        SuKienTrucTuyen = soTrucTuyen - hybridIds,
+
+        ThangSuKien = suKienTheoThang.Select(x => x.Thang).ToList(),
+        SoSuKienTheoThang = suKienTheoThang.Select(x => x.SoLuong).ToList(),
+
+        ThangNguoiDung = nguoiDungTheoThang.Select(x => x.Thang).ToList(),
+        SoNguoiDungTheoThang = nguoiDungTheoThang.Select(x => x.SoLuong).ToList()
+    };
+
+    return View(vm);
+}
+}
 }

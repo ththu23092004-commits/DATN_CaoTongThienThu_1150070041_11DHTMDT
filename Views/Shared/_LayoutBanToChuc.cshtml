@@ -1,68 +1,203 @@
-
 @using Microsoft.AspNetCore.Mvc.Rendering
 @inject Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper<dynamic> HtmlHelper
+
 @{
-    Layout = "_Layout"; // nếu bạn muốn kế thừa layout tổng, hoặc bỏ dòng này nếu không cần
+    Layout = "_Layout";
+
     string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
 }
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- SIDEBAR BÊN TRÁI -->
-        <nav class="col-12 col-md-3 col-lg-2 bg-light border-end min-vh-100 p-0">
-            <div class="d-flex flex-column h-100">
-                <div class="p-3 border-bottom">
-                    <h5 class="mb-0">Ban tổ chức</h5>
-                    <div class="text-muted small">Quản lý sự kiện & vé</div>
-                </div>
+<style>
+    .btc-shell {
+        background: #f5f7fb;
+        min-height: calc(100vh - 56px);
+        padding: 20px 18px 30px 8px;
+    }
 
-                <div class="nav flex-column nav-pills p-2 gap-1">
-                    <a asp-controller="BanToChuc" asp-action="Index"
-                       class="nav-link @(currentAction == "Index" ? "active" : "")">
-                        <i class="bi bi-calendar-event"></i>
-                        <span class="ms-1">Sự kiện của tôi</span>
-                    </a>
+    .btc-layout {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+        width: 100%;
+    }
 
-                    <a asp-controller="BanToChuc" asp-action="TaoSuKien"
-                       class="nav-link @(currentAction == "TaoSuKien" ? "active" : "")">
-                        <i class="bi bi-plus-circle"></i>
-                        <span class="ms-1">Tạo sự kiện mới</span>
-                    </a>
+    .btc-sidebar {
+        position: sticky;
+        top: 76px;
+        min-height: calc(100vh - 100px);
+        background: #ffffff;
+        border: 1px solid #e6ebf3;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+    }
 
-                    <a asp-controller="BanToChuc" asp-action="YeuCauHoanHuy"
-                       class="nav-link @(currentAction == "YeuCauHoanHuy" ? "active" : "")">
-                        <i class="bi bi-arrow-repeat"></i>
-                        <span class="ms-1">Yêu cầu hoàn/hủy vé</span>
-                    </a>
+    .btc-brand {
+        margin-bottom: 24px;
+    }
 
+    .btc-brand-title {
+        color: #0f172a;
+        font-size: 23px;
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 8px;
+    }
 
+    .btc-brand-subtitle {
+        color: #64748b;
+        font-size: 14px;
+        margin: 0;
+    }
 
+    .btc-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 
-                    @* Sau này nếu muốn có trang thống kê tổng *@
-<a asp-controller="BanToChuc" asp-action="ThongKeTongQuan"
-   class="nav-link @(currentAction == "ThongKeTongQuan" ? "active" : "")">
-    <i class="bi bi-bar-chart"></i>
-    <span class="ms-1">Thống kê tổng quan</span>
-</a>
+    .btc-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #334155;
+        padding: 12px 13px;
+        border-radius: 15px;
+        font-size: 14.5px;
+        font-weight: 650;
+        transition: .2s ease;
+    }
 
+    .btc-nav-link i {
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+        color: #64748b;
+        transition: .2s ease;
+    }
 
+    .btc-nav-link:hover {
+        background: #f1f5f9;
+        color: #1d4ed8;
+        transform: translateX(2px);
+    }
 
+    .btc-nav-link:hover i {
+        color: #1d4ed8;
+    }
 
+    .btc-nav-link.active {
+        background: #eef2ff;
+        color: #2563eb;
+        font-weight: 800;
+        box-shadow: inset 3px 0 0 #2563eb;
+    }
 
+    .btc-nav-link.active i {
+        color: #2563eb;
+    }
 
-                </div>
+    .btc-footer {
+        margin-top: auto;
+        padding-top: 18px;
+        border-top: 1px solid #edf2f7;
+        color: #94a3b8;
+        font-size: 13px;
+        line-height: 1.6;
+    }
 
-                <div class="mt-auto p-3 border-top small text-muted">
-                    © Hệ thống đặt vé sự kiện
-                </div>
+    .btc-content {
+        min-width: 0;
+        width: 100%;
+        background: transparent;
+    }
+
+    @@media (max-width: 992px) {
+        .btc-shell {
+            padding: 16px;
+        }
+
+        .btc-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .btc-sidebar {
+            position: relative;
+            top: 0;
+            min-height: auto;
+        }
+
+        .btc-nav {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .btc-nav {
+            grid-template-columns: 1fr;
+        }
+
+        .btc-sidebar {
+            padding: 20px;
+            border-radius: 22px;
+        }
+    }
+</style>
+
+<div class="btc-shell">
+    <div class="btc-layout">
+        <aside class="btc-sidebar">
+            <div class="btc-brand">
+                <div class="btc-brand-title">Ban tổ chức</div>
+                <p class="btc-brand-subtitle">Quản lý sự kiện và vé</p>
             </div>
-        </nav>
 
-        <!-- NỘI DUNG CHÍNH BÊN PHẢI -->
-        <main class="col-12 col-md-9 col-lg-10 p-3">
+            <nav class="btc-nav">
+                <a asp-controller="BanToChuc"
+                   asp-action="Index"
+                   class="btc-nav-link @(currentAction == "Index" ? "active" : "")">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Sự kiện của tôi</span>
+                </a>
+
+                <a asp-controller="BanToChuc"
+                   asp-action="TaoSuKien"
+                   class="btc-nav-link @(currentAction == "TaoSuKien" ? "active" : "")">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Tạo sự kiện mới</span>
+                </a>
+
+                <a asp-controller="BanToChuc"
+                   asp-action="YeuCauHoanHuy"
+                   class="btc-nav-link @(currentAction == "YeuCauHoanHuy" ? "active" : "")">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>Yêu cầu hoàn/hủy vé</span>
+                </a>
+
+                <a asp-controller="BanToChuc"
+                   asp-action="ThongKeTongQuan"
+                   class="btc-nav-link @(currentAction == "ThongKeTongQuan" ? "active" : "")">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Thống kê tổng quan</span>
+                </a>
+            </nav>
+
+            <div class="btc-footer">
+                <div>© 2026</div>
+                <div>Đặt Vé Sự Kiện</div>
+            </div>
+        </aside>
+
+        <main class="btc-content">
             @RenderBody()
         </main>
     </div>
 </div>
+
 @RenderSection("Scripts", required: false)

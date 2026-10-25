@@ -21,6 +21,7 @@ namespace VeSuKienWeb.Controllers
             var suKienNoiBat = await _db.SuKien
                 .Include(s => s.LoaiSuKien)
                 .Include(s => s.ToChucSuKien)
+                .Include(s => s.DiaDiem)
                 .Where(s => s.TrangThaiDuyet == "DaDuyet"
                             && s.ThoiGianKetThuc > now)
                 .OrderBy(s => s.ThoiGianBatDau)

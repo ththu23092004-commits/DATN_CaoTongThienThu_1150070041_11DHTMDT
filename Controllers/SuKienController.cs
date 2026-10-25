@@ -20,6 +20,8 @@ namespace VeSuKienWeb.Controllers
         {
             var query = _db.SuKien
                 .Include(s => s.LoaiSuKien)
+                
+                .Include(s => s.DiaDiem)
                 .Where(s => s.TrangThaiDuyet == "DaDuyet")
                 .AsQueryable();
 

@@ -1,52 +1,832 @@
-@* Banner dùng chung *@
-<div class="hero-banner hero-slider rounded-4 mb-4 text-white overflow-hidden position-relative">
-    <!-- LỚP PHỦ XÁM (INLINE CHO CHẮC CHẮN HIỆN) -->
-    <div class="hero-overlay-layer"
-         style="
-            position:absolute;
-            inset:0;
-            background:linear-gradient(
-                180deg,
-                rgba(0,0,0,0.2),
-                rgba(0,0,0,0.45)
-            );
-            pointer-events:none;
-            z-index:1;">
+@model List<VeSuKienWeb.Models.SuKien>
+
+@{
+    var data = Model ?? new List<VeSuKienWeb.Models.SuKien>();
+    var now = DateTime.Now;
+
+    var suKienNoiBat = data
+        .Where(x => x.TrangThaiDuyet == "DaDuyet" && x.ThoiGianKetThuc > now)
+        .OrderBy(x => x.ThoiGianBatDau)
+        .Take(4)
+        .ToList();
+
+    var suKienSapDienRa = data
+        .Where(x => x.TrangThaiDuyet == "DaDuyet" && x.ThoiGianBatDau > now)
+        .OrderBy(x => x.ThoiGianBatDau)
+        .Take(8)
+        .ToList();
+}
+
+<style>
+    .home-page-pro {
+        color: #0f172a;
+    }
+
+    .home-hero {
+        min-height: 350px;
+        border-radius: 30px;
+        overflow: hidden;
+        margin-bottom: 42px;
+        background:
+            linear-gradient(120deg, rgba(15,23,42,.62), rgba(37,99,235,.22)),
+            url('/images/hero-event-1.jpg') center/cover no-repeat;
+        box-shadow: 0 20px 52px rgba(37,99,235,.14);
+    }
+
+    .home-hero-inner {
+        min-height: 350px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 36px 20px;
+        color: white;
+    }
+
+    .home-hero-title {
+        font-size: 42px;
+        font-weight: 900;
+        letter-spacing: -1px;
+        margin-bottom: 12px;
+    }
+
+    .home-hero-desc {
+        max-width: 620px;
+        margin: 0 auto 24px;
+        color: rgba(255,255,255,.9);
+        line-height: 1.65;
+    }
+
+    .home-search {
+        width: min(680px, 100%);
+        height: 58px;
+        margin: auto;
+        display: flex;
+        align-items: center;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255,255,255,.16);
+        border: 1px solid rgba(255,255,255,.32);
+        backdrop-filter: blur(16px);
+    }
+
+    .home-search i {
+        width: 54px;
+        color: rgba(255,255,255,.9);
+        font-size: 18px;
+    }
+
+    .home-search input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: white;
+        font-size: 15px;
+    }
+
+    .home-search input::placeholder {
+        color: rgba(255,255,255,.78);
+    }
+
+    .home-search button {
+        height: 44px;
+        margin-right: 7px;
+        padding: 0 20px;
+        border: none;
+        border-radius: 999px;
+        background: white;
+        color: #2563eb;
+        font-weight: 800;
+        font-size: 14px;
+    }
+
+    .home-section {
+        margin-bottom: 44px;
+    }
+
+    .section-head {
+        margin-bottom: 18px;
+    }
+
+    .section-label {
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .8px;
+        margin-bottom: 5px;
+    }
+
+    .section-title {
+        font-size: 26px;
+        font-weight: 900;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .section-sub {
+        color: #64748b;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .event-link {
+        display: block;
+        height: 100%;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .event-card {
+        height: 100%;
+        overflow: hidden;
+        border-radius: 24px;
+        background: #fff;
+        border: 1px solid #e6eef8;
+        box-shadow: 0 12px 30px rgba(15,23,42,.055);
+        transition: .25s ease;
+    }
+
+    .event-link:hover .event-card {
+        transform: translateY(-6px);
+        border-color: #bfdbfe;
+        box-shadow: 0 22px 52px rgba(37,99,235,.13);
+    }
+
+    .event-image {
+        position: relative;
+        height: 205px;
+        overflow: hidden;
+        background: #e2e8f0;
+    }
+
+    .event-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: .32s ease;
+    }
+
+    .event-link:hover .event-image img {
+        transform: scale(1.05);
+    }
+
+    .date-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 54px;
+        padding: 7px 0;
+        border-radius: 15px;
+        background: rgba(255,255,255,.95);
+        text-align: center;
+        box-shadow: 0 10px 22px rgba(15,23,42,.15);
+    }
+
+    .date-badge strong {
+        display: block;
+        color: #0f172a;
+        font-size: 19px;
+        line-height: 1;
+    }
+
+    .date-badge span {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .event-status {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .event-body {
+        padding: 15px 16px 16px;
+    }
+
+    .event-type {
+        display: inline-block;
+        max-width: 100%;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 800;
+        margin-bottom: 9px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .event-name {
+        font-size: 16px;
+        font-weight: 900;
+        line-height: 1.35;
+        color: #0f172a;
+        min-height: 44px;
+        margin-bottom: 9px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .event-time {
+        color: #64748b;
+        font-size: 13px;
+        margin-bottom: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .event-bottom {
+        padding-top: 12px;
+        border-top: 1px solid #eef2f7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .event-price {
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .event-view {
+        color: #2563eb;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .empty-box {
+        padding: 24px;
+        border-radius: 22px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+    }
+
+    .home-footer {
+        margin-top: 50px;
+        padding: 34px;
+        border-radius: 28px;
+        background: linear-gradient(180deg, #ffffff, #eef7ff);
+        border: 1px solid #dbeafe;
+        box-shadow: 0 16px 42px rgba(15,23,42,.05);
+    }
+
+    .footer-brand {
+        font-size: 24px;
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 10px;
+    }
+
+    .footer-text,
+    .footer-info {
+        color: #64748b;
+        line-height: 1.7;
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+
+    .footer-title {
+        color: #0f172a;
+        font-weight: 900;
+        margin-bottom: 12px;
+    }
+
+    .footer-link {
+        display: block;
+        text-decoration: none;
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .footer-link:hover {
+        color: #2563eb;
+    }
+
+.event-location {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.event-location i {
+    margin-right: 4px;
+}
+
+.info-showcase {
+    margin: 70px 0 55px;
+}
+
+.info-row {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 0;
+    align-items: stretch;
+    margin-bottom: 38px;
+    background: #fff;
+    border-radius: 32px;
+    overflow: hidden;
+    border: 1px solid #e6eef8;
+    box-shadow: 0 18px 48px rgba(15,23,42,.06);
+}
+
+.info-row.reverse {
+    grid-template-columns: 1fr 1.15fr;
+}
+
+.info-image {
+    height: 390px;
+    overflow: hidden;
+    background: #e2e8f0;
+}
+
+.info-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: .35s ease;
+}
+
+.info-row:hover .info-image img {
+    transform: scale(1.04);
+}
+
+.info-content {
+    padding: 46px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.info-tag {
+    width: fit-content;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 16px;
+}
+
+.info-content h3 {
+    font-size: 34px;
+    line-height: 1.2;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 16px;
+}
+
+.info-content p {
+    color: #64748b;
+    font-size: 15px;
+    line-height: 1.85;
+    margin-bottom: 22px;
+}
+
+.info-btn {
+    width: fit-content;
+    text-decoration: none;
+    padding: 12px 19px;
+    border-radius: 999px;
+    background: #2563eb;
+    color: white;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.info-btn:hover {
+    background: #1d4ed8;
+    color: white;
+}
+.info-heading {
+    text-align: center;
+    max-width: 900px;
+    margin: 72px auto 48px;
+}
+
+.info-heading-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 17px;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 900;
+    margin-bottom: 18px;
+}
+
+.info-heading h2 {
+    max-width: 760px;
+    margin: 0 auto 16px;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: -1.2px;
+    color: #0f172a;
+}
+
+.info-heading p {
+    max-width: 720px;
+    margin: 0 auto;
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1.85;
+}
+@@media(max-width: 768px)
+.info-heading {
+    margin: 48px auto 34px;
+}
+
+.info-heading h2 {
+    font-size: 30px;
+}
+
+.info-heading p {
+    font-size: 15px;
+} {
+    .home-hero-title {
+        font-size: 32px;
+    }
+
+    .home-search {
+        height: auto;
+        padding: 8px;
+        border-radius: 22px;
+        flex-wrap: wrap;
+    }
+
+    .home-search input {
+        height: 46px;
+    }
+
+    .home-search button {
+        width: 100%;
+        margin: 4px 0 0;
+    }
+
+    .event-image {
+        height: 190px;
+    }
+
+    .info-row,
+    .info-row.reverse {
+        grid-template-columns: 1fr;
+    }
+
+    .info-image {
+        height: 240px;
+    }
+
+    .info-content {
+        padding: 24px;
+    }
+
+    .info-content h3 {
+        font-size: 25px;
+    }
+
+}
+</style>
+
+<div class="home-page-pro">
+
+    <section class="home-hero">
+        <div class="home-hero-inner">
+            <div>
+                <h1 class="home-hero-title">Khám phá sự kiện dành cho bạn</h1>
+
+                <p class="home-hero-desc">
+                    Tìm kiếm các sự kiện nổi bật, đặt vé nhanh chóng và check-in tiện lợi bằng mã QR.
+                </p>
+
+                <form method="get" action="/KhachHang/Index" class="home-search">
+                    <i class="bi bi-search"></i>
+
+                    <input type="text"
+                           name="search"
+                           placeholder="Tìm kiếm sự kiện, ca sĩ, địa điểm..." />
+
+                    <button type="submit">Tìm kiếm</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-section">
+        <div class="section-head">
+            <div class="section-label">Nổi bật</div>
+            <h2 class="section-title">Sự kiện nổi bật</h2>
+            <div class="section-sub">Những chương trình đang được quan tâm</div>
+        </div>
+
+        @if (suKienNoiBat.Any())
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+                @foreach (var sk in suKienNoiBat)
+                {
+                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                        ? "~/images/default-event.jpg"
+                        : sk.AnhSuKien);
+
+                    <div class="col">
+                        <a asp-controller="KhachHang"
+                           asp-action="ChiTiet"
+                           asp-route-id="@sk.SuKienId"
+                           class="event-link">
+
+                            <div class="event-card">
+                                <div class="event-image">
+                                    <img src="@img" alt="@sk.TenSuKien" />
+
+                                    <div class="date-badge">
+                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+                                    </div>
+
+                                    <div class="event-status">Còn mở</div>
+                                </div>
+
+                                <div class="event-body">
+                                    <span class="event-type">
+                                        @(sk.LoaiSuKien != null ? sk.LoaiSuKien.TenLoai : "Sự kiện")
+                                    </span>
+
+                                    <div class="event-name">@sk.TenSuKien</div>
+
+                                    <div class="event-time">
+    <i class="bi bi-clock"></i>
+    @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+</div>
+
+@if (sk.ToChucSuKien != null)
+@if (sk.DiaDiem != null)
+{
+    <div class="event-location">
+        <i class="bi bi-geo-alt"></i>
+        @(string.IsNullOrWhiteSpace(sk.DiaDiem.TenDiaDiem)
+            ? sk.DiaDiem.DiaChi
+            : sk.DiaDiem.TenDiaDiem)
+    </div>
+}
+
+                                    <div class="event-bottom">
+                                        <div class="event-price">
+                                            @(sk.GiaVeMacDinh.HasValue && sk.GiaVeMacDinh.Value > 0
+                                                ? "Từ " + sk.GiaVeMacDinh.Value.ToString("N0") + " đ"
+                                                : "Miễn phí")
+                                        </div>
+
+                                        <div class="event-view">Chi tiết</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-box">Hiện chưa có sự kiện nổi bật.</div>
+        }
+    </section>
+
+    <section class="home-section">
+        <div class="section-head">
+            <div class="section-label">Sắp diễn ra</div>
+            <h2 class="section-title">Sự kiện sắp diễn ra</h2>
+            <div class="section-sub">Các sự kiện mới nhất đang mở đặt vé</div>
+        </div>
+
+        @if (suKienSapDienRa.Any())
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+                @foreach (var sk in suKienSapDienRa)
+                {
+                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                        ? "~/images/default-event.jpg"
+                        : sk.AnhSuKien);
+
+                    <div class="col">
+                        <a asp-controller="KhachHang"
+                           asp-action="ChiTiet"
+                           asp-route-id="@sk.SuKienId"
+                           class="event-link">
+
+                            <div class="event-card">
+                                <div class="event-image">
+                                    <img src="@img" alt="@sk.TenSuKien" />
+
+                                    <div class="date-badge">
+                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+                                    </div>
+
+                                    <div class="event-status">Sắp diễn ra</div>
+                                </div>
+
+                                <div class="event-body">
+                                    <span class="event-type">
+                                        @(sk.LoaiSuKien != null ? sk.LoaiSuKien.TenLoai : "Sự kiện")
+                                    </span>
+
+                                 <div class="event-name">@sk.TenSuKien</div>
+
+<div class="event-time">
+    <i class="bi bi-clock"></i>
+    @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+</div>
+
+@if (sk.DiaDiem != null)
+{
+    <div class="event-location">
+        <i class="bi bi-geo-alt"></i>
+        @(string.IsNullOrWhiteSpace(sk.DiaDiem.TenDiaDiem)
+            ? sk.DiaDiem.DiaChi
+            : sk.DiaDiem.TenDiaDiem)
+    </div>
+}
+
+                                    <div class="event-bottom">
+                                        <div class="event-price">
+                                            @(sk.GiaVeMacDinh.HasValue && sk.GiaVeMacDinh.Value > 0
+                                                ? "Từ " + sk.GiaVeMacDinh.Value.ToString("N0") + " đ"
+                                                : "Miễn phí")
+                                        </div>
+
+                                        <div class="event-view">Chi tiết</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-box">Hiện chưa có sự kiện sắp diễn ra.</div>
+        }
+    </section>
+<div class="info-heading">
+    <span class="info-heading-badge">
+        <i class="bi bi-stars"></i>
+        Trải nghiệm nổi bật
+    </span>
+
+    <h2>
+        Không chỉ là đặt vé,<br />
+        mà còn là hành trình khám phá sự kiện
+    </h2>
+
+  
+</div>
+<section class="info-showcase">
+
+    <div class="info-row">
+
+        <div class="info-image">
+            <img src="@Url.Content("~/images/showcase/concert.jpg")">
+        </div>
+
+        <div class="info-content">
+
+            <span class="info-tag">
+                Âm nhạc & Liveshow
+            </span>
+
+            <h3>
+                Những đêm nhạc đáng mong chờ nhất
+            </h3>
+
+            <p>
+                Khám phá các liveshow, đại nhạc hội và chương trình biểu diễn nghệ thuật được tổ chức trên toàn quốc.
+                Người tham gia có thể theo dõi lịch diễn, lựa chọn vị trí phù hợp và đặt vé trực tuyến nhanh chóng.
+            </p>
+
+            <a href="/KhachHang/Index" class="info-btn">
+                Khám phá sự kiện
+            </a>
+
+        </div>
+
     </div>
 
-    <!-- NỘI DUNG CHỮ + FORM -->
-    <div class="container py-4 py-lg-5 position-relative" style="z-index:2;">
-        <div class="row align-items-center gy-4">
-            <div class="col-lg-6">
-                <h1 class="display-5 fw-bold mb-3 hero-title">
-                    Đặt vé sự kiện<br />trực tiếp & trực tuyến
-                </h1>
-                <p class="lead mb-4 hero-subtitle">
-                    Khám phá hàng trăm sự kiện âm nhạc, hội thảo, workshop, livestream...
-                    và giữ chỗ chỉ trong vài giây.
+
+    <div class="info-row reverse">
+
+        <div class="info-content">
+
+            <span class="info-tag">
+                Workshop & Hội thảo
+            </span>
+
+            <h3>
+                Học hỏi, kết nối và phát triển kỹ năng
+            </h3>
+
+            <p>
+                Từ workshop kỹ năng mềm đến các hội thảo chuyên ngành,
+                hệ thống giúp người tham gia dễ dàng tìm kiếm chương trình phù hợp và đăng ký chỉ với vài thao tác đơn giản.
+            </p>
+
+            <a href="/KhachHang/Index" class="info-btn">
+                Xem chương trình
+            </a>
+
+        </div>
+
+        <div class="info-image">
+            <img src="@Url.Content("~/images/showcase/workshop.jpg")">
+        </div>
+
+    </div>
+
+
+    <div class="info-row">
+
+        <div class="info-image">
+            <img src="@Url.Content("~/images/showcase/online-event.jpg")">
+        </div>
+
+        <div class="info-content">
+
+            <span class="info-tag">
+                Sự kiện trực tuyến
+            </span>
+
+            <h3>
+                Tham gia ở bất kỳ đâu
+            </h3>
+
+            <p>
+                Các sự kiện trực tuyến được tổ chức thông qua nền tảng họp trực tuyến,
+                cho phép người tham gia dễ dàng kết nối từ mọi nơi mà không cần di chuyển.
+            </p>
+
+            <a href="/KhachHang/Index" class="info-btn">
+                Tìm hiểu thêm
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+    <footer class="home-footer">
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-5">
+                <div class="footer-brand">Đặt Vé Sự Kiện</div>
+                <p class="footer-text">
+                    Nền tảng tìm kiếm, đặt vé và quản lý vé tham gia sự kiện trực tuyến với giao diện hiện đại, rõ ràng và dễ sử dụng.
                 </p>
             </div>
 
-            <div class="col-lg-5 offset-lg-1">
-                <div class="search-card bg-white text-dark p-4 rounded-4 shadow-lg">
-                    <h5 class="fw-semibold mb-3 text-center">Tìm kiếm sự kiện</h5>
+            <div class="col-lg-3">
+                <div class="footer-title">Điều hướng</div>
+                <a class="footer-link" href="/">Trang chủ</a>
+                <a class="footer-link" href="/KhachHang/Index">Sự kiện</a>
+                <a class="footer-link" href="/TaiKhoan/DangNhap">Đăng nhập</a>
+            </div>
 
-                    <form method="get" action="/KhachHang/Index" class="mb-3">
-<div class="search-input-wrapper">
-    <input type="text"
-           name="search"
-           class="search-input-beauty"
-           placeholder="Tên sự kiện, ca sĩ, địa điểm..." />
-
-    <button type="submit" class="search-button-beauty">
-        <i class="bi bi-search"></i> Tìm kiếm
-    </button>
-</div>
-
-                    </form>
-
-                </div>
+            <div class="col-lg-4">
+                <div class="footer-title">Hỗ trợ khách hàng</div>
+                <p class="footer-info">
+                    Email: eventticket@gmail.com<br />
+                    Hotline: 0909 163 821<br />
+                    Thời gian hỗ trợ: 08:00 đến 22:00
+                </p>
             </div>
         </div>
-    </div>
+    </footer>
+
 </div>

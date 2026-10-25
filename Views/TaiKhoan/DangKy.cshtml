@@ -3,58 +3,220 @@
     ViewData["Title"] = "Đăng ký";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm mt-4">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-3">Tạo tài khoản</h3>
-                <p class="text-muted text-center mb-4">
-                    Đăng ký để nhận vé tham gia các sự kiện hấp dẫn.
-                </p>
+<style>
+    .register-page {
+        min-height: 82vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fbff;
+        padding: 20px 0;
+    }
 
-                <form asp-action="DangKy" method="post">
-                    <div class="mb-3">
-                        <label asp-for="HoTen" class="form-label">Họ tên</label>
-                        <input asp-for="HoTen" class="form-control" />
-                        <span asp-validation-for="HoTen" class="text-danger small"></span>
-                    </div>
+    .register-card {
+        width: 100%;
+        max-width: 500px;
+        background: #fff;
+        border-radius: 18px;
+        padding: 30px 36px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 8px 30px rgba(0,0,0,.05);
+    }
 
-                    <div class="mb-3">
-                        <label asp-for="Email" class="form-label">Email</label>
-                        <input asp-for="Email" class="form-control" />
-                        <span asp-validation-for="Email" class="text-danger small"></span>
-                    </div>
+.register-title {
+    font-size: 30px;
+    font-weight: 700;
+    color: #2563eb;
+    text-align: center;
+    margin-bottom: 8px;
+}
 
-                    <div class="mb-3">
-                        <label asp-for="DienThoai" class="form-label">Số điện thoại</label>
-                        <input asp-for="DienThoai" class="form-control" />
-                        <span asp-validation-for="DienThoai" class="text-danger small"></span>
-                    </div>
+.register-subtitle {
+    text-align: center;
+    color: #64748b;
+    font-size: 15px;
+    margin-bottom: 24px;
+}
 
-                    <div class="mb-3">
-                        <label asp-for="MatKhau" class="form-label">Mật khẩu</label>
-                        <input asp-for="MatKhau" type="password" class="form-control" />
-                        <span asp-validation-for="MatKhau" class="text-danger small"></span>
-                    </div>
+    .form-label {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+        font-size: 14px;
+    }
 
-                    <div class="mb-3">
-                        <label asp-for="XacNhanMatKhau" class="form-label">Xác nhận mật khẩu</label>
-                        <input asp-for="XacNhanMatKhau" type="password" class="form-control" />
-                        <span asp-validation-for="XacNhanMatKhau" class="text-danger small"></span>
-                    </div>
+    .form-control {
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid #dbeafe;
+        background: #fff;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
 
-                    <button type="submit" class="btn btn-success w-100">
-                        Đăng ký
-                    </button>
-                </form>
+    .form-control:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
 
-                <hr class="my-4" />
+    .password-wrapper {
+        position: relative;
+    }
 
-                <div class="text-center">
-                    <span class="text-muted">Đã có tài khoản?</span>
-                    <a asp-controller="TaiKhoan" asp-action="DangNhap">Đăng nhập</a>
-                </div>
+    .password-wrapper .form-control {
+        padding-right: 48px;
+    }
+
+    .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 14px;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .password-toggle:hover {
+        color: #2563eb;
+    }
+
+    .register-btn {
+        width: 100%;
+        height: 46px;
+        border: none;
+        border-radius: 12px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        transition: .25s ease;
+        margin-top: 10px;
+    }
+
+    .register-btn:hover {
+        background: #1d4ed8;
+    }
+
+    .register-footer {
+        text-align: center;
+        margin-top: 14px;
+        font-size: 14px;
+    }
+
+    .register-footer a {
+        color: #2563eb;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .register-footer a:hover {
+        text-decoration: underline;
+    }
+
+    .text-danger.small {
+        font-size: 12px;
+    }
+
+    .form-group-custom {
+        margin-bottom: 12px;
+    }
+</style>
+
+<div class="register-page">
+    <div class="register-card">
+        <h2 class="register-title">Tạo tài khoản</h2>
+        <p class="register-subtitle">
+            Đăng ký để đặt vé và theo dõi các sự kiện yêu thích.
+        </p>
+
+        <form asp-action="DangKy" method="post">
+            <div class="form-group-custom">
+                <label asp-for="HoTen" class="form-label">Họ tên</label>
+                <input asp-for="HoTen" class="form-control" placeholder="Nhập họ tên" />
+                <span asp-validation-for="HoTen" class="text-danger small"></span>
             </div>
+
+            <div class="form-group-custom">
+                <label asp-for="Email" class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" placeholder="Nhập email" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group-custom">
+                <label asp-for="DienThoai" class="form-label">Số điện thoại</label>
+                <input asp-for="DienThoai" class="form-control" placeholder="Nhập số điện thoại" />
+                <span asp-validation-for="DienThoai" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group-custom">
+                <label asp-for="MatKhau" class="form-label">Mật khẩu</label>
+
+                <div class="password-wrapper">
+                    <input asp-for="MatKhau"
+                           type="password"
+                           class="form-control"
+                           id="matKhauInput"
+                           placeholder="Nhập mật khẩu" />
+
+                    <button type="button"
+                            class="password-toggle"
+                            onclick="togglePassword('matKhauInput', 'matKhauIcon')">
+                        <i class="bi bi-eye" id="matKhauIcon"></i>
+                    </button>
+                </div>
+
+                <span asp-validation-for="MatKhau" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group-custom">
+                <label asp-for="XacNhanMatKhau" class="form-label">Xác nhận mật khẩu</label>
+
+                <div class="password-wrapper">
+                    <input asp-for="XacNhanMatKhau"
+                           type="password"
+                           class="form-control"
+                           id="xacNhanMatKhauInput"
+                           placeholder="Nhập lại mật khẩu" />
+
+                    <button type="button"
+                            class="password-toggle"
+                            onclick="togglePassword('xacNhanMatKhauInput', 'xacNhanMatKhauIcon')">
+                        <i class="bi bi-eye" id="xacNhanMatKhauIcon"></i>
+                    </button>
+                </div>
+
+                <span asp-validation-for="XacNhanMatKhau" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="register-btn">
+                Đăng ký
+            </button>
+        </form>
+
+        <div class="register-footer">
+            <span class="text-muted">Đã có tài khoản?</span>
+            <a asp-controller="TaiKhoan" asp-action="DangNhap">Đăng nhập</a>
         </div>
     </div>
 </div>
+
+<script>
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("bi-eye");
+            icon.classList.add("bi-eye-slash");
+        } else {
+            input.type = "password";
+            icon.classList.remove("bi-eye-slash");
+            icon.classList.add("bi-eye");
+        }
+    }
+</script>

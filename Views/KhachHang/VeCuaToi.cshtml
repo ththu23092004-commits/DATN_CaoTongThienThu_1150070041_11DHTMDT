@@ -4,138 +4,624 @@
     ViewData["Title"] = "Vé của tôi";
 }
 
-<h2 class="mb-4">Vé của tôi</h2>
+<style>
+    .tickets-page {
+        background: #f6f8fb;
+        min-height: 100vh;
+        padding: 14px 0 36px;
+    }
 
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-info">
-        Bạn chưa có vé nào trong hệ thống.
-    </div>
+    .tickets-container {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 18px;
+    }
+
+    .tickets-header {
+        margin-bottom: 22px;
+    }
+
+    .tickets-header h2 {
+        font-size: 28px;
+        font-weight: 850;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .tickets-header p {
+        color: #64748b;
+        margin: 0;
+        font-size: 15px;
+    }
+
+    .event-ticket {
+        display: grid;
+        grid-template-columns: 1fr 185px;
+        background: #ffffff;
+        border: 1px solid #dbe4f0;
+        border-radius: 22px;
+        overflow: hidden;
+        margin-bottom: 18px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
+        position: relative;
+        transition: .2s ease;
+    }
+
+    .event-ticket:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, .11);
+    }
+
+    .event-ticket::before,
+    .event-ticket::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 26px;
+        height: 26px;
+        background: #f6f8fb;
+        border-radius: 50%;
+        z-index: 5;
+        transform: translateY(-50%);
+    }
+
+    .event-ticket::before {
+        left: -13px;
+        box-shadow: inset -1px 0 0 #dbe4f0;
+    }
+
+    .event-ticket::after {
+        right: -13px;
+        box-shadow: inset 1px 0 0 #dbe4f0;
+    }
+
+    .ticket-content {
+        position: relative;
+        padding: 18px 24px 17px 26px;
+        background:
+            radial-gradient(circle at 12px 12px, rgba(37, 99, 235, .06) 1px, transparent 1px),
+            linear-gradient(135deg, #ffffff, #f8fbff);
+        background-size: 18px 18px, auto;
+    }
+
+    .ticket-content::before,
+    .ticket-content::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 10px;
+        height: 100%;
+        background:
+            radial-gradient(circle, #f6f8fb 6px, transparent 7px);
+        background-size: 10px 22px;
+        background-repeat: repeat-y;
+        z-index: 2;
+    }
+
+    .ticket-content::before {
+        left: -5px;
+    }
+
+    .ticket-content::after {
+        right: -5px;
+    }
+
+    .ticket-stub {
+        background: linear-gradient(180deg, #334155, #1e293b);
+        color: #ffffff;
+        padding: 18px 16px;
+        border-left: 1.5px dashed rgba(255, 255, 255, .55);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .ticket-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        width: fit-content;
+        margin-bottom: 10px;
+    }
+
+    .status-paid {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-unpaid {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-cancel {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .status-default {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .ticket-title {
+        color: #0f172a;
+        font-size: 20px;
+        line-height: 1.25;
+        font-weight: 850;
+        margin-bottom: 4px;
+    }
+
+    .ticket-subtitle {
+        color: #2563eb;
+        font-size: 13px;
+        font-weight: 750;
+        margin-bottom: 12px;
+    }
+
+    .ticket-info-row {
+        display: grid;
+        grid-template-columns: 1fr 1.25fr;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .ticket-line {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.45;
+        min-width: 0;
+    }
+
+    .ticket-line i {
+        color: #2563eb;
+        margin-top: 2px;
+        font-size: 14px;
+        flex: 0 0 auto;
+    }
+
+    .ticket-line div {
+        min-width: 0;
+    }
+
+    .ticket-line strong {
+        color: #0f172a;
+        font-weight: 750;
+    }
+
+    .text-one-line {
+        display: block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ticket-mini-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.35fr 1fr 1fr;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .mini-box {
+        background: rgba(248, 250, 252, .92);
+        border: 1px solid #edf2f7;
+        border-radius: 13px;
+        padding: 9px 11px;
+        min-width: 0;
+    }
+
+    .mini-label {
+        color: #64748b;
+        font-size: 11px;
+        margin-bottom: 3px;
+    }
+
+    .mini-value {
+        color: #0f172a;
+        font-size: 13.5px;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stub-label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, .7);
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        margin-bottom: 5px;
+    }
+
+    .stub-code {
+        font-size: 12.5px;
+        font-weight: 900;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.35;
+    }
+
+    .stub-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .stub-actions .btn {
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 800;
+        padding: 7px 10px;
+    }
+
+    .btn-ticket-main {
+        background: #ffffff;
+        color: #1e293b;
+        border: 1px solid #ffffff;
+    }
+
+    .btn-ticket-main:hover {
+        background: #eef2ff;
+        color: #1e293b;
+    }
+
+    .btn-ticket-outline {
+        background: transparent;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, .72);
+    }
+
+    .btn-ticket-outline:hover {
+        background: #ffffff;
+        color: #1e293b;
+    }
+
+    .empty-ticket {
+        background: #ffffff;
+        border: 1px solid #dbe4f0;
+        border-radius: 20px;
+        padding: 36px;
+        text-align: center;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
+    }
+
+    @@media (max-width: 900px) {
+        .event-ticket {
+            grid-template-columns: 1fr;
+        }
+
+        .ticket-stub {
+            border-left: none;
+            border-top: 1.5px dashed rgba(255, 255, 255, .55);
+        }
+
+        .ticket-info-row {
+            grid-template-columns: 1fr;
+        }
+
+        .ticket-mini-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stub-actions {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .stub-code {
+            max-width: 100%;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .tickets-page {
+            padding-top: 24px;
+        }
+
+        .ticket-content {
+            padding: 17px;
+        }
+
+        .ticket-title {
+            font-size: 18px;
+        }
+
+        .ticket-mini-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ticket-stub {
+            padding: 16px;
+        }
+        
+    }
+    .qr-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
 }
-else
-{
-    <div class="row">
-        @foreach (var ve in Model)
+
+.qr-modal {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 22px;
+    padding: 28px;
+    text-align: center;
+    box-shadow: 0 25px 60px rgba(0,0,0,.25);
+    animation: modalShow .2s ease;
+}
+
+.qr-modal-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #fff7ed;
+    color: #ea580c;
+    font-size: 30px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.qr-modal-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.qr-modal-text {
+    color: #64748b;
+    margin-bottom: 18px;
+    line-height: 1.5;
+}
+
+.qr-modal-btn {
+    border: none;
+    background: #2563eb;
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.qr-modal-btn:hover {
+    background: #1d4ed8;
+}
+
+@@keyframes modalShow {
+    from {
+        opacity: 0;
+        transform: scale(.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .btn-qr-ticket {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,.72);
+}
+
+.btn-qr-ticket:hover {
+    background: #ffffff;
+    color: #1e293b;
+}
+}
+</style>
+
+<div class="tickets-page">
+    <div class="tickets-container">
+        <div class="tickets-header">
+            <h2>Vé của tôi</h2>
+            <p>Quản lý vé đã đặt, xem chi tiết sự kiện và mã QR tham gia.</p>
+        </div>
+
+        @if (Model == null || !Model.Any())
         {
-            // Badge trạng thái
-            string badgeClass = ve.TrangThaiVe switch
+            <div class="empty-ticket">
+                <h5 class="fw-bold mb-2">Bạn chưa có vé nào</h5>
+                <p class="text-muted mb-0">Sau khi đặt vé thành công, thông tin vé sẽ được hiển thị tại đây.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var ve in Model)
             {
-                "DaThanhToan" => "badge bg-success",
-                "ChuaThanhToan" => "badge bg-warning text-dark",
-                "Huy" => "badge bg-secondary",
-                _ => "badge bg-light text-dark"
-            };
+                string statusClass = ve.TrangThaiVe switch
+                {
+                    "DaThanhToan" => "ticket-status status-paid",
+                    "ChuaThanhToan" => "ticket-status status-unpaid",
+                    "Huy" => "ticket-status status-cancel",
+                    _ => "ticket-status status-default"
+                };
 
-            // Text hiển thị trạng thái cho người dùng
-            string trangThaiHienThi = ve.TrangThaiVe switch
-            {
-                "DaThanhToan" => "Đã thanh toán",
-                "ChuaThanhToan" => "Chưa thanh toán",
-                "Huy" => "Đã hủy",
-                _ => ve.TrangThaiVe
-            };
+                string trangThaiHienThi = ve.TrangThaiVe switch
+                {
+                    "DaThanhToan" => "Đã thanh toán",
+                    "ChuaThanhToan" => "Chưa thanh toán",
+                    "Huy" => "Đã hủy",
+                    _ => ve.TrangThaiVe
+                };
 
-            string viTriGhe = (ve.Hang != null && ve.Cot.HasValue)
-                ? $"{ve.Hang}{ve.Cot}"
-                : "Ghế tự do";
+                string viTriGhe = !string.IsNullOrWhiteSpace(ve.DanhSachGhe)
+                    ? ve.DanhSachGhe
+                    : (ve.Hang != null && ve.Cot.HasValue ? $"{ve.Hang}{ve.Cot}" : "Ghế tự do");
 
-            <div class="col-12 mb-3">
-                <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="@badgeClass">@trangThaiHienThi</span>
+                <div class="event-ticket">
+                    <div class="ticket-content">
+                        <span class="@statusClass">
+                            <i class="bi bi-circle-fill" style="font-size: 6px;"></i>
+                            @trangThaiHienThi
+                        </span>
+
+                        <div class="ticket-title">@ve.TenSuKien</div>
+                        <div class="ticket-subtitle">@ve.TenLoaiSuKien</div>
+
+                        <div class="ticket-info-row">
+                            <div class="ticket-line">
+                                <i class="bi bi-calendar3"></i>
+                                <div>
+                                    <strong>Thời gian</strong><br />
+                                    <span class="text-one-line">
+                                        @ve.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                        -
+                                        @ve.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
+                                    </span>
+                                </div>
+                            </div>
+
+                            @if (ve.LaTrucTiep)
+                            {
+                                <div class="ticket-line">
+                                    <i class="bi bi-geo-alt"></i>
+                                    <div>
+                                        <strong>@ve.DiaDiem</strong><br />
+                                        <span class="text-one-line" title="@ve.DiaChi">@ve.DiaChi</span>
+                                    </div>
+                                </div>
+                            }
+                            else if (ve.LaTrucTuyen)
+                            {
+                                <div class="ticket-line">
+                                    <i class="bi bi-camera-video"></i>
+                                    <div>
+                                        <strong>Sự kiện trực tuyến</strong><br />
+                                        <span class="text-one-line">
+                                            @if (!string.IsNullOrEmpty(ve.OnlineNenTang))
+                                            {
+                                                @ve.OnlineNenTang
+                                            }
+
+                                            @if (!string.IsNullOrEmpty(ve.OnlineLinkXem))
+                                            {
+                                                <span> · </span>
+                                                <a href="@ve.OnlineLinkXem" target="_blank">Vào phòng</a>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            }
                         </div>
-                        <small class="text-muted">
-                            Mã vé: <strong>@ve.MaVe</strong>
-                        </small>
+
+                        <div class="ticket-mini-grid">
+                            <div class="mini-box">
+                                <div class="mini-label">Loại vé</div>
+                                <div class="mini-value" title="@ve.TenLoaiVe">@ve.TenLoaiVe</div>
+                            </div>
+
+                            <div class="mini-box">
+                                <div class="mini-label">Ghế</div>
+                                <div class="mini-value" title="@viTriGhe">@viTriGhe</div>
+                            </div>
+
+                            <div class="mini-box">
+                                <div class="mini-label">Tổng tiền</div>
+                                <div class="mini-value">@ve.GiaVe.ToString("N0") đ</div>
+                            </div>
+
+                            <div class="mini-box">
+                                <div class="mini-label">Ngày đặt</div>
+                                <div class="mini-value">@ve.NgayDat.ToString("dd/MM/yyyy")</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="card-body">
-                        <h5 class="card-title mb-2">@ve.TenSuKien</h5>
-
-                        <p class="mb-1">
-                            <i class="bi bi-calendar3"></i>
-                            @ve.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-                            -
-                            @ve.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
-                        </p>
-
-                        @if (ve.LaTrucTiep)
-                        {
-                            <p class="mb-1">
-                                <i class="bi bi-geo-alt"></i>
-                                <strong>@ve.DiaDiem</strong><br />
-                                <span class="text-muted">@ve.DiaChi</span>
-                            </p>
-                        }
-                        else if (ve.LaTrucTuyen)
-                        {
-                            <p class="mb-1">
-                                <i class="bi bi-camera-video"></i>
-                                Sự kiện trực tuyến trên:
-                                <strong>@ve.OnlineNenTang</strong><br />
-                                @if (!string.IsNullOrEmpty(ve.OnlineLinkXem))
-                                {
-                                    <a href="@ve.OnlineLinkXem" target="_blank">Vào phòng sự kiện</a>
-                                }
-                            </p>
-                        }
-
-                        <hr />
-
-                        <div class="row">
-                            <div class="col-md-4 col-6 mb-2">
-                                <div class="small text-muted">Loại vé</div>
-                                <div><strong>@ve.TenLoaiVe</strong></div>
-                            </div>
-                            <div class="col-md-4 col-6 mb-2">
-                                <div class="small text-muted">Ghế</div>
-                                <div><strong>@viTriGhe</strong></div>
-                            </div>
-                            <div class="col-md-4 col-6 mb-2">
-                                <div class="small text-muted">Giá vé</div>
-                                <div><strong>@ve.GiaVe.ToString("N0") đ</strong></div>
-                            </div>
-                            <div class="col-md-4 col-6 mb-2">
-                                <div class="small text-muted">Ngày đặt</div>
-                                <div>@ve.NgayDat.ToString("dd/MM/yyyy HH:mm")</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card-footer d-flex justify-content-between align-items-center">
-                        <div class="text-muted small">
-                            * Vui lòng mang mã vé (hoặc mã QR) khi tham gia sự kiện.
-                        </div>
-
+                    <div class="ticket-stub">
                         <div>
-<a asp-controller="KhachHang"
-   asp-action="ChiTietVe"
-   asp-route-veId="@ve.VeId"
-   class="btn btn-outline-primary btn-sm">
-    Xem chi tiết sự kiện
-</a>
+                            <div class="stub-label">Mã vé</div>
+                            <div class="stub-code" title="@ve.MaVe">@ve.MaVe</div>
+                        </div>
 
-<a asp-controller="KhachHang"
-   asp-action="XemMaQr"
-   asp-route-veId="@ve.VeId"
-   class="btn btn-outline-secondary btn-sm">
-    Xem mã QR
-</a>
+                        <div class="stub-actions">
+                            <a asp-controller="KhachHang"
+                               asp-action="ChiTietVe"
+                               asp-route-veId="@ve.VeId"
+                               class="btn btn-ticket-main btn-sm">
+                                Chi tiết vé
+                            </a>
+
+@if (ve.LaTrucTiep)
+{
+    <a asp-controller="KhachHang"
+       asp-action="XemMaQr"
+       asp-route-veId="@ve.VeId"
+       class="btn btn-ticket-outline btn-sm">
+        Mã QR
+    </a>
+}
 
                             @if (ve.CoTheHuy)
                             {
                                 <a asp-controller="KhachHang"
                                    asp-action="YeuCauHoanHuy"
                                    asp-route-veId="@ve.VeId"
-                                   class="btn btn-outline-danger btn-sm ms-1">
-                                    Yêu cầu hủy/hoàn vé
+                                   class="btn btn-ticket-outline btn-sm">
+                                    Hoàn vé
                                 </a>
                             }
                         </div>
                     </div>
                 </div>
-            </div>
+            }
         }
     </div>
+    @if (TempData["QrError"] != null)
+{
+    <div class="qr-modal-backdrop" id="qrModal">
+        <div class="qr-modal">
+
+            <div class="qr-modal-icon">
+                !
+            </div>
+
+            <div class="qr-modal-title">
+                Không thể xem mã QR
+            </div>
+
+            <div class="qr-modal-text">
+                @TempData["QrError"]
+            </div>
+
+            @if (TempData["QrMaVe"] != null)
+            {
+                <div class="mini-box mb-3">
+                    <div class="mini-label">Mã vé</div>
+                    <div class="mini-value">
+                        @TempData["QrMaVe"]
+                    </div>
+                </div>
+            }
+
+            <button type="button"
+                    class="qr-modal-btn"
+                    onclick="document.getElementById('qrModal').style.display='none'">
+                Đã hiểu
+            </button>
+
+        </div>
+    </div>
 }
+</div>

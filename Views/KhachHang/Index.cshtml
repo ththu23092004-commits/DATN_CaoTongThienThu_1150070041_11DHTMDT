@@ -3,118 +3,478 @@
 @{
     ViewData["Title"] = "Sự kiện";
     string? search = ViewBag.Search as string;
+    string loai = Context.Request.Query["loai"].ToString();
+
+    var data = Model ?? new List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>();
+
+    if (!string.IsNullOrWhiteSpace(loai))
+    {
+        data = data
+            .Where(x => !string.IsNullOrWhiteSpace(x.TenLoai)
+                     && x.TenLoai.Contains(loai, StringComparison.CurrentCultureIgnoreCase))
+            .ToList();
+    }
+
+    var suKienDangMo = data
+        .Where(x => !x.DaKetThuc)
+        .OrderBy(x => x.ThoiGianBatDau)
+        .ToList();
+
+    var suKienDaDienRa = data
+        .Where(x => x.DaKetThuc)
+        .OrderByDescending(x => x.ThoiGianKetThuc)
+        .ToList();
 }
 
+<style>
+    .event-list-page {
+        color: #0f172a;
+    }
 
+    .event-list-hero {
+        margin-bottom: 32px;
+    }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="mb-0">Tất cả sự kiện</h2>
-        <div class="text-muted small">
-            Danh sách các sự kiện đã được duyệt và mở cho khách đặt vé.
+    .event-list-title {
+        font-size: 40px;
+        font-weight: 900;
+        letter-spacing: -1px;
+        margin-bottom: 8px;
+    }
+
+    .event-list-desc {
+        color: #64748b;
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
+
+    .top-search {
+        max-width: 620px;
+        margin-bottom: 18px;
+    }
+
+    .top-search .input-group {
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid #dbeafe;
+        background: #fff;
+        box-shadow: 0 10px 28px rgba(15,23,42,.04);
+    }
+
+    .top-search .input-group-text,
+    .top-search .form-control {
+        border: none;
+        background: #fff;
+    }
+
+    .top-search .form-control {
+        min-height: 48px;
+        box-shadow: none;
+    }
+
+    .top-search .btn {
+        border-radius: 999px;
+        margin: 5px;
+        font-weight: 800;
+        padding: 0 20px;
+    }
+
+    .filter-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .filter-tab {
+        text-decoration: none;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        font-size: 14px;
+        font-weight: 800;
+        transition: .25s;
+    }
+
+    .filter-tab:hover {
+        background: #eff6ff;
+        color: #2563eb;
+        border-color: #bfdbfe;
+    }
+
+    .filter-tab.active {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+    }
+
+    .section-head-pro {
+        margin: 34px 0 18px;
+    }
+
+    .section-title-pro {
+        font-size: 26px;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .section-sub-pro {
+        color: #64748b;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .event-card-link {
+        display: block;
+        height: 100%;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .event-card-pro {
+        height: 100%;
+        background: #fff;
+        border-radius: 26px;
+        overflow: hidden;
+        border: 1px solid #e6eef8;
+        box-shadow: 0 12px 30px rgba(15,23,42,.055);
+        transition: .25s ease;
+    }
+
+    .event-card-link:hover .event-card-pro {
+        transform: translateY(-6px);
+        border-color: #bfdbfe;
+        box-shadow: 0 22px 52px rgba(37,99,235,.13);
+    }
+
+    .event-img-pro {
+        height: 230px;
+        position: relative;
+        overflow: hidden;
+        background: #e2e8f0;
+    }
+
+    .event-img-pro img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: .32s ease;
+    }
+
+    .event-card-link:hover .event-img-pro img {
+        transform: scale(1.05);
+    }
+
+    .date-badge-pro {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        width: 58px;
+        padding: 8px 0;
+        border-radius: 16px;
+        background: rgba(255,255,255,.95);
+        text-align: center;
+        box-shadow: 0 10px 22px rgba(15,23,42,.15);
+    }
+
+    .date-badge-pro strong {
+        display: block;
+        color: #0f172a;
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .date-badge-pro span {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+    }
+
+    .status-pill {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 11px;
+        font-weight: 900;
+    }
+
+    .status-pill.ended {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .event-body-pro {
+        padding: 16px 17px 17px;
+    }
+
+    .event-type-pro {
+        display: inline-block;
+        max-width: 100%;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 900;
+        margin-bottom: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .event-name-pro {
+        font-size: 17px;
+        font-weight: 900;
+        line-height: 1.35;
+        color: #0f172a;
+        min-height: 46px;
+        margin-bottom: 10px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .event-meta-pro {
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
+    .event-meta-pro div {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+
+    .event-bottom-pro {
+        padding-top: 13px;
+        border-top: 1px solid #eef2f7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .event-price-pro {
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .event-view-pro {
+        color: #2563eb;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .empty-pro {
+        padding: 26px;
+        border-radius: 24px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+    }
+
+    @@media(max-width: 768px) {
+        .event-list-title {
+            font-size: 28px;
+        }
+
+        .event-img-pro {
+            height: 200px;
+        }
+
+        .top-search {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="event-list-page">
+
+    <div class="event-list-hero">
+        <h2 class="event-list-title">Danh sách sự kiện</h2>
+        <p class="event-list-desc">
+            Khám phá các sự kiện đang mở đặt vé và theo dõi những chương trình đã diễn ra.
+        </p>
+
+      
+
+        <div class="filter-tabs">
+            <a class="filter-tab @(string.IsNullOrWhiteSpace(loai) ? "active" : "")"
+               href="/KhachHang/Index">
+                Tất cả
+            </a>
+
+            <a class="filter-tab @(loai.Contains("trực tiếp", StringComparison.CurrentCultureIgnoreCase) ? "active" : "")"
+               href="/KhachHang/Index?loai=trực tiếp">
+                Sự kiện trực tiếp
+            </a>
+
+            <a class="filter-tab @(loai.Contains("trực tuyến", StringComparison.CurrentCultureIgnoreCase) || loai.Contains("online", StringComparison.CurrentCultureIgnoreCase) ? "active" : "")"
+               href="/KhachHang/Index?loai=trực tuyến">
+                Sự kiện trực tuyến
+            </a>
         </div>
     </div>
-<form method="get" class="search-box d-flex align-items-center">
-    <div class="input-group">
-        <span class="input-group-text bg-white border-end-0">
-            <i class="bi bi-search text-muted"></i>
-        </span>
-        <input type="text"
-               name="search"
-               value="@search"
-               class="form-control border-start-0"
-               placeholder="Tìm kiếm sự kiện, ca sĩ, địa điểm..." />
-        <button type="submit" class="btn btn-primary px-4">
-            Tìm kiếm
-        </button>
-    </div>
-</form>
-</div>
 
-@if (Model != null && Model.Any())
-{
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        @foreach (var sk in Model)
+    <section>
+        <div class="section-head-pro">
+            <h3 class="section-title-pro">Sự kiện đang mở đặt vé</h3>
+            <div class="section-sub-pro">Các sự kiện sắp diễn ra và còn mở cho khách đặt vé</div>
+        </div>
+
+        @if (suKienDangMo.Any())
         {
-            var thoiGianStr = $"{sk.ThoiGianBatDau:HH:mm dd/MM/yyyy} - {sk.ThoiGianKetThuc:HH:mm dd/MM/yyyy}";
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                @foreach (var sk in suKienDangMo)
+                {
+                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                        ? "~/images/default-event.jpg"
+                        : sk.AnhSuKien);
 
-                    @* ⭐ HÌNH ẢNH SỰ KIỆN *@
-                    <img class="card-img-top"
-                         src="@Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien) ? "~/images/default-event.jpg" : sk.AnhSuKien)"
-                         alt="@sk.TenSuKien"
-                         style="height: 180px; object-fit: cover;" />
+                    <div class="col">
+                        <a asp-controller="KhachHang"
+                           asp-action="ChiTiet"
+                           asp-route-id="@sk.SuKienId"
+                           class="event-card-link">
 
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h5 class="card-title mb-0">@sk.TenSuKien</h5>
-                                @if (!string.IsNullOrWhiteSpace(sk.TenLoai))
-                                {
-                                    <span class="badge bg-light text-dark border mt-1">
-                                        @sk.TenLoai
+                            <div class="event-card-pro">
+                                <div class="event-img-pro">
+                                    <img src="@img" alt="@sk.TenSuKien" />
+
+                                    <div class="date-badge-pro">
+                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+                                    </div>
+
+                                    <div class="status-pill">Đang mở</div>
+                                </div>
+
+                                <div class="event-body-pro">
+                                    <span class="event-type-pro">
+                                        @(string.IsNullOrWhiteSpace(sk.TenLoai) ? "Sự kiện" : sk.TenLoai)
                                     </span>
-                                }
+
+                                    <div class="event-name-pro">@sk.TenSuKien</div>
+
+                                    <div class="event-meta-pro">
+                                        <div>
+                                            <i class="bi bi-clock"></i>
+                                            @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
+                                        {
+                                            <div>
+                                                <i class="bi bi-geo-alt"></i>
+                                                @sk.DiaDiem
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="event-bottom-pro">
+                                        <div class="event-price-pro">
+                                            @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
+                                                ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
+                                                : "Miễn phí")
+                                        </div>
+
+                                        <div class="event-view-pro">Chi tiết</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                @if (sk.DaKetThuc)
-                                {
-                                    <span class="badge bg-secondary">Đã diễn ra</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-success">Còn mở</span>
-                                }
-                            </div>
-                        </div>
-
-                        <p class="text-muted small mb-1">
-                            <i class="bi bi-clock"></i> @thoiGianStr
-                        </p>
-
-                        @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
-                        {
-                            <p class="text-muted small mb-1">
-                                <i class="bi bi-geo-alt"></i> @sk.DiaDiem
-                            </p>
-                        }
-
-                        @if (sk.GiaTu.HasValue)
-                        {
-                            <p class="fw-semibold mb-2">
-                                Giá từ: @sk.GiaTu.Value.ToString("N0") đ
-                            </p>
-                        }
-
-                        <div class="mt-auto d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">
-                                @if (sk.DaKetThuc)
-                                {
-                                    <text>Sự kiện đã kết thúc</text>
-                                }
-                                else
-                                {
-                                    <text>Sự kiện đang mở</text>
-                                }
-                            </span>
-
-                            <a asp-action="ChiTiet"
-                               asp-route-id="@sk.SuKienId"
-                               class="btn btn-outline-primary btn-sm">
-                                Xem chi tiết
-                            </a>
-                        </div>
+                        </a>
                     </div>
-                </div>
+                }
             </div>
         }
-    </div>
-}
-else
-{
-    <div class="alert alert-light border">
-        <div class="fw-semibold">Chưa có sự kiện nào được duyệt.</div>
-        <div class="small text-muted">Vui lòng quay lại sau.</div>
-    </div>
-}
+        else
+        {
+            <div class="empty-pro">Hiện chưa có sự kiện nào đang mở đặt vé.</div>
+        }
+    </section>
+
+    <section>
+        <div class="section-head-pro">
+            <h3 class="section-title-pro">Sự kiện đã diễn ra</h3>
+            <div class="section-sub-pro">Các chương trình đã kết thúc trên hệ thống</div>
+        </div>
+
+        @if (suKienDaDienRa.Any())
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                @foreach (var sk in suKienDaDienRa)
+                {
+                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                        ? "~/images/default-event.jpg"
+                        : sk.AnhSuKien);
+
+                    <div class="col">
+                        <a asp-controller="KhachHang"
+                           asp-action="ChiTiet"
+                           asp-route-id="@sk.SuKienId"
+                           class="event-card-link">
+
+                            <div class="event-card-pro">
+                                <div class="event-img-pro">
+                                    <img src="@img" alt="@sk.TenSuKien" />
+
+                                    <div class="date-badge-pro">
+                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+                                    </div>
+
+                                    <div class="status-pill ended">Đã diễn ra</div>
+                                </div>
+
+                                <div class="event-body-pro">
+                                    <span class="event-type-pro">
+                                        @(string.IsNullOrWhiteSpace(sk.TenLoai) ? "Sự kiện" : sk.TenLoai)
+                                    </span>
+
+                                    <div class="event-name-pro">@sk.TenSuKien</div>
+
+                                    <div class="event-meta-pro">
+                                        <div>
+                                            <i class="bi bi-clock"></i>
+                                            @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
+                                        {
+                                            <div>
+                                                <i class="bi bi-geo-alt"></i>
+                                                @sk.DiaDiem
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="event-bottom-pro">
+                                        <div class="event-price-pro">
+                                            @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
+                                                ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
+                                                : "Miễn phí")
+                                        </div>
+
+                                        <div class="event-view-pro">Chi tiết</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+</div>

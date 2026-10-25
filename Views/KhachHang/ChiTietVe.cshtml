@@ -3,91 +3,503 @@
 @{
     ViewData["Title"] = "Chi tiết vé";
 
-    // Map trạng thái sang tiếng Việt có dấu
     string trangThai = Model.TrangThaiVe switch
     {
         "DaThanhToan" => "Đã thanh toán",
         "ChuaThanhToan" => "Chưa thanh toán",
         "DaHuy" => "Đã hủy",
-        "Huy"           => "Hủy", 
+        "Huy" => "Đã hủy",
         "HoanTien" => "Đã hoàn tiền",
         _ => Model.TrangThaiVe
     };
+
+    string statusClass = Model.TrangThaiVe switch
+    {
+        "DaThanhToan" => "status-paid",
+        "ChuaThanhToan" => "status-unpaid",
+        "DaHuy" => "status-cancel",
+        "Huy" => "status-cancel",
+        "HoanTien" => "status-refund",
+        _ => "status-default"
+    };
+
+    string viTriGhe = !string.IsNullOrWhiteSpace(Model.DanhSachGhe)
+        ? Model.DanhSachGhe
+        : (Model.Hang != null && Model.Cot.HasValue ? $"{Model.Hang}{Model.Cot}" : "Ghế tự do");
+
+    var danhSachGhe = !string.IsNullOrWhiteSpace(Model.DanhSachGhe)
+        ? Model.DanhSachGhe.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList()
+        : new List<string> { viTriGhe };
+
+    int soLuongVe = danhSachGhe.Count;
+    decimal giaTungVe = soLuongVe > 0 ? Model.GiaVe / soLuongVe : Model.GiaVe;
+
+    string loaiSuKienHienThi = Model.LaTrucTiep
+        ? "Sự kiện trực tiếp"
+        : (Model.LaTrucTuyen ? "Sự kiện trực tuyến" : Model.TenLoaiSuKien);
 }
 
-<h2 class="mb-3">Chi tiết vé</h2>
+<style>
+    .detail-page {
+        background: #f6f8fb;
+        min-height: 100vh;
+        padding: 14px 0 38px;
+    }
 
-<div class="card shadow-sm mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <span class="badge bg-primary">Mã vé: @Model.MaVe</span>
+    .detail-wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 0 18px;
+    }
+
+    .detail-header {
+        margin-bottom: 16px;
+    }
+
+    .detail-header h2 {
+        font-size: 29px;
+        font-weight: 850;
+        color: #0f172a;
+        margin-bottom: 3px;
+    }
+
+    .detail-header p {
+        color: #64748b;
+        margin: 0;
+        font-size: 15.5px;
+    }
+
+    .detail-card {
+        background: #ffffff;
+        border: 1px solid #dbe4f0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
+    }
+
+    .detail-body {
+        padding: 24px 28px 22px;
+        background:
+            radial-gradient(circle at 12px 12px, rgba(37, 99, 235, .04) 1px, transparent 1px),
+            linear-gradient(135deg, #ffffff, #f8fbff);
+        background-size: 18px 18px, auto;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    .status-paid {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-unpaid {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-cancel {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .status-refund {
+        background: #e0f2fe;
+        color: #075985;
+    }
+
+    .status-default {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .event-title {
+        font-size: 26px;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.22;
+        margin-bottom: 6px;
+    }
+
+    .event-type {
+        color: #2563eb;
+        font-size: 15px;
+        font-weight: 750;
+        margin-bottom: 16px;
+    }
+
+    .event-type span {
+        color: #64748b;
+        font-weight: 650;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 11px;
+        margin-bottom: 14px;
+    }
+
+    .info-box {
+        background: rgba(248, 250, 252, .95);
+        border: 1px solid #edf2f7;
+        border-radius: 14px;
+        padding: 12px 14px;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-size: 12.5px;
+        font-weight: 650;
+        margin-bottom: 4px;
+    }
+
+    .info-value {
+        color: #0f172a;
+        font-size: 15.5px;
+        font-weight: 750;
+        line-height: 1.38;
+        word-break: break-word;
+    }
+
+    .location-box,
+    .online-box {
+        margin-top: 4px;
+        border-radius: 15px;
+        padding: 13px 15px;
+    }
+
+    .location-box {
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+    }
+
+    .online-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+    }
+
+    .online-box a {
+        color: #1d4ed8;
+        font-weight: 750;
+        word-break: break-all;
+    }
+
+    .password-code {
+        background: #ffffff;
+        border: 1px solid #dbeafe;
+        border-radius: 10px;
+        padding: 4px 8px;
+        color: #1e40af;
+        font-weight: 800;
+    }
+
+    .section-title {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 850;
+        margin: 20px 0 10px;
+    }
+
+    .ticket-table {
+        width: 100%;
+        border: 1px solid #edf2f7;
+        border-radius: 15px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .ticket-table-row {
+        display: grid;
+        grid-template-columns: 70px 1fr 145px 150px;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 15px;
+    }
+
+    .ticket-table-row:last-child {
+        border-bottom: none;
+    }
+
+    .ticket-table-head {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12.5px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+    }
+
+    .ticket-no {
+        color: #64748b;
+        font-weight: 750;
+    }
+
+    .ticket-seat {
+        color: #0f172a;
+        font-weight: 850;
+    }
+
+    .ticket-type-name {
+        color: #334155;
+        font-weight: 700;
+    }
+
+    .ticket-price {
+        color: #0f172a;
+        font-weight: 850;
+        text-align: right;
+    }
+
+    .total-box {
+        margin-top: 14px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .total-inner {
+        width: 360px;
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 15px;
+        padding: 14px 16px;
+    }
+
+    .total-line,
+    .total-final {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 32px;
+    }
+
+    .total-line {
+        color: #334155;
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+
+    .total-line strong {
+        color: #0f172a;
+        font-weight: 850;
+    }
+
+    .total-final {
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 11px;
+        margin-top: 10px;
+        color: #0f172a;
+        font-size: 19px;
+        font-weight: 900;
+    }
+
+    .detail-actions {
+        background: #ffffff;
+        border-top: 1px solid #edf2f7;
+        padding: 16px 28px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .detail-actions .btn {
+        border-radius: 999px;
+        font-size: 14.5px;
+        font-weight: 750;
+        padding: 9px 18px;
+    }
+
+    @@media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ticket-table-row {
+            grid-template-columns: 52px 1fr;
+            gap: 6px;
+        }
+
+        .ticket-table-head {
+            display: none;
+        }
+
+        .ticket-type-name,
+        .ticket-price {
+            grid-column: 2;
+            text-align: left;
+        }
+
+        .total-inner {
+            width: 100%;
+        }
+
+        .detail-body {
+            padding: 21px 18px;
+        }
+
+        .detail-actions {
+            padding: 15px 18px;
+        }
+    }
+</style>
+
+<div class="detail-page">
+    <div class="detail-wrap">
+        <div class="detail-header">
+            <h2>Chi tiết vé</h2>
+            <p>Thông tin sự kiện, danh sách vé đã đặt và tổng thanh toán.</p>
         </div>
-        <small class="text-muted">
-            Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm")
-        </small>
-    </div>
 
-    <div class="card-body">
-        <h4 class="card-title">@Model.TenSuKien</h4>
-        <p class="text-muted mb-2">@Model.TenLoaiSuKien</p>
+        <div class="detail-card">
+            <div class="detail-body">
+                <span class="status-pill @statusClass">@trangThai</span>
 
-        <p class="mb-1">
-            <strong>Thời gian:</strong><br />
-            @Model.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-            -
-            @Model.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
-        </p>
+                <div class="event-title">@Model.TenSuKien</div>
 
-        @if (Model.LaTrucTiep)
-        {
-            <p class="mb-1">
-                <strong>Địa điểm:</strong><br />
-                @Model.DiaDiem<br />
-                <span class="text-muted">@Model.DiaChi</span>
-            </p>
-        }
-        else if (Model.LaTrucTuyen)
-        {
-            <p class="mb-1">
-                <strong>Sự kiện trực tuyến trên:</strong> @Model.OnlineNenTang<br />
-                @if (!string.IsNullOrEmpty(Model.OnlineLinkXem))
+                <div class="event-type">
+                    <span>Loại sự kiện:</span> @loaiSuKienHienThi
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-box">
+                        <div class="info-label">Mã vé</div>
+                        <div class="info-value">@Model.MaVe</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">Trạng thái vé</div>
+                        <div class="info-value">@trangThai</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">Thời gian diễn ra</div>
+                        <div class="info-value">
+                            @Model.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                            -
+                            @Model.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">Ngày đặt vé</div>
+                        <div class="info-value">@Model.NgayDat.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">Loại vé</div>
+                        <div class="info-value">@Model.TenLoaiVe</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">Số lượng vé</div>
+                        <div class="info-value">@soLuongVe vé</div>
+                    </div>
+                </div>
+
+                @if (Model.LaTrucTiep)
                 {
-                    <span>Link: </span>
-                    <a href="@Model.OnlineLinkXem" target="_blank">@Model.OnlineLinkXem</a>
+                    <div class="location-box">
+                        <div class="info-label">Địa điểm tổ chức</div>
+                        <div class="info-value">
+                            @Model.DiaDiem
+                            @if (!string.IsNullOrEmpty(Model.DiaChi))
+                            {
+                                <br />
+                                <span style="font-weight:650; color:#475569;">@Model.DiaChi</span>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (Model.LaTrucTuyen)
+                {
+                    <div class="online-box">
+                        <div class="info-label">Thông tin tham gia trực tuyến</div>
+                        <div class="info-value">
+                            Nền tảng: @Model.OnlineNenTang
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.OnlineLinkXem))
+                        {
+                            <div class="mt-2">
+                                <a href="@Model.OnlineLinkXem" target="_blank">
+                                    @Model.OnlineLinkXem
+                                </a>
+                            </div>
+                        }
+
+                        @if (Model.TrangThaiVe == "DaThanhToan" && !string.IsNullOrEmpty(Model.OnlineMatKhau))
+                        {
+                            <div class="mt-2">
+                                Mật khẩu phòng:
+                                <code class="password-code">@Model.OnlineMatKhau</code>
+                            </div>
+                        }
+                    </div>
                 }
 
-                @* ⭐ MẬT KHẨU PHÒNG – chỉ hiện khi đã thanh toán và có mật khẩu *@
-                @if (Model.TrangThaiVe == "DaThanhToan" && !string.IsNullOrEmpty(Model.OnlineMatKhau))
+                <div class="section-title">Danh sách vé đã đặt</div>
+
+                <div class="ticket-table">
+                    <div class="ticket-table-row ticket-table-head">
+                        <div>STT</div>
+                        <div>Ghế</div>
+                        <div>Loại vé</div>
+                        <div class="ticket-price">Giá vé</div>
+                    </div>
+
+                    @for (int i = 0; i < danhSachGhe.Count; i++)
+                    {
+                        <div class="ticket-table-row">
+                            <div class="ticket-no">#@(i + 1)</div>
+
+                            <div class="ticket-seat">
+                                @(danhSachGhe[i] == "Ghế tự do" ? "Ghế tự do" : $"Ghế {danhSachGhe[i]}")
+                            </div>
+
+                            <div class="ticket-type-name">
+                                @Model.TenLoaiVe
+                            </div>
+
+                            <div class="ticket-price">
+                                @giaTungVe.ToString("N0") đ
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="total-box">
+
+
+                        <div class="total-final">
+                            <span>Tổng thanh toán</span>
+                            <span>@Model.GiaVe.ToString("N0") đ</span>
+                        </div>
+                    
+                </div>
+            </div>
+
+            <div class="detail-actions">
+                <a asp-action="VeCuaToi" class="btn btn-outline-secondary">
+                    Quay lại danh sách vé
+                </a>
+
+                @if (Model.LaTrucTiep)
                 {
-                    <br />
-                    <strong>Mật khẩu phòng:</strong> <code>@Model.OnlineMatKhau</code>
+                    <a asp-action="XemMaQr"
+                       asp-route-veId="@Model.VeId"
+                       class="btn btn-primary">
+                        Xem mã QR
+                    </a>
                 }
-            </p>
-        }
-
-        <hr />
-
-        <p class="mb-1"><strong>Loại vé:</strong> @Model.TenLoaiVe</p>
-        <p class="mb-1"><strong>Giá:</strong> @Model.GiaVe.ToString("N0") đ</p>
-
-        <p class="mb-1">
-            <strong>Trạng thái vé:</strong>
-            <span class="fw-bold">@trangThai</span>
-        </p>
-
-    </div>
-
-    <div class="card-footer d-flex justify-content-between">
-        <a asp-action="VeCuaToi" class="btn btn-secondary btn-sm">
-            Quay lại danh sách vé
-        </a>
-
-        <div>
-            <a asp-action="XemMaQr"
-               asp-route-veId="@Model.VeId"
-               class="btn btn-outline-secondary btn-sm">
-                Xem mã QR
-            </a>
+            </div>
         </div>
     </div>
 </div>

@@ -14,6 +14,9 @@ namespace VeSuKienWeb.Models.KhachHang
         [Required(ErrorMessage = "Vui lòng nhập lý do hủy/hoàn vé.")]
         [Display(Name = "Lý do hủy/hoàn vé")]
         public string LyDo { get; set; } = string.Empty;
+        public string TenLoaiVe { get; set; } = string.Empty;
+        public string? DanhSachGhe { get; set; }
+        public int SoLuongVe { get; set; }
     }
 }
 

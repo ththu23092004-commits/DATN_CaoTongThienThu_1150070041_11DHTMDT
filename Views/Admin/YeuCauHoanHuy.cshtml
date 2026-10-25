@@ -1,53 +1,135 @@
 @model IEnumerable<VeSuKienWeb.Models.Admin.YeuCauHoanHuyAdminVM>
 
 @{
+    Layout = "_AdminLayout";
     ViewData["Title"] = "Yêu cầu hủy/hoàn vé";
 }
 
-<h2 class="mb-3">Yêu cầu hủy/hoàn vé</h2>
+<style>
+    .admin-page-title {
+        font-size: 30px;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .admin-card {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 18px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+        overflow: hidden;
+    }
+
+    .refund-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .refund-table th {
+        font-size: 14px;
+        color: #111827;
+        font-weight: 700;
+        padding: 14px 10px;
+        background: #f8fafc;
+        white-space: normal;
+    }
+
+    .refund-table td {
+        padding: 14px 10px;
+        vertical-align: middle;
+        font-size: 13px;
+        color: #374151;
+        word-break: break-word;
+    }
+
+    .ticket-col { width: 12%; }
+    .event-col { width: 22%; }
+    .customer-col { width: 17%; }
+    .money-col { width: 9%; }
+    .date-col { width: 13%; }
+    .type-col { width: 9%; }
+    .status-col { width: 9%; }
+    .action-col { width: 9%; }
+
+    .sub-text {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+    }
+
+    .badge-soft {
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .btn-action {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        width: 100%;
+    }
+
+    .action-col form {
+        display: block;
+        margin-bottom: 4px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="admin-page-title mb-1">Yêu cầu hủy/hoàn vé</h2>
+        <div class="text-muted small">
+            Admin theo dõi và xử lý các yêu cầu hủy vé hoặc hoàn tiền từ khách hàng.
+        </div>
+    </div>
+</div>
 
 @if (TempData["ThongBao"] != null)
 {
-    <div class="alert alert-info">
+    <div class="alert alert-info rounded-4 border-0 shadow-sm">
         @TempData["ThongBao"]
     </div>
 }
 
 @if (!Model.Any())
 {
-    <div class="alert alert-secondary">
-        Hiện không có yêu cầu hủy/hoàn vé nào.
+    <div class="alert alert-light border rounded-4 shadow-sm">
+        <div class="fw-semibold">Hiện không có yêu cầu hủy/hoàn vé nào.</div>
+        <div class="small text-muted">Khi khách hàng gửi yêu cầu, danh sách sẽ hiển thị tại đây.</div>
     </div>
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-hover table-sm align-middle">
-            <thead class="table-light">
+    <div class="admin-card">
+        <table class="table table-hover align-middle mb-0 refund-table">
+            <thead>
                 <tr>
-                    <th>Mã vé</th>
-                    <th>Sự kiện</th>
-                    <th>Khách hàng</th>
-                    <th>Số tiền</th>
-                    <th>Ngày yêu cầu</th>
-                    <th>Hình thức</th>
-                    <th>Trạng thái</th>
-                    <th class="text-end">Thao tác</th>
+                    <th class="ticket-col">Mã vé</th>
+                    <th class="event-col">Sự kiện</th>
+                    <th class="customer-col">Khách hàng</th>
+                    <th class="money-col">Số tiền</th>
+                    <th class="date-col">Ngày yêu cầu</th>
+                    <th class="type-col">Hình thức</th>
+                    <th class="status-col">Trạng thái</th>
+                    <th class="action-col text-end">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
             @foreach (var item in Model)
             {
-                // Badge màu
                 var badgeClass = item.TrangThai switch
                 {
-                    "ChoDuyet" => "badge bg-warning text-dark",
-                    "DaDuyet"  => "badge bg-success",
-                    "TuChoi"   => "badge bg-secondary",
-                    _          => "badge bg-light text-dark"
+                    "ChoDuyet" => "badge bg-warning text-dark badge-soft",
+                    "DaDuyet"  => "badge bg-success badge-soft",
+                    "TuChoi"   => "badge bg-secondary badge-soft",
+                    _          => "badge bg-light text-dark badge-soft"
                 };
 
-                // Map tiếng Việt có dấu cho trạng thái
                 var trangThaiTiengViet = item.TrangThai switch
                 {
                     "ChoDuyet" => "Chờ duyệt",
@@ -56,7 +138,6 @@ else
                     _ => item.TrangThai
                 };
 
-                // Map tiếng Việt có dấu cho hình thức
                 var hinhThucTiengViet = item.HinhThuc switch
                 {
                     "HoanTien" => "Hoàn tiền",
@@ -65,37 +146,49 @@ else
                 };
 
                 <tr>
-                    <td>@item.MaVe</td>
-                    <td>
-                        <div>@item.TenSuKien</div>
-                        <div class="small text-muted">@item.LyDo</div>
+                    <td class="ticket-col">
+                        <div class="fw-semibold">@item.MaVe</div>
                     </td>
-                    <td>
-                        <div>@item.TenNguoiDung</div>
-                        <div class="small text-muted">@item.EmailNguoiDung</div>
+
+                    <td class="event-col">
+                        <div class="fw-semibold">@item.TenSuKien</div>
+                        <div class="sub-text">@item.LyDo</div>
                     </td>
-                    <td>@item.SoTien.ToString("N0") đ</td>
-                    <td>@item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")</td>
 
-                    <td>@hinhThucTiengViet</td>
+                    <td class="customer-col">
+                        <div class="fw-semibold">@item.TenNguoiDung</div>
+                        <div class="sub-text">@item.EmailNguoiDung</div>
+                    </td>
 
-                    <td>
+                    <td class="money-col">
+                        @item.SoTien.ToString("N0") đ
+                    </td>
+
+                    <td class="date-col">
+                        @item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")
+                    </td>
+
+                    <td class="type-col">
+                        @hinhThucTiengViet
+                    </td>
+
+                    <td class="status-col">
                         <span class="@badgeClass">@trangThaiTiengViet</span>
                     </td>
 
-                    <td class="text-end">
+                    <td class="action-col text-end">
                         @if (item.TrangThai == "ChoDuyet")
                         {
-                            <form asp-action="DuyetYeuCauHoanHuy" method="post" class="d-inline">
+                            <form asp-action="DuyetYeuCauHoanHuy" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@item.YeuCauId" />
-                                <button type="submit" class="btn btn-sm btn-success me-1">Duyệt</button>
+                                <button type="submit" class="btn btn-sm btn-success btn-action">Duyệt</button>
                             </form>
 
-                            <form asp-action="TuChoiYeuCauHoanHuy" method="post" class="d-inline">
+                            <form asp-action="TuChoiYeuCauHoanHuy" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@item.YeuCauId" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger btn-action">Từ chối</button>
                             </form>
                         }
                         else

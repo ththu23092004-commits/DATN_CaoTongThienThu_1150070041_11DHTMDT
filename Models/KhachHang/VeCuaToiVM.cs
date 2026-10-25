@@ -34,5 +34,6 @@ namespace VeSuKienWeb.Models.KhachHang
 
         public bool SuKienDaKetThuc { get; set; }
         public bool CoTheHuy { get; set; }    // thêm mới
+        public string? DanhSachGhe { get; set; }
     }
 }

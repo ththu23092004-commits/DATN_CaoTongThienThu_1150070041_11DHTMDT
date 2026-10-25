@@ -284,6 +284,9 @@
                                id="TenLoaiVeOnline"
                                class="form-control"
                                placeholder="VD: Vé Online" />
+                               <input type="hidden" name="TenLoaiVe1" id="TenLoaiVe1OnlineHidden" />
+<input type="hidden" name="GiaVe1" id="GiaVe1OnlineHidden" />
+<input type="hidden" name="SoLuongVe1" id="SoLuongVe1OnlineHidden" />
                         <div class="form-text">
                             Giá vé và số lượng sẽ dùng từ <strong>Giá vé mặc định</strong> và <strong>Số lượng tối đa</strong> ở trên.
                         </div>
@@ -326,12 +329,12 @@
             if (!isOnline) return;
 
             var tenOnlineInput = document.getElementById("TenLoaiVeOnline");
-            var tenHidden = document.getElementById("TenLoaiVe1");
-            var giaMacDinh = document.getElementById("GiaVeMacDinh");
-            var giaHidden = document.getElementById("GiaVe1");
-            var soLuongToiDa = document.getElementById("SoLuongToiDa");
-            var soLuongHidden = document.getElementById("SoLuongVe1");
+            var tenHidden = document.getElementById("TenLoaiVe1OnlineHidden");
 
+            var giaMacDinh = document.getElementById("GiaVeMacDinh");
+            var giaHidden = document.getElementById("GiaVe1OnlineHidden");
+            var soLuongToiDa = document.getElementById("SoLuongToiDa");
+            var soLuongHidden = document.getElementById("SoLuongVe1OnlineHidden");
             if (tenOnlineInput && tenHidden) {
                 tenHidden.value = tenOnlineInput.value || "Vé Online";
             }

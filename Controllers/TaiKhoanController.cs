@@ -85,7 +85,11 @@ namespace VeSuKienWeb.Controllers
                 ModelState.AddModelError(string.Empty, "Sai email hoặc mật khẩu.");
                 return View(model);
             }
-
+if (user.TrangThai == "BiKhoa")
+{
+    ModelState.AddModelError(string.Empty, "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.");
+    return View(model);
+}
             // Tạo claims chứa thông tin user + VaiTro
             var claims = new List<Claim>
             {

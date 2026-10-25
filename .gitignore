@@ -1,0 +1,12 @@
+.vs/
+.vscode/
+bin/
+obj/
+node_modules/
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+*.user
+*.suo
+*.log

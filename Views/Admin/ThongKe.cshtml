@@ -1,0 +1,327 @@
+@model VeSuKienWeb.Models.Admin.AdminDashboardVM
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thống kê hệ thống";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .dash-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .dash-subtitle {
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-bottom: 22px;
+    }
+
+    .kpi-card, .dash-panel {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 24px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+    }
+
+    .kpi-card {
+        padding: 22px;
+    }
+
+    .kpi-label {
+        color: #6b7280;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .kpi-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: #111827;
+        margin-top: 8px;
+    }
+
+    .kpi-note {
+        color: #9ca3af;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 22px;
+        margin-bottom: 22px;
+    }
+
+    .dashboard-grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 22px;
+        margin-bottom: 22px;
+    }
+
+    .dash-panel {
+        padding: 24px;
+    }
+
+    .panel-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 18px;
+    }
+
+    @@media(max-width: 1200px) {
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .dashboard-grid,
+        .dashboard-grid-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="mb-4">
+    <h2 class="dash-title mb-1">Thống kê hệ thống</h2>
+    <div class="dash-subtitle">
+        Tổng quan dữ liệu người dùng, sự kiện và trạng thái hoạt động của hệ thống.
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Tổng người dùng</div>
+        <div class="kpi-value">@Model.TongNguoiDung</div>
+        <div class="kpi-note">Toàn bộ tài khoản trong hệ thống</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Ban tổ chức</div>
+        <div class="kpi-value">@Model.TongBanToChuc</div>
+        <div class="kpi-note">Tài khoản có vai trò tổ chức</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Tổng sự kiện</div>
+        <div class="kpi-value">@Model.TongSuKien</div>
+        <div class="kpi-note">Bao gồm tất cả trạng thái</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Sự kiện chờ duyệt</div>
+        <div class="kpi-value">@Model.SuKienChoDuyet</div>
+        <div class="kpi-note">Cần quản trị viên xử lý</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dash-panel">
+        <div class="panel-title">Sự kiện được tạo theo tháng</div>
+        <canvas id="eventMonthChart" height="120"></canvas>
+    </div>
+
+    <div class="dash-panel">
+        <div class="panel-title">Tỷ lệ trạng thái sự kiện</div>
+        <canvas id="eventStatusChart" height="230"></canvas>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dash-panel">
+        <div class="panel-title">Người dùng mới theo tháng</div>
+        <canvas id="userMonthChart" height="120"></canvas>
+    </div>
+
+    <div class="dash-panel">
+        <div class="panel-title">Hình thức tổ chức sự kiện</div>
+        <canvas id="eventFormatChart" height="230"></canvas>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dash-panel">
+        <div class="panel-title">Số sự kiện theo từng loại</div>
+        <canvas id="eventTypeChart" height="130"></canvas>
+    </div>
+
+    <div class="dash-panel">
+        <div class="panel-title">Tổng quan nhanh</div>
+        <canvas id="quickRadarChart" height="230"></canvas>
+    </div>
+</div>
+
+<script>
+    const eventMonthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ThangSuKien));
+    const eventMonthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoSuKienTheoThang));
+
+    const userMonthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ThangNguoiDung));
+    const userMonthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoNguoiDungTheoThang));
+
+    const eventTypeLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TenLoaiSuKien));
+    const eventTypeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoLuongTheoLoai));
+
+    const choDuyet = @Model.SuKienChoDuyet;
+    const daDuyet = @Model.SuKienDaDuyet;
+    const tuChoi = @Model.SuKienTuChoi;
+
+    const trucTiep = @Model.SuKienTrucTiep;
+    const trucTuyen = @Model.SuKienTrucTuyen;
+    const hybrid = @Model.SuKienHybrid;
+
+    const tongNguoiDung = @Model.TongNguoiDung;
+    const tongBanToChuc = @Model.TongBanToChuc;
+    const tongSuKien = @Model.TongSuKien;
+
+    const commonGrid = {
+        color: '#e5e7eb'
+    };
+
+    new Chart(document.getElementById('eventMonthChart'), {
+        type: 'line',
+        data: {
+            labels: eventMonthLabels,
+            datasets: [{
+                label: 'Số sự kiện',
+                data: eventMonthData,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,.12)',
+                fill: true,
+                tension: .45,
+                pointRadius: 5,
+                pointBackgroundColor: '#6366f1'
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 }, grid: commonGrid },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('eventStatusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Chờ duyệt', 'Đã duyệt', 'Từ chối'],
+            datasets: [{
+                data: [choDuyet, daDuyet, tuChoi],
+                backgroundColor: ['#facc15', '#22c55e', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            cutout: '68%',
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    new Chart(document.getElementById('userMonthChart'), {
+        type: 'bar',
+        data: {
+            labels: userMonthLabels,
+            datasets: [{
+                label: 'Người dùng mới',
+                data: userMonthData,
+                backgroundColor: '#38bdf8',
+                borderRadius: 12
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 }, grid: commonGrid },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('eventFormatChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Trực tiếp', 'Trực tuyến'],
+            datasets: [{
+                data: [trucTiep, trucTuyen],
+                backgroundColor: [
+                    '#4f46e5',
+                    '#06b6d4'
+                ],
+                borderWidth: 0,
+                hoverOffset: 12
+            }]
+        },
+        options: {
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('eventTypeChart'), {
+        type: 'bar',
+        data: {
+            labels: eventTypeLabels,
+            datasets: [{
+                label: 'Số sự kiện',
+                data: eventTypeData,
+                backgroundColor: '#f97316',
+                borderRadius: 12
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0 }, grid: commonGrid },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('quickRadarChart'), {
+        type: 'radar',
+        data: {
+            labels: ['Người dùng', 'Ban tổ chức', 'Sự kiện', 'Chờ duyệt', 'Đã duyệt'],
+            datasets: [{
+                label: 'Tổng quan',
+                data: [tongNguoiDung, tongBanToChuc, tongSuKien, choDuyet, daDuyet],
+                backgroundColor: 'rgba(99,102,241,.18)',
+                borderColor: '#6366f1',
+                pointBackgroundColor: '#6366f1'
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+</script>

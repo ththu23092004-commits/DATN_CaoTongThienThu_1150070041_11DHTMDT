@@ -58,6 +58,9 @@ namespace VeSuKienWeb.Data
 
                 e.Property(x => x.VaiTro)
                     .HasMaxLength(20);
+                e.Property(x => x.TrangThai)
+    .HasMaxLength(20)
+    .HasDefaultValue("HoatDong");
             });
 
             // ToChucSuKien

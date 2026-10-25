@@ -1,0 +1,89 @@
+
+@model VeSuKienWeb.Models.NguoiDung
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Sửa người dùng";
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-0 p-4">
+        <h3 class="fw-bold text-primary mb-1">
+            Sửa thông tin người dùng
+        </h3>
+        <p class="text-muted mb-0">
+            Cập nhật thông tin tài khoản trong hệ thống.
+        </p>
+    </div>
+
+    <div class="card-body p-4">
+
+        <form asp-action="SuaNguoiDung"
+              asp-route-id="@Model.NguoiDungId"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Họ và tên
+                </label>
+                <input asp-for="HoTen"
+                       class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Email
+                </label>
+                <input asp-for="Email"
+                       class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Điện thoại
+                </label>
+                <input asp-for="DienThoai"
+                       class="form-control" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">
+                    Vai trò
+                </label>
+
+                <select asp-for="VaiTro"
+                        class="form-select">
+
+                    <option value="KhachHang">
+                        Khách hàng
+                    </option>
+
+                    <option value="ToChuc">
+                        Ban tổ chức
+                    </option>
+
+                    <option value="Admin">
+                        Admin
+                    </option>
+
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit"
+                        class="btn btn-primary px-4">
+                    Lưu thay đổi
+                </button>
+
+                <a asp-action="NguoiDung"
+                   class="btn btn-outline-secondary">
+                    Quay lại
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>

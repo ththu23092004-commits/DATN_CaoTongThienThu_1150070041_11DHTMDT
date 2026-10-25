@@ -1,187 +1,662 @@
-@model List<VeSuKienWeb.Models.BanToChuc.ThongKeDoanhThuItemVM>
+@model VeSuKienWeb.Models.BanToChuc.ThongKeTongQuanDashboardVM
+@using System.Text.Json
 
 @{
     Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
     ViewData["Title"] = "Thống kê tổng quan";
 
-    var q = Context.Request.Query["q"].ToString();
-
-    var data = Model ?? new List<VeSuKienWeb.Models.BanToChuc.ThongKeDoanhThuItemVM>();
-
-    // 🔍 Tìm kiếm theo tên sự kiện
-    if (!string.IsNullOrWhiteSpace(q))
+    string TrangThaiVeText(string status) => status switch
     {
-        data = data
-            .Where(x => (x.TenSuKien ?? "")
-            .Contains(q, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    }
+        "ChuaThanhToan" => "Chưa thanh toán",
+        "DaThanhToan" => "Đã thanh toán",
+        "DaCheckIn" => "Đã check-in",
+        "Huy" => "Đã hủy",
+        _ => status
+    };
 
-    // Tổng quan theo danh sách đang hiển thị
-    decimal tongDoanhThu = data.Sum(x => x.DoanhThuThucTe);
-    int tongVe = data.Sum(x => x.TongSoVe);
-    int tongVeDaThanhToan = data.Sum(x => x.VeDaThanhToan);
-    int tongVeDaHuy = data.Sum(x => x.VeDaHuy);
+    string TrangThaiYeuCauText(string status) => status switch
+    {
+        "ChoDuyet" => "Chờ duyệt",
+        "DaDuyet" => "Đã duyệt",
+        "TuChoi" => "Từ chối",
+        _ => status
+    };
+
+    var doanhThuLabels = Model.DoanhThuTheoThang.Select(x => x.Thang).ToList();
+    var doanhThuData = Model.DoanhThuTheoThang.Select(x => x.DoanhThu).ToList();
+
+    var veBanLabels = Model.VeBanTheoSuKien.Select(x => x.TenSuKien).ToList();
+    var veBanData = Model.VeBanTheoSuKien.Select(x => x.SoVe).ToList();
+
+    var trangThaiVeLabels = Model.TrangThaiVe.Select(x => TrangThaiVeText(x.TrangThai)).ToList();
+    var trangThaiVeData = Model.TrangThaiVe.Select(x => x.SoLuong).ToList();
+
+    var hoanHuyLabels = Model.TrangThaiHoanHuy.Select(x => TrangThaiYeuCauText(x.TrangThai)).ToList();
+    var hoanHuyData = Model.TrangThaiHoanHuy.Select(x => x.SoLuong).ToList();
+
+    var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = null };
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h4 class="mb-1">Thống kê doanh thu theo sự kiện</h4>
-        <div class="text-muted small">
-            Doanh thu tính theo giao dịch <strong>ThanhCong</strong> và vé <strong>DaThanhToan</strong>.
-        </div>
-    </div>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- 🔍 Bộ lọc tìm kiếm -->
-<form method="get" class="card shadow-sm mb-3">
-    <div class="card-body">
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-8">
-                <label class="form-label small text-muted">Tìm theo tên sự kiện</label>
-                <input type="text" name="q" class="form-control"
-                       value="@q" placeholder="Nhập tên sự kiện..." />
-            </div>
+<style>
+    .dash-page {
+        padding: 2px 0 36px;
+    }
 
-            <div class="col-6 col-md-2 d-grid">
-                <button type="submit" class="btn btn-primary">
-                    Tìm kiếm
-                </button>
-            </div>
+    .dash-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
 
-            <div class="col-6 col-md-2 d-grid">
-                <a asp-action="ThongKeTongQuan"
-                   class="btn btn-outline-secondary">
-                    Xóa lọc
-                </a>
-            </div>
-        </div>
-    </div>
-</form>
+    .dash-title {
+        color: #0f172a;
+        font-size: 30px;
+        font-weight: 900;
+        margin: 0 0 4px;
+    }
 
-<!-- 📊 Thẻ tổng quan -->
-<div class="row g-3 mb-3">
-    <div class="col-12 col-lg-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small">Tổng doanh thu</div>
-                <div class="fs-5 fw-semibold">@tongDoanhThu.ToString("N0") đ</div>
-            </div>
-        </div>
-    </div>
+    .dash-subtitle {
+        color: #64748b;
+        font-size: 14.5px;
+        margin: 0;
+    }
 
-    <div class="col-12 col-lg-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small">Tổng vé</div>
-                <div class="fs-5 fw-semibold">@tongVe</div>
-            </div>
-        </div>
-    </div>
+    .dash-badge {
+        background: linear-gradient(135deg, #eef2ff, #eff6ff);
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
 
-    <div class="col-12 col-lg-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small">Vé đã thanh toán</div>
-                <div class="fs-5 fw-semibold">@tongVeDaThanhToan</div>
-            </div>
-        </div>
-    </div>
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+    }
 
-    <div class="col-12 col-lg-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small">Vé đã hủy</div>
-                <div class="fs-5 fw-semibold">@tongVeDaHuy</div>
-            </div>
-        </div>
-    </div>
-</div>
+    .kpi-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 18px 20px;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .07);
+        position: relative;
+        overflow: hidden;
+    }
 
-<!-- 📋 Bảng thống kê theo sự kiện -->
-<div class="card shadow-sm">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    .kpi-card::after {
+        content: "";
+        position: absolute;
+        right: -26px;
+        top: -26px;
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        background: rgba(37, 99, 235, .08);
+    }
+
+    .kpi-label {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .kpi-value {
+        color: #0f172a;
+        font-size: 25px;
+        font-weight: 900;
+        line-height: 1.1;
+        position: relative;
+        z-index: 1;
+    }
+
+    .kpi-note {
+        color: #94a3b8;
+        font-size: 12.5px;
+        margin-top: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .dash-grid {
+        display: grid;
+        grid-template-columns: 1.45fr .9fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .dash-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .07);
+        overflow: hidden;
+    }
+
+    .panel-head {
+        padding: 17px 20px 8px;
+    }
+
+    .panel-title {
+        color: #0f172a;
+        font-size: 17px;
+        font-weight: 900;
+        margin: 0 0 3px;
+    }
+
+    .panel-desc {
+        color: #64748b;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .chart-box {
+        height: 300px;
+        padding: 8px 18px 18px;
+    }
+
+    .chart-box.small {
+        height: 285px;
+    }
+
+    .bottom-grid {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 16px;
+    }
+
+    .table-clean {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table-clean th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: .25px;
+        padding: 12px 16px;
+        border-top: 1px solid #edf2f7;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .table-clean td {
+        color: #475569;
+        font-size: 14px;
+        padding: 13px 16px;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+        font-weight: 500;
+    }
+
+    .table-clean tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table-clean tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .event-name {
+        color: #334155;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .ticket-code {
+        color: #475569;
+        font-weight: 500;
+        font-size: 13px;
+    }
+
+    .money {
+        color: #0f172a;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .status-wait {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-ok {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-no {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .empty-text {
+        padding: 28px 18px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    @@media (max-width: 1100px) {
+        .kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .dash-grid,
+        .bottom-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dash-head {
+            flex-direction: column;
+        }
+
+        .chart-box {
+            height: 260px;
+        }
+    }
+</style>
+
+<div class="dash-page">
+    <div class="dash-head">
         <div>
-            <div class="fw-semibold">Bảng thống kê theo sự kiện</div>
-            <div class="text-muted small">Sắp xếp theo doanh thu giảm dần</div>
+            <h2 class="dash-title">Thống kê tổng quan</h2>
+            <p class="dash-subtitle">
+                Theo dõi doanh thu, số vé bán và yêu cầu hoàn/hủy của các sự kiện.
+            </p>
         </div>
-        <div class="text-muted small">
-            Số sự kiện: <span class="fw-semibold">@data.Count</span>
+
+        <div class="dash-badge">
+            Dashboard ban tổ chức
         </div>
     </div>
 
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:60px">#</th>
-                        <th>Sự kiện</th>
-                        <th style="width:240px">Thời gian</th>
-                        <th class="text-end">Tổng vé</th>
-                        <th class="text-end">Vé đã bán</th>
-                        <th class="text-end">Vé hủy</th>
-                        <th class="text-end">Doanh thu</th>
-                        <th class="text-end">Tiến độ</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Tổng sự kiện</div>
+            <div class="kpi-value">@Model.TongSuKien</div>
+            <div class="kpi-note">Sự kiện thuộc ban tổ chức</div>
+        </div>
 
-                <tbody>
-                @if (!data.Any())
-                {
-                    <tr>
-                        <td colspan="9" class="text-center p-4 text-muted">
-                            Không có dữ liệu thống kê.
-                        </td>
-                    </tr>
-                }
-                else
-                {
-                    var stt = 1;
-                    foreach (var item in data.OrderByDescending(x => x.DoanhThuThucTe))
-                    {
-                        var rate = item.TongSoVe > 0
-                            ? item.VeDaThanhToan * 100.0 / item.TongSoVe
-                            : 0;
+        <div class="kpi-card">
+            <div class="kpi-label">Vé đã bán</div>
+            <div class="kpi-value">@Model.TongVeDaBan</div>
+            <div class="kpi-note">Vé đã thanh toán</div>
+        </div>
 
+        <div class="kpi-card">
+            <div class="kpi-label">Tổng doanh thu</div>
+            <div class="kpi-value">@Model.TongDoanhThu.ToString("N0") đ</div>
+            <div class="kpi-note">Giao dịch thành công</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Yêu cầu chờ duyệt</div>
+            <div class="kpi-value">@Model.YeuCauChoDuyet</div>
+            <div class="kpi-note">Hoàn hoặc hủy vé</div>
+        </div>
+    </div>
+
+    <div class="dash-grid">
+        <div class="dash-panel">
+            <div class="panel-head">
+                <h5 class="panel-title">Doanh thu theo tháng</h5>
+                <p class="panel-desc">Tổng doanh thu từ các vé đã thanh toán thành công.</p>
+            </div>
+            <div class="chart-box">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <div class="dash-panel">
+            <div class="panel-head">
+                <h5 class="panel-title">Trạng thái vé</h5>
+                <p class="panel-desc">Phân bổ vé theo trạng thái hiện tại.</p>
+            </div>
+            <div class="chart-box small">
+                <canvas id="ticketStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="dash-grid">
+        <div class="dash-panel">
+            <div class="panel-head">
+                <h5 class="panel-title">Số vé bán theo sự kiện</h5>
+                <p class="panel-desc">Top sự kiện có số lượng vé bán cao nhất.</p>
+            </div>
+            <div class="chart-box">
+                <canvas id="ticketByEventChart"></canvas>
+            </div>
+        </div>
+
+        <div class="dash-panel">
+            <div class="panel-head">
+                <h5 class="panel-title">Yêu cầu hoàn/hủy</h5>
+                <p class="panel-desc">Tỷ lệ yêu cầu theo trạng thái xử lý.</p>
+            </div>
+            <div class="chart-box small">
+                <canvas id="refundStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-grid">
+        <div class="dash-panel">
+            <div class="panel-head">
+                <h5 class="panel-title">Top sự kiện bán chạy</h5>
+                <p class="panel-desc">Sắp xếp theo số vé đã bán.</p>
+            </div>
+
+            @if (Model.TopSuKienBanChay.Any())
+            {
+                <table class="table-clean">
+                    <thead>
                         <tr>
-                            <td>@stt</td>
-                            <td class="fw-semibold">@item.TenSuKien</td>
-                            <td class="small text-muted">
-                                @item.ThoiGianBatDau:dd/MM/yyyy HH:mm
-                                –
-                                @item.ThoiGianKetThuc:dd/MM/yyyy HH:mm
-                            </td>
-                            <td class="text-end">@item.TongSoVe</td>
-                            <td class="text-end fw-semibold">@item.VeDaThanhToan</td>
-                            <td class="text-end">@item.VeDaHuy</td>
-                            <td class="text-end fw-semibold">
-                                @item.DoanhThuThucTe.ToString("N0") đ
-                            </td>
-                            <td class="text-end">
-                                <div class="small text-muted mb-1">
-                                    @item.VeDaThanhToan/@item.TongSoVe (@rate.ToString("0.0")%)
-                                </div>
-                                <div class="progress" style="height:8px;">
-                                    <div class="progress-bar"
-                                         style="width:@rate.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%">
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-end">
-                                <a class="btn btn-sm btn-outline-primary"
-                                   asp-action="ChiTiet"
-                                   asp-route-id="@item.SuKienId">
-                                    Chi tiết
-                                </a>
-                            </td>
+                            <th>Sự kiện</th>
+                            <th class="text-end">Vé bán</th>
+                            <th class="text-end">Doanh thu</th>
                         </tr>
-                        stt++;
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.TopSuKienBanChay)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="event-name">@item.TenSuKien</div>
+                                </td>
+                                <td class="text-end">@item.SoVeDaBan</td>
+                                <td class="text-end money">@item.DoanhThu.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-text">Chưa có dữ liệu sự kiện bán chạy.</div>
+            }
+        </div>
+
+        <div class="dash-panel">
+            <div class="panel-head">
+                <h5 class="panel-title">Yêu cầu hoàn/hủy gần đây</h5>
+                <p class="panel-desc">Các yêu cầu mới nhất từ khách hàng.</p>
+            </div>
+
+            @if (Model.YeuCauGanDay.Any())
+            {
+                <table class="table-clean">
+                    <thead>
+                        <tr>
+                            <th>Mã vé</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày yêu cầu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.YeuCauGanDay)
+                        {
+                            string cls = item.TrangThai switch
+                            {
+                                "ChoDuyet" => "status-pill status-wait",
+                                "DaDuyet" => "status-pill status-ok",
+                                "TuChoi" => "status-pill status-no",
+                                _ => "status-pill status-wait"
+                            };
+
+                            <tr>
+                                <td>
+                                    <div class="ticket-code">@item.MaVe</div>
+                                    <div class="text-muted small">@item.TenSuKien</div>
+                                </td>
+                                <td>
+                                    <span class="@cls">
+                                        @TrangThaiYeuCauText(item.TrangThai)
+                                    </span>
+                                </td>
+                                <td class="text-muted small">
+                                    @item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-text">Chưa có yêu cầu hoàn/hủy gần đây.</div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    const revenueLabels = @Html.Raw(JsonSerializer.Serialize(doanhThuLabels, jsonOptions));
+    const revenueData = @Html.Raw(JsonSerializer.Serialize(doanhThuData, jsonOptions));
+
+    const ticketEventLabels = @Html.Raw(JsonSerializer.Serialize(veBanLabels, jsonOptions));
+    const ticketEventData = @Html.Raw(JsonSerializer.Serialize(veBanData, jsonOptions));
+
+    const ticketStatusLabels = @Html.Raw(JsonSerializer.Serialize(trangThaiVeLabels, jsonOptions));
+    const ticketStatusData = @Html.Raw(JsonSerializer.Serialize(trangThaiVeData, jsonOptions));
+
+    const refundLabels = @Html.Raw(JsonSerializer.Serialize(hoanHuyLabels, jsonOptions));
+    const refundData = @Html.Raw(JsonSerializer.Serialize(hoanHuyData, jsonOptions));
+
+    const moneyFormat = (value) => new Intl.NumberFormat('vi-VN').format(value) + ' đ';
+
+    Chart.defaults.font.family = "'Inter', 'Segoe UI', Arial, sans-serif";
+    Chart.defaults.color = "#64748b";
+
+    const gradientLine = (ctx) => {
+        const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 280);
+        gradient.addColorStop(0, 'rgba(37, 99, 235, .28)');
+        gradient.addColorStop(1, 'rgba(37, 99, 235, .02)');
+        return gradient;
+    };
+
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: revenueLabels,
+            datasets: [{
+                label: 'Doanh thu',
+                data: revenueData,
+                tension: 0.45,
+                fill: true,
+                borderColor: '#2563eb',
+                backgroundColor: gradientLine,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 3,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 1200,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 12,
+                    callbacks: {
+                        label: ctx => moneyFormat(ctx.raw)
                     }
                 }
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(148, 163, 184, .18)' },
+                    ticks: {
+                        callback: value => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(value)
+                    }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('ticketByEventChart'), {
+        type: 'bar',
+        data: {
+            labels: ticketEventLabels,
+            datasets: [{
+                label: 'Vé bán',
+                data: ticketEventData,
+                backgroundColor: ['#6366f1', '#8b5cf6', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444', '#0ea5e9'],
+                borderRadius: 14,
+                maxBarThickness: 44
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 1100,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 12
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        maxRotation: 0,
+                        callback: function(value) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 14 ? label.substring(0, 14) + '...' : label;
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(148, 163, 184, .18)' },
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('ticketStatusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ticketStatusLabels,
+            datasets: [{
+                data: ticketStatusData,
+                backgroundColor: ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'],
+                borderColor: '#ffffff',
+                borderWidth: 5,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1200,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 9,
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 12
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('refundStatusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: refundLabels,
+            datasets: [{
+                data: refundData,
+                backgroundColor: ['#f59e0b', '#22c55e', '#ef4444'],
+                borderColor: '#ffffff',
+                borderWidth: 5,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1200,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 9,
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 12
+                }
+            }
+        }
+    });
+</script>

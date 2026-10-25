@@ -519,290 +519,410 @@ namespace VeSuKienWeb.Controllers
             return RedirectToAction("ThanhToanThanhCong", new { id = donHang.DonHangId });
         }
 
-        // ============================================================
-        // ========== VÉ CỦA TÔI ======================================
-        // ============================================================
+// ============================================================
+// ========== VÉ CỦA TÔI ======================================
+// ============================================================
 
-        [Authorize(Roles = "KhachHang")]
-        public async Task<IActionResult> VeCuaToi()
+[Authorize(Roles = "KhachHang")]
+public async Task<IActionResult> VeCuaToi()
+{
+    int userId = GetCurrentUserId();
+    var now = DateTime.Now;
+
+    var veRaw = await _db.Ve
+        .Include(v => v.SuKien)
+            .ThenInclude(s => s.LoaiSuKien)
+        .Include(v => v.LoaiVe)
+        .Include(v => v.ChoNgoi)
+        .Where(v => v.NguoiDungId == userId)
+        .OrderByDescending(v => v.NgayDat)
+        .ToListAsync();
+
+    var list = veRaw
+        .GroupBy(v => v.DonHangId.HasValue ? $"DH_{v.DonHangId.Value}" : $"VE_{v.VeId}")
+        .Select(g =>
         {
-            int userId = GetCurrentUserId();
-            var now = DateTime.Now;
+            var first = g.First();
+            var tenLoai = first.SuKien.LoaiSuKien != null
+                ? first.SuKien.LoaiSuKien.TenLoai
+                : string.Empty;
 
-            var list = await _db.Ve
-                .Include(v => v.SuKien)
-                    .ThenInclude(s => s.LoaiSuKien)
-                .Include(v => v.LoaiVe)
-                .Include(v => v.ChoNgoi)
-                .Where(v => v.NguoiDungId == userId)
-                .OrderByDescending(v => v.NgayDat)
-                .Select(v => new VeCuaToiItemVM
-                {
-                    VeId = v.VeId,
-                    SuKienId = v.SuKienId,
-                    MaVe = v.MaVe,
-                    TenSuKien = v.SuKien.TenSuKien,
-                    TenLoaiSuKien = v.SuKien.LoaiSuKien != null ? v.SuKien.LoaiSuKien.TenLoai : string.Empty,
-                    ThoiGianBatDau = v.SuKien.ThoiGianBatDau,
-                    ThoiGianKetThuc = v.SuKien.ThoiGianKetThuc,
-
-                    TenLoaiVe = v.LoaiVe.TenLoai ?? string.Empty,
-                    GiaVe = v.LoaiVe.GiaVe,
-                    Hang = v.ChoNgoi != null ? v.ChoNgoi.Hang : null,
-                    Cot = v.ChoNgoi != null ? v.ChoNgoi.Cot : null,
-
-                    TrangThaiVe = v.TrangThai,
-                    NgayDat = v.NgayDat,
-
-                    LaTrucTiep = v.SuKien.LoaiSuKien != null &&
-                                 (((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("trực tiếp")) ||
-                                  ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("truc tiep"))),
-
-                    LaTrucTuyen = v.SuKien.LoaiSuKien != null &&
-                                  (((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("trực tuyến")) ||
-                                   ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("truc tuyen")) ||
-                                   ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("online")) ||
-                                   ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("hybrid"))),
-
-                    DiaDiem = _db.DiaDiem
-                        .Where(d => d.SuKienId == v.SuKienId)
-                        .Select(d => d.TenDiaDiem)
-                        .FirstOrDefault(),
-                    DiaChi = _db.DiaDiem
-                        .Where(d => d.SuKienId == v.SuKienId)
-                        .Select(d => d.DiaChi)
-                        .FirstOrDefault(),
-
-                    OnlineNenTang = _db.SuKienTrucTuyen
-                        .Where(o => o.SuKienId == v.SuKienId)
-                        .Select(o => o.NenTang)
-                        .FirstOrDefault(),
-                    OnlineLinkXem = _db.SuKienTrucTuyen
-                        .Where(o => o.SuKienId == v.SuKienId)
-                        .Select(o => o.LinkXem)
-                        .FirstOrDefault(),
-                    OnlineMatKhau = _db.SuKienTrucTuyen
-                        .Where(o => o.SuKienId == v.SuKienId)
-                        .Select(o => o.MatKhauPhong)
-                        .FirstOrDefault(),
-
-                    SuKienDaKetThuc = v.SuKien.ThoiGianKetThuc < now,
-
-                    CoTheHuy = v.TrangThai == "DaThanhToan"
-                               && v.SuKien.ThoiGianBatDau > now
-                               && !_db.YeuCauHoanHuyVe
-                                     .Any(yc => yc.VeId == v.VeId && yc.TrangThai == "ChoDuyet")
-                })
-                .ToListAsync();
-
-            return View(list);
-        }
-
-        [Authorize(Roles = "KhachHang")]
-        [HttpGet]
-        public async Task<IActionResult> ChiTietVe(int veId)
-        {
-            int userId = GetCurrentUserId();
-            var now = DateTime.Now;
-
-            var ve = await _db.Ve
-                .Include(v => v.SuKien)
-                    .ThenInclude(s => s.LoaiSuKien)
-                .Include(v => v.LoaiVe)
-                .Include(v => v.ChoNgoi)
-                .Where(v => v.VeId == veId && v.NguoiDungId == userId)
-                .Select(v => new VeCuaToiItemVM
-                {
-                    VeId = v.VeId,
-                    SuKienId = v.SuKienId,
-                    MaVe = v.MaVe,
-                    TenSuKien = v.SuKien.TenSuKien,
-                    TenLoaiSuKien = v.SuKien.LoaiSuKien != null ? v.SuKien.LoaiSuKien.TenLoai : string.Empty,
-                    ThoiGianBatDau = v.SuKien.ThoiGianBatDau,
-                    ThoiGianKetThuc = v.SuKien.ThoiGianKetThuc,
-
-                    TenLoaiVe = v.LoaiVe.TenLoai ?? string.Empty,
-                    GiaVe = v.LoaiVe.GiaVe,
-                    Hang = v.ChoNgoi != null ? v.ChoNgoi.Hang : null,
-                    Cot = v.ChoNgoi != null ? v.ChoNgoi.Cot : null,
-
-                    TrangThaiVe = v.TrangThai,
-                    NgayDat = v.NgayDat,
-
-                    LaTrucTiep = v.SuKien.LoaiSuKien != null &&
-                                 (((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("trực tiếp")) ||
-                                  ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("truc tiep"))),
-
-                    LaTrucTuyen = v.SuKien.LoaiSuKien != null &&
-                                  (((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("trực tuyến")) ||
-                                   ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("truc tuyen")) ||
-                                   ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("online")) ||
-                                   ((v.SuKien.LoaiSuKien.TenLoai ?? "").ToLower().Contains("hybrid"))),
-
-                    DiaDiem = _db.DiaDiem
-                        .Where(d => d.SuKienId == v.SuKienId)
-                        .Select(d => d.TenDiaDiem)
-                        .FirstOrDefault(),
-                    DiaChi = _db.DiaDiem
-                        .Where(d => d.SuKienId == v.SuKienId)
-                        .Select(d => d.DiaChi)
-                        .FirstOrDefault(),
-
-                    OnlineNenTang = _db.SuKienTrucTuyen
-                        .Where(o => o.SuKienId == v.SuKienId)
-                        .Select(o => o.NenTang)
-                        .FirstOrDefault(),
-                    OnlineLinkXem = _db.SuKienTrucTuyen
-                        .Where(o => o.SuKienId == v.SuKienId)
-                        .Select(o => o.LinkXem)
-                        .FirstOrDefault(),
-                    OnlineMatKhau = _db.SuKienTrucTuyen
-                        .Where(o => o.SuKienId == v.SuKienId)
-                        .Select(o => o.MatKhauPhong)
-                        .FirstOrDefault(),
-
-                    SuKienDaKetThuc = v.SuKien.ThoiGianKetThuc < now,
-                    CoTheHuy = v.TrangThai == "DaThanhToan"
-                               && v.SuKien.ThoiGianBatDau > now
-                               && !_db.YeuCauHoanHuyVe
-                                     .Any(yc => yc.VeId == v.VeId && yc.TrangThai == "ChoDuyet")
-                })
-                .FirstOrDefaultAsync();
-
-            if (ve == null) return NotFound();
-
-            return View(ve);
-        }
-
-        // ✅ XEM MÃ QR
-        [Authorize(Roles = "KhachHang")]
-        [HttpGet]
-        public async Task<IActionResult> XemMaQr(int veId)
-        {
-            int userId = GetCurrentUserId();
-
-            var ve = await _db.Ve
-                .FirstOrDefaultAsync(v => v.VeId == veId && v.NguoiDungId == userId);
-
-            if (ve == null) return NotFound();
-
-            string qrText = $"CHECKIN|{ve.VeId}|{ve.MaVe}";
-
-            using var qrGenerator = new QRCodeGenerator();
-            QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrText, QRCodeGenerator.ECCLevel.Q);
-
-            var pngQr = new PngByteQRCode(qrCodeData);
-            byte[] qrBytes = pngQr.GetGraphic(20);
-
-            string base64 = Convert.ToBase64String(qrBytes);
-
-            var vm = new MaQrVM
+            return new VeCuaToiItemVM
             {
-                VeId = ve.VeId,
-                MaVe = ve.MaVe,
-                QrCodeBase64 = base64
+                VeId = first.VeId,
+                SuKienId = first.SuKienId,
+                MaVe = first.MaVe,
+
+                TenSuKien = first.SuKien.TenSuKien,
+                TenLoaiSuKien = tenLoai,
+                ThoiGianBatDau = first.SuKien.ThoiGianBatDau,
+                ThoiGianKetThuc = first.SuKien.ThoiGianKetThuc,
+
+                TenLoaiVe = first.LoaiVe.TenLoai ?? string.Empty,
+                GiaVe = g.Sum(x => x.LoaiVe.GiaVe),
+
+                Hang = first.ChoNgoi != null ? first.ChoNgoi.Hang : null,
+                Cot = first.ChoNgoi != null ? first.ChoNgoi.Cot : null,
+
+                DanhSachGhe = string.Join(", ",
+                    g.Where(x => x.ChoNgoi != null)
+                     .Select(x => $"{x.ChoNgoi!.Hang}{x.ChoNgoi.Cot}")
+                ),
+
+                TrangThaiVe = first.TrangThai,
+                NgayDat = first.NgayDat,
+
+                LaTrucTiep = tenLoai.ToLower().Contains("trực tiếp")
+                             || tenLoai.ToLower().Contains("truc tiep"),
+
+                LaTrucTuyen = tenLoai.ToLower().Contains("trực tuyến")
+                              || tenLoai.ToLower().Contains("truc tuyen")
+                              || tenLoai.ToLower().Contains("online")
+                              || tenLoai.ToLower().Contains("hybrid"),
+
+                DiaDiem = _db.DiaDiem
+                    .Where(d => d.SuKienId == first.SuKienId)
+                    .Select(d => d.TenDiaDiem)
+                    .FirstOrDefault(),
+
+                DiaChi = _db.DiaDiem
+                    .Where(d => d.SuKienId == first.SuKienId)
+                    .Select(d => d.DiaChi)
+                    .FirstOrDefault(),
+
+                OnlineNenTang = _db.SuKienTrucTuyen
+                    .Where(o => o.SuKienId == first.SuKienId)
+                    .Select(o => o.NenTang)
+                    .FirstOrDefault(),
+
+                OnlineLinkXem = _db.SuKienTrucTuyen
+                    .Where(o => o.SuKienId == first.SuKienId)
+                    .Select(o => o.LinkXem)
+                    .FirstOrDefault(),
+
+                OnlineMatKhau = _db.SuKienTrucTuyen
+                    .Where(o => o.SuKienId == first.SuKienId)
+                    .Select(o => o.MatKhauPhong)
+                    .FirstOrDefault(),
+
+                SuKienDaKetThuc = first.SuKien.ThoiGianKetThuc < now,
+
+                CoTheHuy = g.All(x => x.TrangThai == "DaThanhToan")
+                           && first.SuKien.ThoiGianBatDau > now
+                           && !g.Any(x => _db.YeuCauHoanHuyVe
+                               .Any(yc => yc.VeId == x.VeId && yc.TrangThai == "ChoDuyet"))
             };
+        })
+        .OrderByDescending(x => x.NgayDat)
+        .ToList();
 
-            return View(vm);
-        }
+    return View(list);
+}
 
-        // ============================================================
-        // ========== YÊU CẦU HỦY / HOÀN VÉ (KHÁCH HÀNG) ==============
-        // ============================================================
+[Authorize(Roles = "KhachHang")]
+[HttpGet]
+public async Task<IActionResult> ChiTietVe(int veId)
+{
+    int userId = GetCurrentUserId();
+    var now = DateTime.Now;
 
-        [Authorize(Roles = "KhachHang")]
-        [HttpGet]
-        public async Task<IActionResult> YeuCauHoanHuy(int veId)
+    var veGoc = await _db.Ve
+        .Where(v => v.VeId == veId && v.NguoiDungId == userId)
+        .FirstOrDefaultAsync();
+
+    if (veGoc == null)
+    {
+        return NotFound();
+    }
+
+    var veRaw = await _db.Ve
+        .Include(v => v.SuKien)
+            .ThenInclude(s => s.LoaiSuKien)
+        .Include(v => v.LoaiVe)
+        .Include(v => v.ChoNgoi)
+        .Where(v => v.NguoiDungId == userId
+            && (
+                veGoc.DonHangId.HasValue
+                    ? v.DonHangId == veGoc.DonHangId
+                    : v.VeId == veGoc.VeId
+            ))
+        .ToListAsync();
+
+    if (!veRaw.Any())
+    {
+        return NotFound();
+    }
+
+    var first = veRaw.First();
+
+    var tenLoai = first.SuKien.LoaiSuKien != null
+        ? first.SuKien.LoaiSuKien.TenLoai
+        : string.Empty;
+
+    var ve = new VeCuaToiItemVM
+    {
+        VeId = first.VeId,
+        SuKienId = first.SuKienId,
+        MaVe = first.MaVe,
+
+        TenSuKien = first.SuKien.TenSuKien,
+        TenLoaiSuKien = tenLoai,
+        ThoiGianBatDau = first.SuKien.ThoiGianBatDau,
+        ThoiGianKetThuc = first.SuKien.ThoiGianKetThuc,
+
+        TenLoaiVe = first.LoaiVe.TenLoai ?? string.Empty,
+        GiaVe = veRaw.Sum(x => x.LoaiVe.GiaVe),
+
+        Hang = first.ChoNgoi != null ? first.ChoNgoi.Hang : null,
+        Cot = first.ChoNgoi != null ? first.ChoNgoi.Cot : null,
+
+        DanhSachGhe = string.Join(", ",
+            veRaw.Where(x => x.ChoNgoi != null)
+                 .Select(x => $"{x.ChoNgoi!.Hang}{x.ChoNgoi.Cot}")
+        ),
+
+        TrangThaiVe = first.TrangThai,
+        NgayDat = first.NgayDat,
+
+        LaTrucTiep = tenLoai.ToLower().Contains("trực tiếp")
+                     || tenLoai.ToLower().Contains("truc tiep"),
+
+        LaTrucTuyen = tenLoai.ToLower().Contains("trực tuyến")
+                      || tenLoai.ToLower().Contains("truc tuyen")
+                      || tenLoai.ToLower().Contains("online")
+                      || tenLoai.ToLower().Contains("hybrid"),
+
+        DiaDiem = _db.DiaDiem
+            .Where(d => d.SuKienId == first.SuKienId)
+            .Select(d => d.TenDiaDiem)
+            .FirstOrDefault(),
+
+        DiaChi = _db.DiaDiem
+            .Where(d => d.SuKienId == first.SuKienId)
+            .Select(d => d.DiaChi)
+            .FirstOrDefault(),
+
+        OnlineNenTang = _db.SuKienTrucTuyen
+            .Where(o => o.SuKienId == first.SuKienId)
+            .Select(o => o.NenTang)
+            .FirstOrDefault(),
+
+        OnlineLinkXem = _db.SuKienTrucTuyen
+            .Where(o => o.SuKienId == first.SuKienId)
+            .Select(o => o.LinkXem)
+            .FirstOrDefault(),
+
+        OnlineMatKhau = _db.SuKienTrucTuyen
+            .Where(o => o.SuKienId == first.SuKienId)
+            .Select(o => o.MatKhauPhong)
+            .FirstOrDefault(),
+
+        SuKienDaKetThuc = first.SuKien.ThoiGianKetThuc < now,
+
+        CoTheHuy = veRaw.All(x => x.TrangThai == "DaThanhToan")
+                   && first.SuKien.ThoiGianBatDau > now
+                   && !veRaw.Any(x => _db.YeuCauHoanHuyVe
+                       .Any(yc => yc.VeId == x.VeId && yc.TrangThai == "ChoDuyet"))
+    };
+
+    return View(ve);
+}
+
+   // ✅ XEM MÃ QR
+[Authorize(Roles = "KhachHang")]
+[HttpGet]
+public async Task<IActionResult> XemMaQr(int veId)
+{
+    int userId = GetCurrentUserId();
+    var now = DateTime.Now;
+
+    var ve = await _db.Ve
+        .Include(v => v.SuKien)
+        .FirstOrDefaultAsync(v => v.VeId == veId && v.NguoiDungId == userId);
+
+    if (ve == null)
+    {
+        return NotFound();
+    }
+
+if (ve.SuKien.ThoiGianKetThuc < now)
+{
+    TempData["QrError"] = "Sự kiện đã kết thúc nên không thể xem mã QR.";
+    TempData["QrMaVe"] = ve.MaVe;
+    return RedirectToAction("VeCuaToi");
+}
+
+    string qrText = $"CHECKIN|{ve.VeId}|{ve.MaVe}";
+
+    using var qrGenerator = new QRCodeGenerator();
+    QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrText, QRCodeGenerator.ECCLevel.Q);
+
+    var pngQr = new PngByteQRCode(qrCodeData);
+    byte[] qrBytes = pngQr.GetGraphic(20);
+
+    string base64 = Convert.ToBase64String(qrBytes);
+
+    var vm = new MaQrVM
+    {
+        VeId = ve.VeId,
+        MaVe = ve.MaVe,
+        QrCodeBase64 = base64,
+        HetHieuLuc = false
+    };
+
+    return View(vm);
+}
+  // ============================================================
+// ========== YÊU CẦU HỦY / HOÀN VÉ (KHÁCH HÀNG) ==============
+// ============================================================
+
+[Authorize(Roles = "KhachHang")]
+[HttpGet]
+public async Task<IActionResult> YeuCauHoanHuy(int veId)
+{
+    int userId = GetCurrentUserId();
+
+    var veGoc = await _db.Ve
+        .Include(v => v.SuKien)
+        .Include(v => v.LoaiVe)
+        .Include(v => v.ChoNgoi)
+        .FirstOrDefaultAsync(v => v.VeId == veId && v.NguoiDungId == userId);
+
+    if (veGoc == null) return NotFound();
+
+    var nhomVe = await _db.Ve
+        .Include(v => v.SuKien)
+        .Include(v => v.LoaiVe)
+        .Include(v => v.ChoNgoi)
+        .Where(v => v.NguoiDungId == userId
+            && (
+                veGoc.DonHangId.HasValue
+                    ? v.DonHangId == veGoc.DonHangId
+                    : v.VeId == veGoc.VeId
+            ))
+        .ToListAsync();
+
+    if (!nhomVe.Any()) return NotFound();
+
+    if (nhomVe.Any(v => v.TrangThai != "DaThanhToan") || veGoc.SuKien.ThoiGianBatDau <= DateTime.Now)
+    {
+        TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy/hoàn.";
+        return RedirectToAction("VeCuaToi");
+    }
+
+    bool daCoYeuCauChoDuyet = await _db.YeuCauHoanHuyVe
+        .AnyAsync(yc => nhomVe.Select(v => v.VeId).Contains(yc.VeId)
+                        && yc.TrangThai == "ChoDuyet");
+
+    if (daCoYeuCauChoDuyet)
+    {
+        TempData["ThongBao"] = "Bạn đã gửi yêu cầu hủy/hoàn cho vé này và đang chờ xử lý.";
+        return RedirectToAction("VeCuaToi");
+    }
+
+    string danhSachGhe = string.Join(", ",
+        nhomVe.Where(v => v.ChoNgoi != null)
+              .Select(v => $"{v.ChoNgoi!.Hang}{v.ChoNgoi.Cot}")
+    );
+
+    var vm = new YeuCauHoanHuyVM
+    {
+        VeId = veGoc.VeId,
+        MaVe = veGoc.MaVe,
+        TenSuKien = veGoc.SuKien.TenSuKien,
+        ThoiGianBatDau = veGoc.SuKien.ThoiGianBatDau,
+        SoTien = nhomVe.Sum(v => v.LoaiVe.GiaVe),
+
+        TenLoaiVe = veGoc.LoaiVe.TenLoai ?? string.Empty,
+        DanhSachGhe = string.IsNullOrWhiteSpace(danhSachGhe) ? null : danhSachGhe,
+        SoLuongVe = nhomVe.Count
+    };
+
+    return View(vm);
+}
+
+[Authorize(Roles = "KhachHang")]
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> YeuCauHoanHuy(YeuCauHoanHuyVM model)
+{
+    int userId = GetCurrentUserId();
+
+    var veGoc = await _db.Ve
+        .Include(v => v.SuKien)
+        .Include(v => v.LoaiVe)
+        .Include(v => v.ChoNgoi)
+        .FirstOrDefaultAsync(v => v.VeId == model.VeId && v.NguoiDungId == userId);
+
+    if (veGoc == null) return NotFound();
+
+    var nhomVe = await _db.Ve
+        .Include(v => v.SuKien)
+        .Include(v => v.LoaiVe)
+        .Include(v => v.ChoNgoi)
+        .Where(v => v.NguoiDungId == userId
+            && (
+                veGoc.DonHangId.HasValue
+                    ? v.DonHangId == veGoc.DonHangId
+                    : v.VeId == veGoc.VeId
+            ))
+        .ToListAsync();
+
+    if (!nhomVe.Any()) return NotFound();
+
+    string danhSachGhe = string.Join(", ",
+        nhomVe.Where(v => v.ChoNgoi != null)
+              .Select(v => $"{v.ChoNgoi!.Hang}{v.ChoNgoi.Cot}")
+    );
+
+    if (!ModelState.IsValid)
+    {
+        model.MaVe = veGoc.MaVe;
+        model.TenSuKien = veGoc.SuKien.TenSuKien;
+        model.ThoiGianBatDau = veGoc.SuKien.ThoiGianBatDau;
+        model.SoTien = nhomVe.Sum(v => v.LoaiVe.GiaVe);
+        model.TenLoaiVe = veGoc.LoaiVe.TenLoai ?? string.Empty;
+        model.DanhSachGhe = string.IsNullOrWhiteSpace(danhSachGhe) ? null : danhSachGhe;
+        model.SoLuongVe = nhomVe.Count;
+
+        return View(model);
+    }
+
+    if (nhomVe.Any(v => v.TrangThai != "DaThanhToan") || veGoc.SuKien.ThoiGianBatDau <= DateTime.Now)
+    {
+        TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy/hoàn.";
+        return RedirectToAction("VeCuaToi");
+    }
+
+    bool daCoYeuCauChoDuyet = await _db.YeuCauHoanHuyVe
+        .AnyAsync(yc => nhomVe.Select(v => v.VeId).Contains(yc.VeId)
+                        && yc.TrangThai == "ChoDuyet");
+
+    if (daCoYeuCauChoDuyet)
+    {
+        TempData["ThongBao"] = "Bạn đã có yêu cầu hủy/hoàn đang chờ xử lý cho vé này.";
+        return RedirectToAction("VeCuaToi");
+    }
+
+    foreach (var ve in nhomVe)
+    {
+        var yeuCau = new YeuCauHoanHuyVe
         {
-            int userId = GetCurrentUserId();
+            VeId = ve.VeId,
+            LyDo = model.LyDo,
+            NgayYeuCau = DateTime.Now,
+            TrangThai = "ChoDuyet",
+            HinhThuc = "HoanTien"
+        };
 
-            var ve = await _db.Ve
-                .Include(v => v.SuKien)
-                .Include(v => v.LoaiVe)
-                .FirstOrDefaultAsync(v => v.VeId == veId && v.NguoiDungId == userId);
+        _db.YeuCauHoanHuyVe.Add(yeuCau);
+    }
 
-            if (ve == null) return NotFound();
+    await _db.SaveChangesAsync();
 
-            if (ve.TrangThai != "DaThanhToan" || ve.SuKien.ThoiGianBatDau <= DateTime.Now)
-            {
-                TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy/hoàn.";
-                return RedirectToAction("VeCuaToi");
-            }
-
-            bool daCoYeuCauChoDuyet = await _db.YeuCauHoanHuyVe
-                .AnyAsync(yc => yc.VeId == ve.VeId && yc.TrangThai == "ChoDuyet");
-
-            if (daCoYeuCauChoDuyet)
-            {
-                TempData["ThongBao"] = "Bạn đã gửi yêu cầu hủy/hoàn cho vé này và đang chờ xử lý.";
-                return RedirectToAction("VeCuaToi");
-            }
-
-            var vm = new YeuCauHoanHuyVM
-            {
-                VeId = ve.VeId,
-                MaVe = ve.MaVe,
-                TenSuKien = ve.SuKien.TenSuKien,
-                ThoiGianBatDau = ve.SuKien.ThoiGianBatDau,
-                SoTien = ve.LoaiVe.GiaVe
-            };
-
-            return View(vm);
-        }
-
-        [Authorize(Roles = "KhachHang")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> YeuCauHoanHuy(YeuCauHoanHuyVM model)
-        {
-            int userId = GetCurrentUserId();
-
-            var ve = await _db.Ve
-                .Include(v => v.SuKien)
-                .Include(v => v.LoaiVe)
-                .FirstOrDefaultAsync(v => v.VeId == model.VeId && v.NguoiDungId == userId);
-
-            if (ve == null) return NotFound();
-
-            if (!ModelState.IsValid)
-            {
-                model.MaVe = ve.MaVe;
-                model.TenSuKien = ve.SuKien.TenSuKien;
-                model.ThoiGianBatDau = ve.SuKien.ThoiGianBatDau;
-                model.SoTien = ve.LoaiVe.GiaVe;
-                return View(model);
-            }
-
-            if (ve.TrangThai != "DaThanhToan" || ve.SuKien.ThoiGianBatDau <= DateTime.Now)
-            {
-                TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy/hoàn.";
-                return RedirectToAction("VeCuaToi");
-            }
-
-            bool daCoYeuCauChoDuyet = await _db.YeuCauHoanHuyVe
-                .AnyAsync(yc => yc.VeId == ve.VeId && yc.TrangThai == "ChoDuyet");
-
-            if (daCoYeuCauChoDuyet)
-            {
-                TempData["ThongBao"] = "Bạn đã có yêu cầu hủy/hoàn đang chờ xử lý cho vé này.";
-                return RedirectToAction("VeCuaToi");
-            }
-
-            var yeuCau = new YeuCauHoanHuyVe
-            {
-                VeId = ve.VeId,
-                LyDo = model.LyDo,
-                NgayYeuCau = DateTime.Now,
-                TrangThai = "ChoDuyet",
-                HinhThuc = "HoanTien"
-            };
-
-            _db.YeuCauHoanHuyVe.Add(yeuCau);
-            await _db.SaveChangesAsync();
-
-            TempData["ThongBao"] = "Gửi yêu cầu hủy/hoàn vé thành công. Vui lòng chờ hệ thống xử lý.";
-            return RedirectToAction("VeCuaToi");
-        }
+    TempData["ThongBao"] = "Gửi yêu cầu hủy/hoàn vé thành công. Vui lòng chờ hệ thống xử lý.";
+    return RedirectToAction("VeCuaToi");
+}
 
         // ============================================================
         // ========== SAU KHI THANH TOÁN THÀNH CÔNG ===================

@@ -11,6 +11,7 @@ namespace VeSuKienWeb.Models
         public string? DienThoai { get; set; }
         public string? VaiTro { get; set; }   // "KhachHang", "ToChuc", "Admin"
         public DateTime NgayTao { get; set; } = DateTime.Now;
+        public string TrangThai { get; set; } = "HoatDong";
     }
 }
 

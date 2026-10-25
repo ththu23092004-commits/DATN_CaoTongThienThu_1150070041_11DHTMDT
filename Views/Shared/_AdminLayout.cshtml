@@ -1,0 +1,151 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    Layout = "_Layout";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+
+<style>
+    .admin-page {
+        background: #f5f7fb;
+        min-height: calc(100vh - 130px);
+        padding: 24px 24px 24px 10px;
+    }
+
+    .admin-layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    .admin-sidebar-wrap {
+        width: 300px;
+        flex: 0 0 300px;
+    }
+
+    .admin-sidebar-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 12px 35px rgba(0,0,0,.06);
+        border: 1px solid #eef2f7;
+    }
+
+    .admin-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .admin-subtitle {
+        color: #6b7280;
+        font-size: 13px;
+        margin-top: 6px;
+        margin-bottom: 28px;
+    }
+
+    .admin-menu .nav-link {
+        color: #4b5563;
+        padding: 14px 18px;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 10px;
+        transition: all .2s ease;
+    }
+
+    .admin-menu .nav-link:hover {
+        background: #f3f4f6;
+        color: #6366f1;
+    }
+
+    .admin-menu .nav-link.active {
+        background: #eef2ff;
+        color: #4f46e5;
+        font-weight: 700;
+    }
+
+    .admin-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .admin-content {
+        padding: 0;
+    }
+
+    .admin-footer {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #eef2f7;
+        color: #9ca3af;
+        font-size: 12px;
+    }
+</style>
+
+<div class="admin-page">
+
+    <div class="admin-layout">
+
+        <!-- SIDEBAR -->
+        <div class="admin-sidebar-wrap">
+
+            <div class="admin-sidebar-card">
+
+                <div class="admin-title">
+                    Quản trị hệ thống
+                </div>
+
+                <div class="admin-subtitle">
+                    Hệ thống đặt vé sự kiện
+                </div>
+
+                <div class="nav flex-column admin-menu">
+
+                    <a asp-controller="Admin"
+                       asp-action="Index"
+                       class="nav-link @(currentAction == "Index" ? "active" : "")">
+                        Duyệt sự kiện
+                    </a>
+
+
+
+                    <a asp-controller="Admin"
+                       asp-action="NguoiDung"
+                       class="nav-link @(currentAction == "NguoiDung" || currentAction == "TaoBanToChuc" ? "active" : "")">
+                        Quản lý người dùng
+                    </a>
+                                        <a asp-controller="Admin"
+                       asp-action="YeuCauHoanHuy"
+                       class="nav-link @(currentAction == "YeuCauHoanHuy" ? "active" : "")">
+                        Yêu cầu hủy/hoàn vé
+                    </a>
+<a asp-controller="Admin"
+   asp-action="ThongKe"
+   class="nav-link @(currentAction == "ThongKe" ? "active" : "")">
+    Thống kê hệ thống
+</a>
+                </div>
+
+                <div class="admin-footer">
+                    © @DateTime.Now.Year<br />
+                    Đặt Vé Sự Kiện
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- CONTENT -->
+        <div class="admin-main">
+
+            <div class="admin-content">
+                @RenderBody()
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@RenderSection("Scripts", required: false)

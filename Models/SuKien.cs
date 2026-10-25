@@ -25,6 +25,8 @@ namespace VeSuKienWeb.Models
          public string? AnhSuKien { get; set; }
 
 
+public DiaDiem? DiaDiem { get; set; }
+
     }
 }
 

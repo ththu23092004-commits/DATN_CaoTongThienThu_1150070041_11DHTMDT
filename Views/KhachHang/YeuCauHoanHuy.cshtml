@@ -2,44 +2,374 @@
 
 @{
     ViewData["Title"] = "Yêu cầu hủy/hoàn vé";
+
+    var danhSachGhe = !string.IsNullOrWhiteSpace(Model.DanhSachGhe)
+        ? Model.DanhSachGhe.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList()
+        : new List<string>();
+
+    int soLuongVe = Model.SoLuongVe > 0 ? Model.SoLuongVe : (danhSachGhe.Any() ? danhSachGhe.Count : 1);
 }
 
-<h2 class="mb-3">Yêu cầu hủy vé</h2>
+<style>
+    .refund-page {
+        background: #f6f8fb;
+        min-height: 100vh;
+        padding: 12px 0 32px;
+    }
 
-<div class="card shadow-sm mb-3">
-    <div class="card-body">
-        <h5 class="card-title">@Model.TenSuKien</h5>
+    .refund-wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 18px;
+    }
 
-        <p class="mb-1">
-            <strong>Mã vé:</strong> @Model.MaVe
-        </p>
+    .refund-header {
+        margin-bottom: 12px;
+    }
 
-        <p class="mb-1">
-            <strong>Thời gian:</strong>
-            @Model.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-        </p>
+    .refund-header h2 {
+        color: #0f172a;
+        font-size: 27px;
+        font-weight: 850;
+        margin-bottom: 2px;
+    }
 
-        <p class="mb-0">
-            <strong>Số tiền:</strong> @Model.SoTien.ToString("N0") đ
-        </p>
+    .refund-header p {
+        color: #64748b;
+        margin: 0;
+        font-size: 14.5px;
+    }
+
+    .refund-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 14px;
+        align-items: start;
+    }
+
+    .refund-card,
+    .note-card {
+        background: #ffffff;
+        border: 1px solid #dbe4f0;
+        border-radius: 20px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .075);
+        overflow: hidden;
+    }
+
+    .refund-body {
+        padding: 18px 22px;
+        background:
+            radial-gradient(circle at 12px 12px, rgba(37, 99, 235, .035) 1px, transparent 1px),
+            linear-gradient(135deg, #ffffff, #f8fbff);
+        background-size: 18px 18px, auto;
+    }
+
+    .event-name {
+        color: #0f172a;
+        font-size: 22px;
+        font-weight: 900;
+        line-height: 1.25;
+        margin-bottom: 12px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        margin-bottom: 12px;
+    }
+
+    .info-box {
+        background: rgba(248, 250, 252, .96);
+        border: 1px solid #edf2f7;
+        border-radius: 13px;
+        padding: 10px 12px;
+        min-width: 0;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 650;
+        margin-bottom: 3px;
+    }
+
+    .info-value {
+        color: #0f172a;
+        font-size: 14.5px;
+        font-weight: 750;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .amount-box {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .amount-value {
+        color: #1d4ed8;
+        font-size: 18px;
+        font-weight: 900;
+        line-height: 1.2;
+    }
+
+    .seat-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 2px;
+    }
+
+    .seat-tag {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12.5px;
+        font-weight: 800;
+    }
+
+    .form-section {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .refund-label {
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .refund-textarea {
+        border-radius: 14px;
+        border: 1px solid #dbe4f0;
+        padding: 11px 13px;
+        font-size: 14.5px;
+        min-height: 105px;
+        resize: vertical;
+    }
+
+    .refund-textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 .18rem rgba(37, 99, 235, .12);
+    }
+
+    .notice-box {
+        margin-top: 10px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 13px;
+        padding: 10px 12px;
+        color: #9a3412;
+        font-size: 13.5px;
+        line-height: 1.45;
+    }
+
+    .refund-actions {
+        display: flex;
+        gap: 9px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+
+    .refund-actions .btn {
+        border-radius: 999px;
+        padding: 8px 17px;
+        font-size: 14px;
+        font-weight: 750;
+    }
+
+    .note-head {
+        background: linear-gradient(180deg, #334155, #1e293b);
+        color: #ffffff;
+        padding: 14px 16px;
+    }
+
+    .note-title {
+        font-size: 16px;
+        font-weight: 850;
+        margin-bottom: 2px;
+    }
+
+    .note-subtitle {
+        font-size: 12.5px;
+        color: rgba(255,255,255,.72);
+        margin: 0;
+    }
+
+    .note-body {
+        padding: 14px 16px 16px;
+    }
+
+    .note-list {
+        padding-left: 18px;
+        margin: 0;
+        color: #475569;
+        font-size: 13.5px;
+        line-height: 1.55;
+    }
+
+    .note-list li {
+        margin-bottom: 7px;
+    }
+
+    .note-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .policy-box {
+        margin-top: 12px;
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 13px;
+        padding: 11px 12px;
+        color: #334155;
+        font-size: 13.5px;
+        line-height: 1.45;
+    }
+
+    .policy-box strong {
+        color: #0f172a;
+    }
+
+    @@media (max-width: 900px) {
+        .refund-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .note-card {
+            order: -1;
+        }
+    }
+
+    @@media (max-width: 650px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .refund-body {
+            padding: 17px;
+        }
+
+        .refund-actions {
+            flex-direction: column;
+        }
+
+        .refund-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="refund-page">
+    <div class="refund-wrap">
+        <div class="refund-header">
+            <h2>Yêu cầu hủy/hoàn vé</h2>
+            <p>Kiểm tra thông tin vé và nhập lý do để gửi yêu cầu xử lý.</p>
+        </div>
+
+        <div class="refund-layout">
+            <div class="refund-card">
+                <div class="refund-body">
+                    <div class="event-name">@Model.TenSuKien</div>
+
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <div class="info-label">Mã vé</div>
+                            <div class="info-value">@Model.MaVe</div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-label">Thời gian diễn ra</div>
+                            <div class="info-value">@Model.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")</div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-label">Loại vé</div>
+                            <div class="info-value">@Model.TenLoaiVe</div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-label">Số lượng vé</div>
+                            <div class="info-value">@soLuongVe vé</div>
+                        </div>
+
+                        @if (danhSachGhe.Any())
+                        {
+                            <div class="info-box">
+                                <div class="info-label">Ghế đã đặt</div>
+                                <div class="seat-tags">
+                                    @foreach (var ghe in danhSachGhe)
+                                    {
+                                        <span class="seat-tag">@ghe</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="info-box amount-box">
+                            <div class="info-label">Số tiền dự kiến hoàn</div>
+                            <div class="amount-value">@Model.SoTien.ToString("N0") đ</div>
+                        </div>
+                    </div>
+
+                    <form asp-action="YeuCauHoanHuy" method="post" class="form-section">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="VeId" />
+
+                        <div>
+                            <label asp-for="LyDo" class="refund-label">
+                                Lý do hủy/hoàn vé
+                            </label>
+
+                            <textarea asp-for="LyDo"
+                                      class="form-control refund-textarea"
+                                      rows="4"
+                                      placeholder="Vui lòng nhập lý do hủy vé hoặc yêu cầu hoàn tiền..."></textarea>
+
+                            <span asp-validation-for="LyDo" class="text-danger small"></span>
+                        </div>
+
+                        <div class="notice-box">
+                            Yêu cầu sau khi gửi sẽ được chuyển đến ban tổ chức để xét duyệt. Kết quả xử lý phụ thuộc vào chính sách của từng sự kiện.
+                        </div>
+
+                        <div class="refund-actions">
+                            <button type="submit" class="btn btn-danger">
+                                Gửi yêu cầu
+                            </button>
+
+                            <a asp-action="VeCuaToi" class="btn btn-outline-secondary">
+                                Quay lại
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="note-card">
+                <div class="note-head">
+                    <div class="note-title">Lưu ý trước khi gửi</div>
+                    <p class="note-subtitle">Kiểm tra kỹ thông tin trước khi xác nhận.</p>
+                </div>
+
+                <div class="note-body">
+                    <ul class="note-list">
+                        <li>Chỉ gửi yêu cầu khi vé còn đủ điều kiện hủy hoặc hoàn.</li>
+                        <li>Lý do càng rõ ràng thì quá trình xét duyệt càng thuận tiện.</li>
+                        <li>Yêu cầu sau khi gửi sẽ ở trạng thái chờ duyệt.</li>
+                        <li>Vé đã check-in hoặc sự kiện đã diễn ra có thể không được hoàn tiền.</li>
+                    </ul>
+
+                    <div class="policy-box">
+                        <strong>Ghi chú:</strong> Số tiền hoàn thực tế có thể thay đổi theo chính sách của ban tổ chức.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-<form asp-action="YeuCauHoanHuy" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="VeId" />
-
-    <div class="mb-3">
-        <label asp-for="LyDo" class="form-label"></label>
-        <textarea asp-for="LyDo" class="form-control" rows="4"
-                  placeholder="Vui lòng mô tả lý do hủy vé..."></textarea>
-        <span asp-validation-for="LyDo" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-danger">
-        Gửi yêu cầu
-    </button>
-    <a asp-action="VeCuaToi" class="btn btn-secondary ms-2">
-        Quay lại
-    </a>
-</form>

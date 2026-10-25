@@ -1,0 +1,131 @@
+@model IEnumerable<VeSuKienWeb.Models.NguoiDung>
+
+@{
+      Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-0 p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold text-primary mb-1">Quản lý người dùng</h3>
+                <p class="text-muted mb-0">Theo dõi tài khoản khách hàng, ban tổ chức và quản trị viên.</p>
+            </div>
+
+            <a asp-controller="Admin"
+               asp-action="TaoBanToChuc"
+               class="btn btn-primary rounded-pill px-4">
+                + Tạo tài khoản ban tổ chức
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        @if (TempData["ThongBao"] != null)
+        {
+            <div class="alert alert-success rounded-3">
+                @TempData["ThongBao"]
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                 
+                        <th>Người dùng</th>
+                        <th>Email</th>
+                        <th>Điện thoại</th>
+                        <th>Vai trò</th>
+                        <th>Mật khẩu</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                         
+                            <td>
+                                <div class="fw-semibold">@item.HoTen</div>
+                                <div class="text-muted small">Tài khoản hệ thống</div>
+                            </td>
+                            <td>@item.Email</td>
+                            <td>@(item.DienThoai ?? "Chưa cập nhật")</td>
+                            <td>
+                                @if (item.VaiTro == "Admin")
+                                {
+                                    <span class="badge rounded-pill bg-danger px-3">Admin</span>
+                                }
+                                else if (item.VaiTro == "ToChuc")
+                                {
+                                    <span class="badge rounded-pill bg-warning text-dark px-3">Ban tổ chức</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-success px-3">Khách hàng</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill bg-secondary px-3">Đã mã hóa</span>
+                            </td>
+
+                            <td>
+                                @if (item.TrangThai == "BiKhoa")
+                                {
+                                    <span class="badge rounded-pill bg-danger px-3">Bị khóa</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-success px-3">Hoạt động</span>
+                                }
+                            </td>
+
+                            <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+
+                            <td class="text-end">
+                                <a asp-controller="Admin"
+                                   asp-action="SuaNguoiDung"
+                                   asp-route-id="@item.NguoiDungId"
+                                   class="btn btn-warning btn-sm rounded-pill px-3 me-1">
+                                    Sửa
+                                </a>
+
+                                <form asp-controller="Admin"
+                                      asp-action="KhoaMoKhoaNguoiDung"
+                                      method="post"
+                                      class="d-inline">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@item.NguoiDungId" />
+
+                                    @if (item.TrangThai == "BiKhoa")
+                                    {
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm rounded-pill px-3">
+                                            Mở khóa
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit"
+                                                class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                            Khóa
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

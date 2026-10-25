@@ -1,0 +1,71 @@
+@model VeSuKienWeb.Models.NguoiDung
+
+@{
+      Layout = "_AdminLayout";
+    ViewData["Title"] = "Tạo tài khoản ban tổ chức";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 p-4 text-center">
+                <h3 class="fw-bold text-primary mb-1">Tạo tài khoản ban tổ chức</h3>
+                <p class="text-muted mb-0">Tài khoản này dùng để đăng nhập và quản lý sự kiện.</p>
+            </div>
+
+            <div class="card-body p-4">
+                <form asp-action="TaoBanToChuc" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Họ tên</label>
+                        <input asp-for="HoTen"
+                               class="form-control form-control-lg rounded-3"
+                               placeholder="Nhập họ tên ban tổ chức" />
+                        <span asp-validation-for="HoTen" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input asp-for="Email"
+                               class="form-control form-control-lg rounded-3"
+                               placeholder="Nhập email đăng nhập" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mật khẩu</label>
+                        <input asp-for="MatKhau"
+                               type="password"
+                               class="form-control form-control-lg rounded-3"
+                               placeholder="Nhập mật khẩu" />
+                        <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Điện thoại</label>
+                        <input asp-for="DienThoai"
+                               class="form-control form-control-lg rounded-3"
+                               placeholder="Nhập số điện thoại liên hệ" />
+                    </div>
+
+                    <div class="alert alert-info rounded-3 small">
+                        Vai trò tài khoản sẽ được tự động gán là <strong>Ban tổ chức</strong>.
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a asp-action="NguoiDung"
+                           class="btn btn-light border rounded-pill px-4">
+                            Quay lại
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-primary rounded-pill px-4">
+                            Tạo tài khoản
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
