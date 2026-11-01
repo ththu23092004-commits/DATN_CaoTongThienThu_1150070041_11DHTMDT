@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using VeSuKienWeb.Data;
 using VeSuKienWeb.Models;
 using VeSuKienWeb.Models.BanToChuc;
+using System.Text.Json;
 
 namespace VeSuKienWeb.Controllers
 {
@@ -20,6 +21,121 @@ namespace VeSuKienWeb.Controllers
         {
             _db = db;
         }
+
+private sealed class SoDoDuLieu
+{
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public List<GheDuLieu> Seats { get; set; } = new();
+    public List<ThanhPhanDuLieu> Components { get; set; } = new();
+}
+
+private sealed class GheDuLieu
+{
+    public string Row { get; set; } = "";
+    public int Col { get; set; }
+    public string Code { get; set; } = "";
+    public decimal X { get; set; }
+    public decimal Y { get; set; }
+    public string Zone { get; set; } = "";
+}
+
+private sealed class ThanhPhanDuLieu
+{
+    public string Type { get; set; } = "";
+    public string Name { get; set; } = "";
+    public decimal X { get; set; }
+    public decimal Y { get; set; }
+    public decimal Width { get; set; }
+    public decimal Height { get; set; }
+}
+
+private static SoDoDuLieu? DocSoDo(string? json)
+{
+    if (string.IsNullOrWhiteSpace(json) || json.Length > 200000)
+        return null;
+
+    try
+    {
+        var data = JsonSerializer.Deserialize<SoDoDuLieu>(
+            json,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+        if (data == null ||
+            data.Width != 1000 ||
+            data.Height != 700 ||
+            data.Seats == null ||
+            data.Components == null ||
+            data.Seats.Count is < 2 or > 1200 ||
+            data.Components.Count > 20)
+        {
+            return null;
+        }
+
+        var codes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var seat in data.Seats)
+        {
+            if (seat == null ||
+                string.IsNullOrWhiteSpace(seat.Row) ||
+                seat.Row.Length != 1 ||
+                seat.Row[0] < 'A' ||
+                seat.Row[0] > 'Y' ||
+                seat.Col < 1 ||
+                seat.Col > 40 ||
+                seat.Code != $"{seat.Row}{seat.Col}" ||
+                (seat.Zone != "VIP" && seat.Zone != "Thuong") ||
+                seat.X < 0 || seat.X > 1000 ||
+                seat.Y < 0 || seat.Y > 700 ||
+                !codes.Add(seat.Code))
+            {
+                return null;
+            }
+        }
+
+        var allowed = new HashSet<string>
+        {
+            "SanKhau",
+            "ManHinh",
+            "LoiDi",
+            "CuaVao",
+            "CuaThoatHiem",
+            "VatCan"
+        };
+
+        foreach (var part in data.Components)
+        {
+            if (part == null ||
+                !allowed.Contains(part.Type) ||
+                string.IsNullOrWhiteSpace(part.Name) ||
+                part.Name.Length > 100 ||
+                part.X < 0 ||
+                part.Y < 0 ||
+                part.Width <= 0 ||
+                part.Height <= 0 ||
+                part.X + part.Width > 1000 ||
+                part.Y + part.Height > 700)
+            {
+                return null;
+            }
+        }
+
+        if (!data.Seats.Any(s => s.Zone == "VIP") ||
+            !data.Seats.Any(s => s.Zone == "Thuong"))
+        {
+            return null;
+        }
+
+        return data;
+    }
+    catch (JsonException)
+    {
+        return null;
+    }
+}
 
         private int GetCurrentUserId()
         {
@@ -336,14 +452,45 @@ namespace VeSuKienWeb.Controllers
                             ModelState.AddModelError("HangVipDen", "Hàng VIP tối đa không được vượt quá tổng số hàng.");
                     }
 
-                    if (model.SoChoNgoi.HasValue && model.SoHang.HasValue && model.SoCotMoiHang.HasValue)
-                    {
-                        int gheTinh = model.SoHang.Value * model.SoCotMoiHang.Value;
-                        if (model.SoChoNgoi.Value != gheTinh)
-                        {
-                            ModelState.AddModelError("SoChoNgoi", "Tổng số ghế phải bằng Số hàng × Số ghế mỗi hàng.");
-                        }
-                    }
+
+var soDoNhap = DocSoDo(model.SoDoJson);
+
+if (soDoNhap == null)
+{
+    ModelState.AddModelError(
+        "SoDoJson",
+        "Sơ đồ chỗ ngồi không hợp lệ. Vui lòng kiểm tra lại.");
+}
+else
+{
+    int tongGhe = soDoNhap.Seats.Count;
+    int soGheVip = soDoNhap.Seats.Count(x => x.Zone == "VIP");
+    int soGheThuong = soDoNhap.Seats.Count(x => x.Zone == "Thuong");
+
+    if (model.SoChoNgoi != tongGhe)
+    {
+        ModelState.AddModelError(
+            "SoChoNgoi",
+            "Tổng số ghế không khớp với sơ đồ.");
+    }
+
+    if (model.SoLuongVe1 != soGheVip ||
+        model.SoLuongVe2 != soGheThuong)
+    {
+        ModelState.AddModelError(
+            "SoDoJson",
+            "Số lượng vé VIP và Thường không khớp sơ đồ.");
+    }
+
+    if (model.SoLuongToiDa.HasValue &&
+        model.SoLuongToiDa.Value != tongGhe)
+    {
+        ModelState.AddModelError(
+            "SoLuongToiDa",
+            "Sức chứa phải bằng tổng số ghế thực tế.");
+    }
+}
+
                 }
             }
             else if (tenLoaiLower.Contains("trực tuyến"))
@@ -379,6 +526,8 @@ namespace VeSuKienWeb.Controllers
                 return View(model);
             }
 
+            await using var transaction = await _db.Database.BeginTransactionAsync();
+
             var sk = new SuKien
             {
                 TenSuKien = model.TenSuKien,
@@ -387,8 +536,13 @@ namespace VeSuKienWeb.Controllers
                 ThoiGianKetThuc = model.ThoiGianKetThuc,
                 LoaiId = model.LoaiId,
                 ToChucId = toChucId,
-                SoLuongToiDa = model.SoLuongToiDa,
-                GiaVeMacDinh = model.GiaVeMacDinh,
+SoLuongToiDa = laTrucTiep
+    ? DocSoDo(model.SoDoJson)?.Seats.Count
+    : model.SoLuongToiDa,
+
+GiaVeMacDinh = laTrucTiep
+    ? null
+    : model.GiaVeMacDinh,
                 TrangThaiDuyet = "ChoDuyet",
                 NgayDang = DateTime.Now
             };
@@ -517,48 +671,91 @@ namespace VeSuKienWeb.Controllers
 
                     await _db.SaveChangesAsync();
                 }
-                else if (model.SoHang.HasValue && model.SoCotMoiHang.HasValue)
-                {
-                    int soHang = model.SoHang.Value;
-                    int soCot = model.SoCotMoiHang.Value;
 
-                    int hangVipTu = model.HangVipTu ?? 0;
-                    int hangVipDen = model.HangVipDen ?? 0;
+else if (laTrucTiep)
+{
+    var soDoNhap = DocSoDo(model.SoDoJson);
 
-                    for (int i = 1; i <= soHang; i++)
-                    {
-                        char hangChar = (char)('A' + (i - 1));
-                        bool laVip = (i >= hangVipTu && i <= hangVipDen);
+    if (soDoNhap == null ||
+        loaiVeVip == null ||
+        loaiVeThuong == null)
+    {
+        throw new InvalidOperationException(
+            "Dữ liệu sơ đồ hoặc loại vé không hợp lệ.");
+    }
 
-                        for (int c = 1; c <= soCot; c++)
-                        {
-                            int loaiVeId;
+    var soDo = new SoDoSuKien
+    {
+        SuKienId = sk.SuKienId,
+        ChieuRong = soDoNhap.Width,
+        ChieuCao = soDoNhap.Height,
+        TrangThai = "BanNhap",
+        NgayCapNhat = DateTime.UtcNow
+    };
 
-                            if (laVip && loaiVeVip != null)
-                                loaiVeId = loaiVeVip.LoaiVeId;
-                            else if (!laVip && loaiVeThuong != null)
-                                loaiVeId = loaiVeThuong.LoaiVeId;
-                            else if (loaiVeVip != null)
-                                loaiVeId = loaiVeVip.LoaiVeId;
-                            else if (loaiVeThuong != null)
-                                loaiVeId = loaiVeThuong.LoaiVeId;
-                            else
-                                continue;
+    _db.SoDoSuKien.Add(soDo);
+    await _db.SaveChangesAsync();
 
-                            var ghe = new SoDoChoNgoi
-                            {
-                                DiaDiemId = diaDiem.DiaDiemId,
-                                Hang = hangChar.ToString(),
-                                Cot = c,
-                                TrangThai = "Trong",
-                                LoaiVeId = loaiVeId
-                            };
-                            _db.SoDoChoNgoi.Add(ghe);
-                        }
-                    }
+    var khuVip = new KhuVucChoNgoi
+    {
+        SoDoId = soDo.SoDoId,
+        TenKhu = "VIP",
+        MauSac = "#D4AF37",
+        LoaiVeId = loaiVeVip.LoaiVeId,
+        ThuTu = 1
+    };
 
-                    await _db.SaveChangesAsync();
-                }
+    var khuThuong = new KhuVucChoNgoi
+    {
+        SoDoId = soDo.SoDoId,
+        TenKhu = "Thường",
+        MauSac = "#A9DCA9",
+        LoaiVeId = loaiVeThuong.LoaiVeId,
+        ThuTu = 2
+    };
+
+    _db.KhuVucChoNgoi.AddRange(khuVip, khuThuong);
+    await _db.SaveChangesAsync();
+
+    foreach (var seat in soDoNhap.Seats)
+    {
+        bool vip = seat.Zone == "VIP";
+
+        _db.SoDoChoNgoi.Add(new SoDoChoNgoi
+        {
+            DiaDiemId = diaDiem.DiaDiemId,
+            Hang = seat.Row,
+            Cot = seat.Col,
+            TrangThai = "Trong",
+            LoaiVeId = vip
+                ? loaiVeVip.LoaiVeId
+                : loaiVeThuong.LoaiVeId,
+            KhuVucId = vip
+                ? khuVip.KhuVucId
+                : khuThuong.KhuVucId,
+            ViTriX = seat.X,
+            ViTriY = seat.Y
+        });
+    }
+
+    foreach (var part in soDoNhap.Components)
+    {
+        _db.ThanhPhanSoDo.Add(new ThanhPhanSoDo
+        {
+            SoDoId = soDo.SoDoId,
+            LoaiThanhPhan = part.Type,
+            TenHienThi = part.Name,
+            ViTriX = part.X,
+            ViTriY = part.Y,
+            ChieuRong = part.Width,
+            ChieuCao = part.Height,
+            GocXoay = 0
+        });
+    }
+
+    await _db.SaveChangesAsync();
+}
+
             }
             else if (tenLoaiLower.Contains("trực tuyến"))
             {
@@ -588,6 +785,8 @@ namespace VeSuKienWeb.Controllers
 
                 await _db.SaveChangesAsync();
             }
+
+            await transaction.CommitAsync();
 
             TempData["ThongBao"] = "Đã gửi sự kiện cho Admin duyệt.";
             return RedirectToAction("Index");
@@ -665,6 +864,58 @@ namespace VeSuKienWeb.Controllers
             var tongYeuCauHoanHuyChoDuyet = await ycQuery
                 .Where(y => y.TrangThai == "ChoDuyet")
                 .CountAsync();
+
+
+var soDo = await _db.SoDoSuKien
+    .AsNoTracking()
+    .FirstOrDefaultAsync(x => x.SuKienId == sk.SuKienId);
+
+ViewBag.SoDoJson = "null";
+
+if (soDo != null && diaDiem != null)
+{
+    var ghe = await _db.SoDoChoNgoi
+        .AsNoTracking()
+        .Where(x => x.DiaDiemId == diaDiem.DiaDiemId)
+        .OrderBy(x => x.Hang)
+        .ThenBy(x => x.Cot)
+        .Select(x => new
+        {
+            id = x.ChoNgoiId,
+            hang = x.Hang,
+            cot = x.Cot,
+            x = x.ViTriX,
+            y = x.ViTriY,
+            trangThai = x.TrangThai,
+            khu = x.KhuVucChoNgoi != null
+                ? x.KhuVucChoNgoi.TenKhu
+                : x.LoaiVe.TenLoai
+        })
+        .ToListAsync();
+
+    var thanhPhan = await _db.ThanhPhanSoDo
+        .AsNoTracking()
+        .Where(x => x.SoDoId == soDo.SoDoId)
+        .Select(x => new
+        {
+            loai = x.LoaiThanhPhan,
+            ten = x.TenHienThi,
+            x = x.ViTriX,
+            y = x.ViTriY,
+            rong = x.ChieuRong,
+            cao = x.ChieuCao
+        })
+        .ToListAsync();
+
+    ViewBag.SoDoJson = JsonSerializer.Serialize(new
+    {
+        chieuRong = soDo.ChieuRong,
+        chieuCao = soDo.ChieuCao,
+        ghe,
+        thanhPhan
+    });
+}
+
 
             var vm = new SuKienChiTietBtcVM
             {

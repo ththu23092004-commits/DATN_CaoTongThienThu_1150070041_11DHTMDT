@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Tạo sự kiện mới";
 }
-
+<link rel="stylesheet" href="~/css/so-do-thiet-ke.css" asp-append-version="true" />
 <h2 class="mb-3">Tạo sự kiện mới</h2>
 
 <style>
@@ -106,7 +106,7 @@
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label asp-for="SoChoNgoi" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="SoChoNgoi" type="number" class="form-control" />
+                        <input asp-for="SoChoNgoi" type="number" class="form-control" readonly />
                         <span asp-validation-for="SoChoNgoi" class="text-danger small"></span>
                     </div>
                     <div class="col-md-8 mb-3">
@@ -117,7 +117,7 @@
                 </div>
 
                 <!-- HÀNG CẤU HÌNH SƠ ĐỒ GHẾ A1, A2... & KHU VIP/THƯỜNG -->
-                <div class="row">
+                <div class="row" style="display:none;">
                     <div class="col-md-3 mb-3">
                         <label asp-for="SoHang" class="form-label"></label><span class="required-mark">*</span>
                         <input asp-for="SoHang" type="number" class="form-control" />
@@ -140,6 +140,144 @@
                     </div>
                 </div>
 
+<div id="seatDesigner" class="seat-designer">
+    <div class="sd-heading">
+        <h4>Thiết kế sơ đồ chỗ ngồi</h4>
+        <p>Tùy chỉnh vị trí ghế, khu VIP, lối đi, sân khấu và cửa ra vào.</p>
+    </div>
+
+    <div class="sd-body">
+        <aside class="sd-sidebar">
+            <div class="sd-group">
+                <div class="sd-group-title">01. Mẫu bố trí</div>
+                <label for="sdPreset">Chọn kiểu hội trường</label>
+                <select id="sdPreset" class="form-select">
+                    <option value="small">Hội trường nhỏ - 60 ghế</option>
+                    <option value="medium">Hội trường vừa - 240 ghế</option>
+                    <option value="large">Phòng lớn - 1000 ghế</option>
+                    <option value="workshop">Phòng họp - 32 ghế</option>
+                </select>
+            </div>
+
+            <div class="sd-group">
+                <div class="sd-group-title">02. Bố trí ghế</div>
+
+                <div class="sd-two-col">
+                    <div>
+                        <label for="sdRows">Số hàng</label>
+                        <input id="sdRows" class="form-control"
+                        type="number" min="2" max="20" value="6" />
+                    </div>
+                    <div>
+                        <label for="sdCols">Ghế mỗi hàng</label>
+                        <input id="sdCols" class="form-control"
+                               type="number" min="2" max="25" value="10" />
+                    </div>
+                </div>
+
+                <label for="sdVipRows">Số hàng VIP tính từ sân khấu</label>
+                <input id="sdVipRows" class="form-control"
+                       type="number" min="0" max="20" value="2" />
+            </div>
+
+            <div class="sd-group">
+                <div class="sd-group-title">03. Lối đi và cửa</div>
+
+                <div class="sd-switch-row">
+                    <label for="sdVerticalAisle">Lối đi giữa các dãy</label>
+                    <input id="sdVerticalAisle" type="checkbox" checked />
+                </div>
+
+                <div class="sd-switch-row">
+                    <label for="sdHorizontalAisle">Lối đi ngang</label>
+                    <input id="sdHorizontalAisle" type="checkbox" checked />
+                </div>
+
+                <div class="sd-switch-row">
+                    <label for="sdShowDoors">Hiển thị cửa ra vào</label>
+                    <input id="sdShowDoors" type="checkbox" checked />
+                </div>
+            </div>
+
+            <div class="sd-group">
+                <div class="sd-group-title">04. Sân khấu</div>
+                <label for="sdStagePosition">Vị trí sân khấu</label>
+                <select id="sdStagePosition" class="form-select">
+                    <option value="top">Phía trước hội trường</option>
+                    <option value="bottom">Phía sau hội trường</option>
+                </select>
+            </div>
+
+            <div class="sd-actions">
+                <button type="button" id="sdRestore"
+                        class="btn btn-outline-secondary">
+                    Khôi phục toàn bộ ghế
+                </button>
+            </div>
+        </aside>
+
+        <section class="sd-preview">
+<div class="sd-toolbar">
+    <div>
+        <h5>Bản xem trước sơ đồ</h5>
+        <div class="sd-help">
+            Bấm vào ghế để loại bỏ hoặc thêm lại ghế. Với phòng lớn, hãy dùng phóng to để xem rõ mã ghế.
+        </div>
+    </div>
+
+    <div class="sd-toolbar-actions">
+        <button type="button" id="sdZoomOut" class="btn btn-outline-secondary btn-sm">- Thu nhỏ</button>
+        <button type="button" id="sdZoomReset" class="btn btn-outline-secondary btn-sm">Mặc định</button>
+        <button type="button" id="sdZoomIn" class="btn btn-outline-secondary btn-sm">+ Phóng to</button>
+        <span class="badge bg-light text-dark border">
+            Sơ đồ đang thiết kế
+        </span>
+    </div>
+</div>
+
+            <div class="sd-canvas">
+                <div id="sdMap" class="sd-map"></div>
+            </div>
+
+            <div class="sd-legend">
+                <div class="sd-legend-item">
+                    <span class="sd-dot vip"></span>
+                    Ghế VIP
+                </div>
+                <div class="sd-legend-item">
+                    <span class="sd-dot normal"></span>
+                    Ghế thường
+                </div>
+                <div class="sd-legend-item">
+                    <span class="sd-dot empty"></span>
+                    Vị trí đã bỏ ghế
+                </div>
+            </div>
+
+            <div class="sd-stats">
+                <div class="sd-stat">
+                    <strong id="sdTotal">0</strong>
+                    <span>Tổng ghế</span>
+                </div>
+                <div class="sd-stat">
+                    <strong id="sdVipTotal">0</strong>
+                    <span>Ghế VIP</span>
+                </div>
+                <div class="sd-stat">
+                    <strong id="sdNormalTotal">0</strong>
+                    <span>Ghế thường</span>
+                </div>
+            </div>
+
+            <div id="sdWarning" class="sd-alert" hidden>
+                Sơ đồ chưa có ghế. Vui lòng bổ sung ghế trước khi lưu.
+            </div>
+        </section>
+    </div>
+</div>
+
+<input type="hidden" id="SoDoJson" name="SoDoJson" />
+
                 <h6 class="mb-2 mt-2">Cấu hình loại vé</h6>
 
                 <div class="row">
@@ -155,7 +293,7 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label asp-for="SoLuongVe1" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="SoLuongVe1" type="number" class="form-control" />
+                        <input asp-for="SoLuongVe1" type="number" class="form-control" readonly />
                         <span asp-validation-for="SoLuongVe1" class="text-danger small"></span>
                     </div>
                 </div>
@@ -173,7 +311,7 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label asp-for="SoLuongVe2" class="form-label"></label>
-                        <input asp-for="SoLuongVe2" type="number" class="form-control" />
+                        <input asp-for="SoLuongVe2" type="number" class="form-control" readonly />
                         <span asp-validation-for="SoLuongVe2" class="text-danger small"></span>
                     </div>
                 </div>
@@ -305,6 +443,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/so-do-thiet-ke.js" asp-append-version="true"></script>
     <script>
         // Bỏ dấu tiếng Việt để so sánh
         function removeVietnameseTone(str) {

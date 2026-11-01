@@ -19,6 +19,10 @@ namespace VeSuKienWeb.Data
         public DbSet<LoaiVe> LoaiVe { get; set; }
         public DbSet<SoDoChoNgoi> SoDoChoNgoi { get; set; }
 
+public DbSet<SoDoSuKien> SoDoSuKien { get; set; } = null!;
+public DbSet<KhuVucChoNgoi> KhuVucChoNgoi { get; set; } = null!;
+public DbSet<ThanhPhanSoDo> ThanhPhanSoDo { get; set; } = null!;
+
         public DbSet<Ve> Ve { get; set; } = null!;
         public DbSet<ThanhToan> ThanhToan { get; set; } = null!;
         public DbSet<ThamGiaSuKien> ThamGiaSuKien { get; set; } = null!;
@@ -33,6 +37,83 @@ namespace VeSuKienWeb.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+modelBuilder.Entity<SoDoSuKien>(e =>
+{
+    e.ToTable("SoDoSuKien");
+    e.HasKey(x => x.SoDoId);
+
+    e.HasIndex(x => x.SuKienId).IsUnique();
+
+    e.HasOne(x => x.SuKien)
+        .WithMany()
+        .HasForeignKey(x => x.SuKienId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.Property(x => x.TrangThai)
+        .HasMaxLength(20);
+
+    e.Property(x => x.NgayCapNhat)
+        .HasColumnType("datetime2");
+});
+
+modelBuilder.Entity<KhuVucChoNgoi>(e =>
+{
+    e.ToTable("KhuVucChoNgoi");
+    e.HasKey(x => x.KhuVucId);
+
+    e.HasIndex(x => new { x.SoDoId, x.TenKhu })
+        .IsUnique();
+
+    e.HasOne(x => x.SoDoSuKien)
+        .WithMany(x => x.KhuVucChoNgois)
+        .HasForeignKey(x => x.SoDoId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.HasOne(x => x.LoaiVe)
+        .WithMany()
+        .HasForeignKey(x => x.LoaiVeId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.Property(x => x.TenKhu)
+        .HasMaxLength(100);
+
+    e.Property(x => x.MauSac)
+        .HasColumnType("varchar(7)");
+});
+
+modelBuilder.Entity<ThanhPhanSoDo>(e =>
+{
+    e.ToTable("ThanhPhanSoDo");
+    e.HasKey(x => x.ThanhPhanId);
+
+    e.HasOne(x => x.SoDoSuKien)
+        .WithMany(x => x.ThanhPhanSoDos)
+        .HasForeignKey(x => x.SoDoId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+
+modelBuilder.Entity<SoDoChoNgoi>(e =>
+{
+    e.ToTable("SoDoChoNgoi");
+
+    e.HasOne(x => x.KhuVucChoNgoi)
+        .WithMany(x => x.GheNgois)
+        .HasForeignKey(x => x.KhuVucId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.HasIndex(x => x.DonHangGiuId);
+
+    e.Property(x => x.ThoiGianHetHanGiu)
+        .HasColumnType("datetime2");
+});
+modelBuilder.Entity<Ve>(e =>
+{
+    e.HasIndex(x => x.ChoNgoiId)
+        .IsUnique()
+        .HasFilter("[ChoNgoiId] IS NOT NULL AND [TrangThai] <> 'Huy'");
+});
 
             // NguoiDung
             modelBuilder.Entity<NguoiDung>(e =>

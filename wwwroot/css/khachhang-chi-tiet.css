@@ -1,0 +1,129 @@
+.kh-event-detail {
+    color: #253247;
+}
+
+.kh-event-hero {
+    overflow: hidden;
+    border: 1px solid #e5eaf1;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 24px rgba(33, 52, 79, .05);
+    margin-bottom: 24px;
+}
+
+.kh-event-hero-body {
+    display: grid;
+    grid-template-columns: minmax(260px, 38%) minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px;
+}
+
+.kh-event-photo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 220px;
+    max-height: 360px;
+    background: #f7f9fc;
+    border: 1px solid #e7edf4;
+    border-radius: 14px;
+    overflow: hidden;
+    padding: 12px;
+}
+
+.kh-event-photo img {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.kh-event-photo-empty {
+    color: #7a889b;
+    font-size: 14px;
+    text-align: center;
+}
+
+.kh-event-title {
+    font-size: clamp(24px, 2.2vw, 32px);
+    font-weight: 750;
+    line-height: 1.35;
+    color: #22324a;
+    margin: 8px 0 14px;
+}
+
+.kh-event-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.kh-event-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.kh-meta-box {
+    border: 1px solid #e8edf3;
+    background: #f8fafd;
+    border-radius: 11px;
+    padding: 12px 14px;
+}
+
+.kh-meta-box span {
+    display: block;
+    font-size: 12px;
+    color: #7b899c;
+    margin-bottom: 5px;
+}
+
+.kh-meta-box strong {
+    display: block;
+    font-size: 14px;
+    color: #293b55;
+    overflow-wrap: anywhere;
+}
+
+.kh-preline {
+    white-space: pre-line;
+    line-height: 1.75;
+}
+
+.kh-side-sticky {
+    position: sticky;
+    top: 20px;
+}
+
+@media (max-width: 991px) {
+    .kh-event-hero-body {
+        grid-template-columns: 1fr;
+    }
+
+    .kh-side-sticky {
+        position: static;
+    }
+}
+
+@media (max-width: 575px) {
+    .kh-event-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .kh-event-hero-body {
+        padding: 15px;
+    }
+
+    .kh-event-photo {
+        min-height: 180px;
+        max-height: 300px;
+    }
+
+    .kh-event-photo img {
+        max-height: 260px;
+    }
+}

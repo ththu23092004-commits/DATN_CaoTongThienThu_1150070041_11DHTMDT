@@ -4,6 +4,7 @@ using VeSuKienWeb.Data;
 using VeSuKienWeb.Config;
 using VeSuKienWeb.Services;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =======================
@@ -48,6 +49,8 @@ builder.Services.AddControllersWithViews();
 // =======================
 //  BUILD APP
 // =======================
+
+builder.Services.AddHostedService<GiaiPhongGheHetHanService>();
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

@@ -12,6 +12,10 @@
     ViewData["Title"] = "Chi tiết sự kiện (Ban tổ chức)";
 }
 
+<link rel="stylesheet"
+      href="~/css/admin-chi-tiet-su-kien.css"
+      asp-append-version="true" />
+
 <h2 class="mb-3">Chi tiết sự kiện</h2>
 
 <div class="row mb-3">
@@ -44,6 +48,122 @@
         </div>
     </div>
 </div>
+
+<div class="aed-card mb-4">
+    <div class="aed-card-head">
+        <h2>Hình ảnh sự kiện</h2>
+        <span class="badge bg-light text-dark border">
+            Ảnh do Ban tổ chức đăng tải
+        </span>
+    </div>
+
+    <div class="aed-card-body">
+        @if (!string.IsNullOrWhiteSpace(sk.AnhSuKien))
+        {
+            <div class="btc-event-photo">
+                <img src="@Url.Content(sk.AnhSuKien)"
+                     alt="Ảnh sự kiện @sk.TenSuKien"
+                     loading="lazy" />
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-5">
+                Sự kiện này chưa có ảnh đại diện.
+            </div>
+        }
+    </div>
+</div>
+
+
+@if (diaDiem != null)
+{
+    <div class="aed-card aed-map-card mb-4">
+        <div class="aed-card-head">
+            <div>
+                <h2>Sơ đồ chỗ ngồi đã thiết kế</h2>
+                <div class="aed-map-intro">
+                    Sơ đồ được lưu khi tạo sự kiện.
+                    Chế độ xem lại, không chỉnh sửa ghế.
+                </div>
+            </div>
+
+            <div class="aed-map-tools">
+                <button type="button"
+                        id="adminSeatZoomOut"
+                        class="btn btn-outline-secondary btn-sm">
+                    Thu nhỏ
+                </button>
+
+                <span id="adminSeatZoomValue" class="aed-muted">
+                    100%
+                </span>
+
+                <button type="button"
+                        id="adminSeatZoomIn"
+                        class="btn btn-outline-secondary btn-sm">
+                    Phóng to
+                </button>
+
+                <button type="button"
+                        id="adminSeatZoomReset"
+                        class="btn btn-outline-secondary btn-sm">
+                    Mặc định
+                </button>
+            </div>
+        </div>
+
+        <div class="aed-card-body">
+            <div id="adminSeatViewport" class="aed-map-viewport">
+                <svg id="adminSeatMap"
+                     class="aed-seat-svg"
+                     viewBox="0 0 1000 700"
+                     xmlns="http://www.w3.org/2000/svg"
+                     role="img"
+                     aria-label="Sơ đồ chỗ ngồi sự kiện">
+                </svg>
+
+                <div id="adminSeatEmpty"
+                     class="aed-map-empty"
+                     hidden>
+                    Sự kiện chưa có sơ đồ chỗ ngồi mới.
+                </div>
+            </div>
+
+            <div class="aed-map-legend">
+                <div class="aed-legend-item">
+                    <span class="aed-legend-dot"
+                          style="background:#ffffff;border:2px solid #d4a51e"></span>
+                    Ghế VIP
+                </div>
+
+                <div class="aed-legend-item">
+                    <span class="aed-legend-dot"
+                          style="background:#ffffff;border:2px solid #80c783"></span>
+                    Ghế Thường
+                </div>
+
+                <div class="aed-legend-item">
+                    <span class="aed-legend-dot"
+                          style="background:#e0e5eb"></span>
+                    Ghế đã đặt
+                </div>
+            </div>
+
+            <div class="aed-info-grid mt-3">
+                <div class="aed-info">
+                    <span>Tổng số ghế</span>
+                    <strong id="adminSeatTotal">—</strong>
+                </div>
+
+                <div class="aed-info">
+                    <span>Số ghế đã đặt</span>
+                    <strong id="adminSeatBooked">—</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <div class="row">
     <!-- CỘT TRÁI -->
@@ -212,3 +332,9 @@
         </a>
     </div>
 </div>
+
+<script id="adminSeatMapData"
+        type="application/json">@Html.Raw(ViewBag.SoDoJson ?? "null")</script>
+
+<script src="~/js/admin-chi-tiet-so-do.js"
+        asp-append-version="true"></script>

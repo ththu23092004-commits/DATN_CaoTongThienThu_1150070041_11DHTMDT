@@ -9,226 +9,346 @@
 
     ViewData["Title"] = "Chi tiết sự kiện";
 
-    // ✅ kiểm tra đăng nhập & vai trò (sửa CS8602)
     bool daDangNhap = User?.Identity?.IsAuthenticated ?? false;
     bool laKhachHang = User?.IsInRole("KhachHang") ?? false;
 
-    // ✅ tính sẵn returnUrl để dùng khi yêu cầu đăng nhập
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
-<div class="row mb-3">
-    <div class="col-md-8">
-        <h2 class="fw-bold">@sk.TenSuKien</h2>
-        <div class="d-flex flex-wrap align-items-center gap-2 text-muted small mt-1">
-            @if (loai != null)
-            {
-                <span class="badge bg-secondary">@loai.TenLoai</span>
-            }
-            <span>
-                @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-                &rarr;
-                @sk.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
-            </span>
-            @if (toChuc != null)
-            {
-                <span>&bull; Tổ chức: <strong>@toChuc.TenToChuc</strong></span>
-            }
-        </div>
-    </div>
-    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-        @if (Model.DiemTrungBinh.HasValue)
-        {
-            <div class="text-muted small">Đánh giá trung bình</div>
-            <div class="fs-4 fw-bold text-warning">
-                @Model.DiemTrungBinh.Value.ToString("0.0") <span class="fs-6 text-dark">/ 5</span>
-            </div>
-            <div class="small text-muted">
-                @Model.TongSoDanhGia đánh giá
-            </div>
-        }
-        else
-        {
-            <div class="small text-muted">Chưa có đánh giá cho sự kiện này.</div>
-        }
-    </div>
-</div>
+<link rel="stylesheet"
+      href="~/css/admin-chi-tiet-su-kien.css"
+      asp-append-version="true" />
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card mb-3 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Giới thiệu sự kiện</strong>
-            </div>
-            <div class="card-body">
-                @if (!string.IsNullOrWhiteSpace(sk.MoTaChiTiet))
+<link rel="stylesheet"
+      href="~/css/khachhang-chi-tiet.css"
+      asp-append-version="true" />
+
+<div class="kh-event-detail">
+
+    <div class="kh-event-hero">
+        <div class="kh-event-hero-body">
+            <div class="kh-event-photo">
+                @if (!string.IsNullOrWhiteSpace(sk.AnhSuKien))
                 {
-                    <p>@sk.MoTaChiTiet</p>
+                    <img src="@Url.Content(sk.AnhSuKien)"
+                         alt="Ảnh sự kiện @sk.TenSuKien"
+                         loading="lazy" />
                 }
                 else
                 {
-                    <p class="text-muted"><em>Chưa có mô tả chi tiết.</em></p>
-                }
-            </div>
-        </div>
-
-        @if (diaDiem != null)
-        {
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light">
-                    <strong>Sự kiện trực tiếp</strong>
-                </div>
-                <div class="card-body">
-                    <p class="mb-1"><strong>Địa điểm:</strong> @diaDiem.TenDiaDiem</p>
-                    <p class="mb-1"><strong>Địa chỉ:</strong> @diaDiem.DiaChi</p>
-                    <p class="mb-1"><strong>Tổng số ghế:</strong> @diaDiem.SoChoNgoi</p>
-                    @if (!string.IsNullOrWhiteSpace(diaDiem.BanDo))
-                    {
-                        <p class="mb-0">
-                            <strong>Bản đồ:</strong>
-                            <a href="@diaDiem.BanDo" target="_blank">Mở Google Maps</a>
-                        </p>
-                    }
-                </div>
-            </div>
-        }
-
-        @if (online != null)
-        {
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light">
-                    <strong>Sự kiện trực tuyến</strong>
-                </div>
-                <div class="card-body">
-                    <p class="mb-1"><strong>Nền tảng:</strong> @online.NenTang</p>
-                    <p class="mb-1 text-muted small">
-                        Link tham gia và mật khẩu phòng sẽ được hiển thị sau khi bạn đặt vé và thanh toán thành công.
-                    </p>
-                    @if (!string.IsNullOrWhiteSpace(online.HuongDan))
-                    {
-                        <p class="mb-0">
-                            <strong>Hướng dẫn:</strong><br />
-                            @online.HuongDan
-                        </p>
-                    }
-                </div>
-            </div>
-        }
-
-        <!-- ====== ĐÁNH GIÁ TỪ NGƯỜI THAM GIA (HIỆN CHỈ HIỂN THỊ THÔNG BÁO) ====== -->
-        <div class="card mb-3 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Đánh giá từ người tham gia</strong>
-            </div>
-            <div class="card-body">
-                @if (Model.TongSoDanhGia > 0 && Model.DiemTrungBinh.HasValue)
-                {
-                    <p class="mb-1">
-                        Đánh giá trung bình: <strong>@Model.DiemTrungBinh.Value.ToString("0.0") / 5</strong>
-                        (@Model.TongSoDanhGia lượt đánh giá)
-                    </p>
-                    <p class="text-muted mb-0">
-                        Tính năng hiển thị chi tiết từng đánh giá sẽ được bổ sung sau.
-                    </p>
-                }
-                else
-                {
-                    <p class="text-muted mb-0">
-                        <em>Chưa có đánh giá nào cho sự kiện này.</em>
-                    </p>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card mb-3 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Thông tin vé</strong>
-            </div>
-            <div class="card-body">
-                @if (Model.LoaiVes != null && Model.LoaiVes.Any())
-                {
-                    <table class="table table-sm align-middle mb-3">
-                        <thead>
-                            <tr>
-                                <th>Loại vé</th>
-                                <th>Giá</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var lv in Model.LoaiVes)
-                            {
-                                <tr>
-                                    <td>@lv.TenLoai</td>
-                                    <td>@lv.GiaVe.ToString("N0") đ</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <p class="text-muted mb-0"><em>Chưa cấu hình loại vé.</em></p>
-                }
-            </div>
-        </div>
-
-        <div class="card mb-3 shadow-sm">
-            <div class="card-body text-center">
-                @if (TempData["ThongBao"] != null)
-                {
-                    <div class="alert alert-info py-2 mb-2">
-                        @TempData["ThongBao"]
+                    <div class="kh-event-photo-empty">
+                        Sự kiện chưa có ảnh đại diện
                     </div>
                 }
+            </div>
 
-                @if (Model.CoTheDatVe)
-                {
-                    @* Sự kiện còn mở đặt vé *@
-                    @if (!daDangNhap)
+            <div>
+                <div class="kh-event-badges">
+                    @if (loai != null)
                     {
-                        <a asp-controller="TaiKhoan"
-                           asp-action="DangNhap"
-                           asp-route-returnUrl="@returnUrl"
-                           class="btn btn-primary w-100 mb-2">
-                            Đăng nhập để đặt vé
-                        </a>
-                        <div class="small text-muted">
-                            Bạn cần đăng nhập với vai trò Khách hàng để đặt vé.
-                        </div>
+                        <span class="badge bg-secondary">@loai.TenLoai</span>
                     }
-                    else if (laKhachHang)
+
+                    <span class="badge bg-light text-dark border">
+                        Mã sự kiện #@sk.SuKienId
+                    </span>
+
+                    @if (Model.CoTheDatVe)
                     {
-                        <a asp-action="DatVe"
-                           asp-route-id="@sk.SuKienId"
-                           class="btn btn-primary w-100 mb-2">
-                            Đặt vé ngay
-                        </a>
-                        <div class="small text-muted">
-                            Vui lòng hoàn tất thanh toán trong thời gian quy định.
-                        </div>
+                        <span class="badge bg-success">Đang mở đặt vé</span>
                     }
                     else
                     {
-                        <span class="badge bg-warning text-dark mb-2">
-                            Bạn không phải tài khoản Khách hàng
-                        </span>
-                        <div class="small text-muted">
-                            Vui lòng đăng xuất và đăng nhập bằng tài khoản Khách hàng để đặt vé.
-                        </div>
+                        <span class="badge bg-secondary">Đã kết thúc</span>
                     }
-                }
-                else
-                {
-                    <span class="badge bg-secondary mb-2">
-                        Sự kiện đã kết thúc · Không thể đặt vé
-                    </span>
-                    <div class="small text-muted">
-                        Bạn vẫn có thể xem thông tin và đánh giá từ người tham gia.
+                </div>
+
+                <h2 class="kh-event-title">@sk.TenSuKien</h2>
+
+                <div class="kh-event-meta">
+                    <div class="kh-meta-box">
+                        <span>Thời gian bắt đầu</span>
+                        <strong>@sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")</strong>
                     </div>
-                }
+
+                    <div class="kh-meta-box">
+                        <span>Thời gian kết thúc</span>
+                        <strong>@sk.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")</strong>
+                    </div>
+
+                    <div class="kh-meta-box">
+                        <span>Đơn vị tổ chức</span>
+                        <strong>@(toChuc?.TenToChuc ?? "Chưa cập nhật")</strong>
+                    </div>
+
+                    <div class="kh-meta-box">
+                        <span>Địa điểm / Hình thức</span>
+                        <strong>
+                            @(diaDiem != null
+                                ? diaDiem.TenDiaDiem
+                                : online != null
+                                    ? "Sự kiện trực tuyến"
+                                    : "Chưa cập nhật")
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <strong>Giới thiệu sự kiện</strong>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(sk.MoTaChiTiet))
+                    {
+                        <div class="kh-preline">@sk.MoTaChiTiet</div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0"><em>Chưa có mô tả chi tiết.</em></p>
+                    }
+                </div>
+            </div>
+
+            @if (diaDiem != null)
+            {
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light">
+                        <strong>Thông tin sự kiện trực tiếp</strong>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Địa điểm:</strong> @diaDiem.TenDiaDiem</p>
+                        <p class="mb-1"><strong>Địa chỉ:</strong> @diaDiem.DiaChi</p>
+                        <p class="mb-1"><strong>Tổng số ghế:</strong> @diaDiem.SoChoNgoi</p>
+
+                        @if (!string.IsNullOrWhiteSpace(diaDiem.BanDo))
+                        {
+                            <p class="mb-0">
+                                <strong>Bản đồ:</strong>
+                                <a href="@diaDiem.BanDo" target="_blank" rel="noopener noreferrer">
+                                    Mở Google Maps
+                                </a>
+                            </p>
+                        }
+                    </div>
+                </div>
+
+                <div class="aed-card aed-map-card mb-4">
+                    <div class="aed-card-head">
+                        <div>
+                            <h2>Sơ đồ chỗ ngồi</h2>
+                            <div class="aed-map-intro">
+                                Bạn có thể xem sơ đồ ghế trước khi đặt vé.
+                                Muốn đặt vé thì cần đăng nhập tài khoản Khách hàng.
+                            </div>
+                        </div>
+
+                        <div class="aed-map-tools">
+                            <button type="button"
+                                    id="adminSeatZoomOut"
+                                    class="btn btn-outline-secondary btn-sm">
+                                Thu nhỏ
+                            </button>
+
+                            <span id="adminSeatZoomValue" class="aed-muted">
+                                100%
+                            </span>
+
+                            <button type="button"
+                                    id="adminSeatZoomIn"
+                                    class="btn btn-outline-secondary btn-sm">
+                                Phóng to
+                            </button>
+
+                            <button type="button"
+                                    id="adminSeatZoomReset"
+                                    class="btn btn-outline-secondary btn-sm">
+                                Mặc định
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="aed-card-body">
+                        <div id="adminSeatViewport" class="aed-map-viewport">
+                            <svg id="adminSeatMap"
+                                 class="aed-seat-svg"
+                                 viewBox="0 0 1000 700"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 role="img"
+                                 aria-label="Sơ đồ chỗ ngồi sự kiện">
+                            </svg>
+
+                            <div id="adminSeatEmpty"
+                                 class="aed-map-empty"
+                                 hidden>
+                                Sự kiện này chưa có sơ đồ chỗ ngồi.
+                            </div>
+                        </div>
+
+                        <div class="aed-map-legend">
+                            <div class="aed-legend-item">
+                                <span class="aed-legend-dot"
+                                      style="background:#ffffff;border:2px solid #d4a51e"></span>
+                                Ghế VIP
+                            </div>
+
+                            <div class="aed-legend-item">
+                                <span class="aed-legend-dot"
+                                      style="background:#ffffff;border:2px solid #80c783"></span>
+                                Ghế Thường
+                            </div>
+
+                            <div class="aed-legend-item">
+                                <span class="aed-legend-dot"
+                                      style="background:#e0e5eb"></span>
+                                Ghế đã đặt
+                            </div>
+                        </div>
+
+                        <div class="aed-info-grid mt-3">
+                            <div class="aed-info">
+                                <span>Tổng số ghế</span>
+                                <strong id="adminSeatTotal">—</strong>
+                            </div>
+
+                            <div class="aed-info">
+                                <span>Số ghế đã đặt</span>
+                                <strong id="adminSeatBooked">—</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (online != null)
+            {
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light">
+                        <strong>Sự kiện trực tuyến</strong>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Nền tảng:</strong> @online.NenTang</p>
+
+                        <p class="mb-2 text-muted small">
+                            Link tham gia và mật khẩu phòng sẽ được hiển thị sau khi bạn đặt vé và thanh toán thành công.
+                        </p>
+
+                        @if (!string.IsNullOrWhiteSpace(online.HuongDan))
+                        {
+                            <div>
+                                <strong>Hướng dẫn:</strong>
+                                <div class="kh-preline mt-1">@online.HuongDan</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-4">
+            <div class="kh-side-sticky">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light">
+                        <strong>Thông tin vé</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.LoaiVes != null && Model.LoaiVes.Any())
+                        {
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Loại vé</th>
+                                        <th>Giá</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var lv in Model.LoaiVes)
+                                    {
+                                        <tr>
+                                            <td>@lv.TenLoai</td>
+                                            <td>@lv.GiaVe.ToString("N0") đ</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0"><em>Chưa cấu hình loại vé.</em></p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body text-center">
+                        @if (TempData["ThongBao"] != null)
+                        {
+                            <div class="alert alert-info py-2 mb-3">
+                                @TempData["ThongBao"]
+                            </div>
+                        }
+
+                        @if (Model.CoTheDatVe)
+                        {
+                            @if (!daDangNhap)
+                            {
+                                <a asp-controller="TaiKhoan"
+                                   asp-action="DangNhap"
+                                   asp-route-returnUrl="@returnUrl"
+                                   class="btn btn-primary w-100 mb-2">
+                                    Đăng nhập để đặt vé
+                                </a>
+
+                                <div class="small text-muted">
+                                    Bạn vẫn có thể xem sơ đồ ghế, nhưng cần đăng nhập tài khoản Khách hàng để đặt vé.
+                                </div>
+                            }
+                            else if (laKhachHang)
+                            {
+                                <a asp-action="DatVe"
+                                   asp-route-id="@sk.SuKienId"
+                                   class="btn btn-primary w-100 mb-2">
+                                    Đặt vé ngay
+                                </a>
+
+                                <div class="small text-muted">
+                                    Vui lòng chọn vé hoặc ghế ở bước tiếp theo và hoàn tất thanh toán trong thời gian quy định.
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark mb-2">
+                                    Bạn không phải tài khoản Khách hàng
+                                </span>
+
+                                <div class="small text-muted">
+                                    Vui lòng đăng xuất và đăng nhập bằng tài khoản Khách hàng để đặt vé.
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary mb-2">
+                                Sự kiện đã kết thúc · Không thể đặt vé
+                            </span>
+
+                            <div class="small text-muted">
+                                Bạn vẫn có thể xem thông tin và sơ đồ sự kiện.
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script id="adminSeatMapData"
+        type="application/json">@Html.Raw(ViewBag.SoDoJson ?? "null")</script>
+
+<script src="~/js/admin-chi-tiet-so-do.js"
+        asp-append-version="true"></script>

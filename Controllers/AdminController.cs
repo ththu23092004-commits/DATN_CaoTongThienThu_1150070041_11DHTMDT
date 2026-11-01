@@ -5,6 +5,8 @@ using VeSuKienWeb.Data;
 using VeSuKienWeb.Models;
 using VeSuKienWeb.Models.Admin;
 using VeSuKienWeb.Helpers;
+using System.Text.Json;
+
 namespace VeSuKienWeb.Controllers
 {
     [Authorize(Roles = "Admin")]
@@ -56,6 +58,60 @@ namespace VeSuKienWeb.Controllers
             var loaiVes = await _db.LoaiVe
                 .Where(l => l.SuKienId == sk.SuKienId)
                 .ToListAsync();
+
+
+var soDo = await _db.SoDoSuKien
+    .AsNoTracking()
+    .FirstOrDefaultAsync(x => x.SuKienId == sk.SuKienId);
+
+if (soDo != null && diaDiem != null)
+{
+    var ghe = await _db.SoDoChoNgoi
+        .AsNoTracking()
+        .Where(x => x.DiaDiemId == diaDiem.DiaDiemId)
+        .Select(x => new
+        {
+            id = x.ChoNgoiId,
+            hang = x.Hang,
+            cot = x.Cot,
+            x = x.ViTriX,
+            y = x.ViTriY,
+            trangThai = x.TrangThai,
+            khu = x.KhuVucChoNgoi != null
+                ? x.KhuVucChoNgoi.TenKhu
+                : x.LoaiVe.TenLoai
+        })
+        .OrderBy(x => x.hang)
+        .ThenBy(x => x.cot)
+        .ToListAsync();
+
+    var thanhPhan = await _db.ThanhPhanSoDo
+        .AsNoTracking()
+        .Where(x => x.SoDoId == soDo.SoDoId)
+        .Select(x => new
+        {
+            loai = x.LoaiThanhPhan,
+            ten = x.TenHienThi,
+            x = x.ViTriX,
+            y = x.ViTriY,
+            rong = x.ChieuRong,
+            cao = x.ChieuCao
+        })
+        .ToListAsync();
+
+    ViewBag.SoDoJson = JsonSerializer.Serialize(new
+    {
+        chieuRong = soDo.ChieuRong,
+        chieuCao = soDo.ChieuCao,
+        ghe,
+        thanhPhan
+    });
+}
+else
+{
+    ViewBag.SoDoJson = "null";
+}
+
 
             var vm = new SuKienChiTietVM
             {

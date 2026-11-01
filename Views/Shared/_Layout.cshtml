@@ -121,11 +121,19 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
     </nav>
 
 
-    <main class="py-4 flex-fill">
-        <div class="container">
-            @RenderBody()
-        </div>
-    </main>
+
+@{
+    bool laTrangAdmin =
+        ViewContext.RouteData.Values["controller"]?.ToString()
+        == "Admin";
+}
+
+<main class="py-4 flex-fill">
+    <div class="@(laTrangAdmin ? "container-fluid px-2 px-lg-3" : "container")">
+        @RenderBody()
+    </div>
+</main>
+
 
  
 

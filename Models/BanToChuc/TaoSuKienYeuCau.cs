@@ -85,6 +85,9 @@ namespace VeSuKienWeb.Models.BanToChuc
 
         [Display(Name = "Hàng VIP đến")]
         public int? HangVipDen { get; set; }
+        
+        public string? SoDoJson { get; set; }
+
 
     }
 }

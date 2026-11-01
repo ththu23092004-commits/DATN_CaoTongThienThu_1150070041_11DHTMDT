@@ -21,20 +21,25 @@ namespace VeSuKienWeb.Models.KhachHang
     }
 
     // ========= CHI TIẾT SỰ KIỆN CHO KHÁCH =========
-    public class SuKienChiTietKhVM
-    {
-        public SuKien SuKien { get; set; } = null!;
-        public LoaiSuKien? LoaiSuKien { get; set; }
-        public ToChucSuKien? ToChuc { get; set; }
-        public DiaDiem? DiaDiem { get; set; }
-        public SuKienTrucTuyen? SuKienTrucTuyen { get; set; }
-        public List<LoaiVe> LoaiVes { get; set; } = new();
+ public class SuKienChiTietKhVM
+{
+    public SuKien SuKien { get; set; } = null!;
+    public LoaiSuKien? LoaiSuKien { get; set; }
+    public ToChucSuKien? ToChuc { get; set; }
+    public DiaDiem? DiaDiem { get; set; }
+    public SuKienTrucTuyen? SuKienTrucTuyen { get; set; }
 
-        public bool CoTheDatVe { get; set; }
+    public List<LoaiVe> LoaiVes { get; set; } = new();
 
-        public double? DiemTrungBinh { get; set; }
-        public int TongSoDanhGia { get; set; }
-    }
+    public List<DatVeGheItemVM> GheList { get; set; } = new();
+
+    public bool CoTheDatVe { get; set; }
+
+    public double? DiemTrungBinh { get; set; }
+    public int TongSoDanhGia { get; set; }
+
+    
+}
 
     // ========= THÔNG TIN 1 GHẾ =========
     public class DatVeGheItemVM

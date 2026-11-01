@@ -31,6 +31,21 @@ namespace VeSuKienWeb.Models
         public DiaDiem DiaDiem { get; set; } = null!;
         public LoaiVe LoaiVe { get; set; } = null!;
 
+        public int? KhuVucId { get; set; }
+        // Thông tin giữ ghế khi khách đang thanh toán
+public int? DonHangGiuId { get; set; }
+
+public DateTime? ThoiGianHetHanGiu { get; set; }
+
+        [Column(TypeName = "decimal(9,2)")]
+        public decimal? ViTriX { get; set; }
+
+        [Column(TypeName = "decimal(9,2)")]
+        public decimal? ViTriY { get; set; }
+
+        public KhuVucChoNgoi? KhuVucChoNgoi { get; set; }
+
+
         // Nếu sau này bạn có entity Ve thì có thể thêm lại navigation:
         // public ICollection<Ve> DanhSachVe { get; set; } = new List<Ve>();
     }

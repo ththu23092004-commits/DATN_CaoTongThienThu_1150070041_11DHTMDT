@@ -10,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using VeSuKienWeb.Data;
 using VeSuKienWeb.Models;
 using VeSuKienWeb.Models.KhachHang;
+using System.Text.Json;
+using System.Data;
+
 
 namespace VeSuKienWeb.Controllers
 {
@@ -88,436 +91,750 @@ namespace VeSuKienWeb.Controllers
         // ========== CHI TIẾT SỰ KIỆN (KHÁCH) ========================
         // ============================================================
 
-        [AllowAnonymous]
-        public async Task<IActionResult> ChiTiet(int id)
-        {
-            var sk = await _db.SuKien
-                .Include(s => s.LoaiSuKien)
-                .Include(s => s.ToChucSuKien)
-                .FirstOrDefaultAsync(s => s.SuKienId == id && s.TrangThaiDuyet == "DaDuyet");
+[AllowAnonymous]
+public async Task<IActionResult> ChiTiet(int id)
+{
+    var sk = await _db.SuKien
+        .Include(s => s.LoaiSuKien)
+        .Include(s => s.ToChucSuKien)
+        .FirstOrDefaultAsync(s =>
+            s.SuKienId == id &&
+            s.TrangThaiDuyet == "DaDuyet");
 
-            if (sk == null) return NotFound();
+    if (sk == null)
+        return NotFound();
 
-            var now = DateTime.Now;
-            bool coTheDatVe = sk.ThoiGianKetThuc > now;
+    var now = DateTime.Now;
+    bool coTheDatVe = sk.ThoiGianKetThuc > now;
 
-            var diaDiem = await _db.DiaDiem
-                .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
+    var diaDiem = await _db.DiaDiem
+        .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
 
-            var online = await _db.SuKienTrucTuyen
-                .FirstOrDefaultAsync(o => o.SuKienId == sk.SuKienId);
+    var online = await _db.SuKienTrucTuyen
+        .FirstOrDefaultAsync(o => o.SuKienId == sk.SuKienId);
 
-            var loaiVes = await _db.LoaiVe
-                .Where(l => l.SuKienId == sk.SuKienId)
-                .ToListAsync();
+    var loaiVes = await _db.LoaiVe
+        .Where(l => l.SuKienId == sk.SuKienId)
+        .ToListAsync();
 
-            var vm = new SuKienChiTietKhVM
+    var gheList = new List<DatVeGheItemVM>();
+
+    if (diaDiem != null)
+    {
+        gheList = await _db.SoDoChoNgoi
+            .Include(g => g.LoaiVe)
+            .Where(g => g.DiaDiemId == diaDiem.DiaDiemId)
+            .OrderBy(g => g.Hang)
+            .ThenBy(g => g.Cot)
+            .Select(g => new DatVeGheItemVM
             {
-                SuKien = sk,
-                LoaiSuKien = sk.LoaiSuKien,
-                ToChuc = sk.ToChucSuKien,
-                DiaDiem = diaDiem,
-                SuKienTrucTuyen = online,
-                LoaiVes = loaiVes,
-                CoTheDatVe = coTheDatVe,
-                DiemTrungBinh = null,
-                TongSoDanhGia = 0
-            };
+                ChoNgoiId = g.ChoNgoiId,
+                Hang = g.Hang ?? string.Empty,
+                Cot = g.Cot,
+                TrangThai = g.TrangThai ?? "Trong",
+                TenLoaiVe = g.LoaiVe.TenLoai ?? string.Empty,
+                GiaVe = g.LoaiVe.GiaVe
+            })
+            .ToListAsync();
+    }
 
-            return View(vm);
-        }
+    ViewBag.SoDoJson = "null";
+
+    var soDo = await _db.SoDoSuKien
+        .AsNoTracking()
+        .FirstOrDefaultAsync(x => x.SuKienId == sk.SuKienId);
+
+    if (soDo != null && diaDiem != null)
+    {
+        var gheSoDo = await _db.SoDoChoNgoi
+            .AsNoTracking()
+            .Where(x => x.DiaDiemId == diaDiem.DiaDiemId)
+            .OrderBy(x => x.Hang)
+            .ThenBy(x => x.Cot)
+.Select(x => new
+{
+    id = x.ChoNgoiId,
+    hang = x.Hang,
+    cot = x.Cot,
+    x = x.ViTriX,
+    y = x.ViTriY,
+    trangThai = x.TrangThai,
+    khu = x.KhuVucChoNgoi != null
+        ? x.KhuVucChoNgoi.TenKhu
+        : x.LoaiVe.TenLoai,
+    tenLoai = x.LoaiVe.TenLoai,
+    giaVe = x.LoaiVe.GiaVe
+})
+            .ToListAsync();
+
+        var thanhPhan = await _db.ThanhPhanSoDo
+            .AsNoTracking()
+            .Where(x => x.SoDoId == soDo.SoDoId)
+            .Select(x => new
+            {
+                loai = x.LoaiThanhPhan,
+                ten = x.TenHienThi,
+                x = x.ViTriX,
+                y = x.ViTriY,
+                rong = x.ChieuRong,
+                cao = x.ChieuCao
+            })
+            .ToListAsync();
+
+        ViewBag.SoDoJson = JsonSerializer.Serialize(new
+        {
+            chieuRong = soDo.ChieuRong,
+            chieuCao = soDo.ChieuCao,
+            ghe = gheSoDo,
+            thanhPhan
+        });
+    }
+
+    var vm = new SuKienChiTietKhVM
+    {
+        SuKien = sk,
+        LoaiSuKien = sk.LoaiSuKien,
+        ToChuc = sk.ToChucSuKien,
+        DiaDiem = diaDiem,
+        SuKienTrucTuyen = online,
+        LoaiVes = loaiVes,
+        GheList = gheList,
+        CoTheDatVe = coTheDatVe,
+
+        DiemTrungBinh = null,
+        TongSoDanhGia = 0
+    };
+
+    return View(vm);
+}
 
         // ============================================================
         // ========== ĐẶT VÉ (OFFLINE + ONLINE) =======================
         // ============================================================
 
-        [Authorize(Roles = "KhachHang")]
-        [HttpGet]
-        public async Task<IActionResult> DatVe(int id)
+
+[Authorize(Roles = "KhachHang")]
+[HttpGet]
+public async Task<IActionResult> DatVe(int id)
+{
+    var now = DateTime.Now;
+
+    var sk = await _db.SuKien
+        .Include(s => s.LoaiSuKien)
+        .FirstOrDefaultAsync(s =>
+            s.SuKienId == id &&
+            s.TrangThaiDuyet == "DaDuyet");
+
+    if (sk == null)
+        return NotFound();
+
+    if (sk.ThoiGianKetThuc <= now)
+    {
+        TempData["ThongBao"] = "Sự kiện đã kết thúc, không thể đặt vé.";
+        return RedirectToAction("ChiTiet", new { id });
+    }
+
+    var loaiTenLower = (sk.LoaiSuKien?.TenLoai ?? "").ToLower();
+
+    bool laTrucTiep =
+        loaiTenLower.Contains("trực tiếp") ||
+        loaiTenLower.Contains("truc tiep");
+
+    bool laWorkshop = loaiTenLower.Contains("workshop");
+    bool laSuKienCoSoDoGhe = laTrucTiep || laWorkshop;
+
+    var vm = new DatVeKhVM
+    {
+        SuKienId = sk.SuKienId,
+        TenSuKien = sk.TenSuKien,
+        LaSuKienTrucTiep = laSuKienCoSoDoGhe,
+        LaWorkshop = laWorkshop
+    };
+
+    DiaDiem? diaDiem = null;
+
+    if (laSuKienCoSoDoGhe)
+    {
+        diaDiem = await _db.DiaDiem
+            .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
+
+        if (diaDiem == null)
         {
-            var sk = await _db.SuKien
-                .Include(s => s.LoaiSuKien)
-                .FirstOrDefaultAsync(s => s.SuKienId == id && s.TrangThaiDuyet == "DaDuyet");
-
-            if (sk == null) return NotFound();
-
-            if (sk.ThoiGianKetThuc <= DateTime.Now)
-            {
-                TempData["ThongBao"] = "Sự kiện đã kết thúc, không thể đặt vé.";
-                return RedirectToAction("ChiTiet", new { id });
-            }
-
-            var loaiTenLower = (sk.LoaiSuKien?.TenLoai ?? "").ToLower();
-            bool laTrucTiep = loaiTenLower.Contains("trực tiếp") || loaiTenLower.Contains("truc tiep");
-            bool laWorkshop = loaiTenLower.Contains("workshop");
-            bool laSuKienCoSoDoGhe = laTrucTiep || laWorkshop;
-
-            var vm = new DatVeKhVM
-            {
-                SuKienId = sk.SuKienId,
-                TenSuKien = sk.TenSuKien,
-                LaSuKienTrucTiep = laSuKienCoSoDoGhe,
-                LaWorkshop = laWorkshop
-            };
-
-            if (laSuKienCoSoDoGhe)
-            {
-                var diaDiem = await _db.DiaDiem
-                    .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
-
-                if (diaDiem == null)
-                {
-                    TempData["ThongBao"] = "Sự kiện chưa cấu hình địa điểm.";
-                    return RedirectToAction("ChiTiet", new { id });
-                }
-
-                var gheList = await _db.SoDoChoNgoi
-                    .Include(g => g.LoaiVe)
-                    .Where(g => g.DiaDiemId == diaDiem.DiaDiemId)
-                    .OrderBy(g => g.Hang)
-                    .ThenBy(g => g.Cot)
-                    .ToListAsync();
-
-                vm.GheList = gheList.Select(g => new DatVeGheItemVM
-                {
-                    ChoNgoiId = g.ChoNgoiId,
-                    Hang = g.Hang ?? string.Empty,
-                    Cot = g.Cot,
-                    TrangThai = g.TrangThai ?? "Trong",
-                    TenLoaiVe = g.LoaiVe.TenLoai ?? string.Empty,
-                    GiaVe = g.LoaiVe.GiaVe
-                }).ToList();
-
-                var thongKeTheoHang = vm.GheList
-                    .GroupBy(g => g.Hang)
-                    .OrderBy(g => g.Key)
-                    .Select(g => new
-                    {
-                        Hang = g.Key,
-                        SoGhe = g.Count(),
-                        CotMin = g.Min(x => x.Cot),
-                        CotMax = g.Max(x => x.Cot),
-                        SoVip = g.Count(x => (x.TenLoaiVe ?? string.Empty).ToLower().Contains("vip"))
-                    })
-                    .ToList();
-
-                _logger.LogWarning(
-                    "[DatVeDebug] SuKienId={SuKienId}, LaWorkshop={LaWorkshop}, TongGhe={TongGhe}, TheoHang={@TheoHang}",
-                    sk.SuKienId,
-                    laWorkshop,
-                    vm.GheList.Count,
-                    thongKeTheoHang);
-            }
-            else
-            {
-                vm.LaSuKienTrucTiep = false;
-
-                // ✅ SỰ KIỆN TRỰC TUYẾN: tự chọn loại vé mặc định (ví dụ: rẻ nhất)
-                var loaiVeMacDinh = await _db.LoaiVe
-                    .Where(l => l.SuKienId == sk.SuKienId)
-                    .OrderBy(l => l.GiaVe)
-                    .FirstOrDefaultAsync();
-
-                if (loaiVeMacDinh == null)
-                {
-                    TempData["ThongBao"] = "Sự kiện trực tuyến chưa cấu hình loại vé, không thể đặt vé.";
-                    return RedirectToAction("ChiTiet", new { id = sk.SuKienId });
-                }
-
-                vm.LoaiVeId = loaiVeMacDinh.LoaiVeId;
-            }
-
-            return View(vm);
+            TempData["ThongBao"] = "Sự kiện chưa cấu hình địa điểm.";
+            return RedirectToAction("ChiTiet", new { id });
         }
 
-        [Authorize(Roles = "KhachHang")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DatVe(DatVeKhVM model)
-        {
-            var sk = await _db.SuKien
-                .Include(s => s.LoaiSuKien)
-                .FirstOrDefaultAsync(s => s.SuKienId == model.SuKienId && s.TrangThaiDuyet == "DaDuyet");
-
-            if (sk == null) return NotFound();
-
-            if (sk.ThoiGianKetThuc <= DateTime.Now)
+        var gheList = await _db.SoDoChoNgoi
+            .AsNoTracking()
+            .Include(g => g.LoaiVe)
+            .Where(g => g.DiaDiemId == diaDiem.DiaDiemId)
+            .OrderBy(g => g.Hang)
+            .ThenBy(g => g.Cot)
+            .Select(g => new
             {
-                TempData["ThongBao"] = "Sự kiện đã kết thúc, không thể đặt vé.";
+                g.ChoNgoiId,
+                g.Hang,
+                g.Cot,
+                g.TrangThai,
+                g.DonHangGiuId,
+                g.ThoiGianHetHanGiu,
+                TenLoaiVe = g.LoaiVe.TenLoai,
+                GiaVe = g.LoaiVe.GiaVe
+            })
+            .ToListAsync();
+
+        vm.GheList = gheList.Select(g =>
+        {
+            string trangThai = g.TrangThai ?? "Trong";
+
+            bool dangGiu =
+                g.DonHangGiuId.HasValue &&
+                g.ThoiGianHetHanGiu.HasValue &&
+                g.ThoiGianHetHanGiu.Value > now;
+
+            if (dangGiu)
+                trangThai = "DangGiu";
+
+            return new DatVeGheItemVM
+            {
+                ChoNgoiId = g.ChoNgoiId,
+                Hang = g.Hang ?? string.Empty,
+                Cot = g.Cot,
+                TrangThai = trangThai,
+                TenLoaiVe = g.TenLoaiVe ?? string.Empty,
+                GiaVe = g.GiaVe
+            };
+        }).ToList();
+    }
+    else
+    {
+        vm.LaSuKienTrucTiep = false;
+
+        var loaiVeMacDinh = await _db.LoaiVe
+            .Where(l => l.SuKienId == sk.SuKienId)
+            .OrderBy(l => l.GiaVe)
+            .FirstOrDefaultAsync();
+
+        if (loaiVeMacDinh == null)
+        {
+            TempData["ThongBao"] =
+                "Sự kiện trực tuyến chưa cấu hình loại vé.";
+
+            return RedirectToAction("ChiTiet", new { id });
+        }
+
+        vm.LoaiVeId = loaiVeMacDinh.LoaiVeId;
+    }
+
+    ViewBag.SoDoJson = "null";
+
+    var soDo = await _db.SoDoSuKien
+        .AsNoTracking()
+        .FirstOrDefaultAsync(x => x.SuKienId == sk.SuKienId);
+
+    if (soDo != null && diaDiem != null)
+    {
+        var gheSoDo = await _db.SoDoChoNgoi
+            .AsNoTracking()
+            .Where(x => x.DiaDiemId == diaDiem.DiaDiemId)
+            .OrderBy(x => x.Hang)
+            .ThenBy(x => x.Cot)
+            .Select(x => new
+            {
+                id = x.ChoNgoiId,
+                hang = x.Hang,
+                cot = x.Cot,
+                x = x.ViTriX,
+                y = x.ViTriY,
+
+                trangThai =
+                    x.DonHangGiuId != null &&
+                    x.ThoiGianHetHanGiu > now
+                        ? "DangGiu"
+                        : x.TrangThai,
+
+                khu = x.KhuVucChoNgoi != null
+                    ? x.KhuVucChoNgoi.TenKhu
+                    : x.LoaiVe.TenLoai,
+
+                tenLoai = x.LoaiVe.TenLoai,
+                giaVe = x.LoaiVe.GiaVe
+            })
+            .ToListAsync();
+
+        var thanhPhan = await _db.ThanhPhanSoDo
+            .AsNoTracking()
+            .Where(x => x.SoDoId == soDo.SoDoId)
+            .Select(x => new
+            {
+                loai = x.LoaiThanhPhan,
+                ten = x.TenHienThi,
+                x = x.ViTriX,
+                y = x.ViTriY,
+                rong = x.ChieuRong,
+                cao = x.ChieuCao
+            })
+            .ToListAsync();
+
+        ViewBag.SoDoJson = JsonSerializer.Serialize(new
+        {
+            chieuRong = soDo.ChieuRong,
+            chieuCao = soDo.ChieuCao,
+            ghe = gheSoDo,
+            thanhPhan
+        });
+    }
+
+    return View(vm);
+}
+
+[Authorize(Roles = "KhachHang")]
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> DatVe(DatVeKhVM model)
+{
+    var sk = await _db.SuKien
+        .Include(s => s.LoaiSuKien)
+        .FirstOrDefaultAsync(s =>
+            s.SuKienId == model.SuKienId &&
+            s.TrangThaiDuyet == "DaDuyet");
+
+    if (sk == null)
+        return NotFound();
+
+    if (sk.ThoiGianKetThuc <= DateTime.Now)
+    {
+        TempData["ThongBao"] = "Sự kiện đã kết thúc, không thể đặt vé.";
+        return RedirectToAction("ChiTiet", new { id = model.SuKienId });
+    }
+
+    var loaiTenLower = (sk.LoaiSuKien?.TenLoai ?? "").ToLower();
+
+    bool laTrucTiep =
+        loaiTenLower.Contains("trực tiếp") ||
+        loaiTenLower.Contains("truc tiep");
+
+    bool laWorkshop = loaiTenLower.Contains("workshop");
+    bool laSuKienCoSoDoGhe = laTrucTiep || laWorkshop;
+
+    int userId = GetCurrentUserId();
+
+    List<int> gheIds = new();
+
+    if (laSuKienCoSoDoGhe)
+    {
+        gheIds = (model.GheChonIds ?? new List<int>())
+            .Distinct()
+            .ToList();
+
+        if (gheIds.Count == 0)
+        {
+            TempData["ThongBao"] = "Vui lòng chọn ít nhất 1 ghế.";
+            return RedirectToAction("DatVe", new { id = model.SuKienId });
+        }
+
+        if (gheIds.Count > 10)
+        {
+            TempData["ThongBao"] = "Bạn chỉ được đặt tối đa 10 vé trong một lần.";
+            return RedirectToAction("DatVe", new { id = model.SuKienId });
+        }
+    }
+    else
+    {
+        if (model.SoLuong < 1 || model.SoLuong > 10)
+        {
+            TempData["ThongBao"] = "Số lượng vé phải từ 1 đến 10.";
+            return RedirectToAction("DatVe", new { id = model.SuKienId });
+        }
+
+        if (!model.LoaiVeId.HasValue)
+        {
+            TempData["ThongBao"] = "Sự kiện chưa cấu hình loại vé.";
+            return RedirectToAction("ChiTiet", new { id = model.SuKienId });
+        }
+    }
+
+    // Kiểm tra lịch trùng với sự kiện đã thanh toán
+    var suKienTrung = await _db.Ve
+        .Include(v => v.SuKien)
+        .Where(v =>
+            v.NguoiDungId == userId &&
+            v.TrangThai == "DaThanhToan" &&
+            v.SuKienId != sk.SuKienId &&
+            v.SuKien.ThoiGianBatDau < sk.ThoiGianKetThuc &&
+            v.SuKien.ThoiGianKetThuc > sk.ThoiGianBatDau)
+        .Select(v => v.SuKien)
+        .Distinct()
+        .ToListAsync();
+
+    if (suKienTrung.Any())
+    {
+        TempData["CanhBaoTrungLich"] =
+            "Lưu ý: Bạn đã có sự kiện khác trong khoảng thời gian này. Nếu tiếp tục, lịch sẽ bị trùng.";
+    }
+
+    await using var transaction =
+        await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+    try
+    {
+        var now = DateTime.Now;
+        var hetHan = now.AddMinutes(5);
+
+        var donHang = new DonHang
+        {
+            NguoiDungId = userId,
+            NgayDat = now,
+            TrangThai = "DangXuLy",
+            TongTien = 0
+        };
+
+        _db.DonHang.Add(donHang);
+        await _db.SaveChangesAsync();
+
+        decimal tongTien = 0;
+
+        if (laSuKienCoSoDoGhe)
+        {
+            var diaDiem = await _db.DiaDiem
+                .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
+
+            if (diaDiem == null)
+            {
+                await transaction.RollbackAsync();
+                TempData["ThongBao"] = "Sự kiện chưa cấu hình địa điểm.";
                 return RedirectToAction("ChiTiet", new { id = model.SuKienId });
             }
 
-            var loaiTenLower = (sk.LoaiSuKien?.TenLoai ?? "").ToLower();
-            bool laTrucTiep = loaiTenLower.Contains("trực tiếp") || loaiTenLower.Contains("truc tiep");
-            bool laWorkshop = loaiTenLower.Contains("workshop");
-            bool laSuKienCoSoDoGhe = laTrucTiep || laWorkshop;
-            int userId = GetCurrentUserId();
-
-            // ========================================================
-            // ✅ GIỚI HẠN TỐI ĐA 10 VÉ / 1 LẦN ĐẶT
-            // ========================================================
-            if (laSuKienCoSoDoGhe)
-            {
-                if (model.GheChonIds == null || !model.GheChonIds.Any())
-                {
-                    TempData["ThongBao"] = "Vui lòng chọn ít nhất 1 ghế.";
-                    return RedirectToAction("DatVe", new { id = model.SuKienId });
-                }
-
-                if (model.GheChonIds.Count > 10)
-                {
-                    TempData["ThongBao"] = "Bạn chỉ được đặt tối đa 10 vé trong một lần.";
-                    return RedirectToAction("DatVe", new { id = model.SuKienId });
-                }
-            }
-            else
-            {
-                // ✅ TRỰC TUYẾN: chỉ kiểm tra số lượng + đảm bảo LoaiVeId đã có sẵn
-                if (model.SoLuong <= 0)
-                {
-                    TempData["ThongBao"] = "Vui lòng nhập số lượng vé hợp lệ.";
-                    return RedirectToAction("DatVe", new { id = model.SuKienId });
-                }
-
-                if (model.SoLuong > 10)
-                {
-                    TempData["ThongBao"] = "Bạn chỉ được đặt tối đa 10 vé trong một lần.";
-                    return RedirectToAction("DatVe", new { id = model.SuKienId });
-                }
-
-                if (!model.LoaiVeId.HasValue)
-                {
-                    TempData["ThongBao"] = "Sự kiện chưa được cấu hình loại vé, không thể đặt vé trực tuyến.";
-                    return RedirectToAction("ChiTiet", new { id = model.SuKienId });
-                }
-            }
-
-            // ========================================================
-            // ✅ CẢNH BÁO TRÙNG THỜI GIAN VỚI SỰ KIỆN KHÁC (CHỈ CẢNH BÁO)
-            // ========================================================
-            var suKienTrung = await _db.Ve
-                .Include(v => v.SuKien)
-                .Where(v => v.NguoiDungId == userId
-                            && v.TrangThai == "DaThanhToan"
-                            && v.SuKienId != sk.SuKienId
-                            && v.SuKien.ThoiGianBatDau < sk.ThoiGianKetThuc
-                            && v.SuKien.ThoiGianKetThuc > sk.ThoiGianBatDau)
-                .Select(v => v.SuKien)
-                .Distinct()
+            // Xử lý ghế theo thứ tự ID để giảm nguy cơ deadlock
+            var gheChon = await _db.SoDoChoNgoi
+                .AsNoTracking()
+                .Include(g => g.LoaiVe)
+                .Where(g =>
+                    gheIds.Contains(g.ChoNgoiId) &&
+                    g.DiaDiemId == diaDiem.DiaDiemId)
+                .OrderBy(g => g.ChoNgoiId)
                 .ToListAsync();
 
-            if (suKienTrung.Any())
+            if (gheChon.Count != gheIds.Count)
             {
-                TempData["CanhBaoTrungLich"] = "Lưu ý: Bạn đã có sự kiện khác trong khoảng thời gian này. " +
-                                                "Nếu tiếp tục, lịch sẽ bị trùng.";
+                await transaction.RollbackAsync();
+                TempData["ThongBao"] = "Một số ghế không hợp lệ. Vui lòng chọn lại.";
+                return RedirectToAction("DatVe", new { id = model.SuKienId });
             }
 
-            // ========================================================
-            // Tạo đơn hàng
-            // ========================================================
-            var donHang = new DonHang
+            foreach (var ghe in gheChon)
             {
-                NguoiDungId = userId,
-                NgayDat = DateTime.Now,
-                TrangThai = "DangXuLy",
-                TongTien = 0
-            };
-            _db.DonHang.Add(donHang);
-            await _db.SaveChangesAsync();
-
-            decimal tongTien = 0;
-
-            if (laSuKienCoSoDoGhe)
-            {
-                var diaDiem = await _db.DiaDiem
-                    .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
-
-                if (diaDiem == null)
+                if (!string.Equals(
+                    ghe.TrangThai,
+                    "Trong",
+                    StringComparison.OrdinalIgnoreCase))
                 {
-                    TempData["ThongBao"] = "Sự kiện chưa cấu hình địa điểm.";
-                    return RedirectToAction("ChiTiet", new { id = model.SuKienId });
-                }
+                    await transaction.RollbackAsync();
 
-                var gheChon = await _db.SoDoChoNgoi
-                    .Include(g => g.LoaiVe)
-                    .Where(g => model.GheChonIds.Contains(g.ChoNgoiId)
-                             && g.DiaDiemId == diaDiem.DiaDiemId)
-                    .ToListAsync();
+                    TempData["ThongBao"] =
+                        $"Ghế {ghe.Hang}{ghe.Cot} không còn khả dụng.";
 
-                if (!gheChon.Any())
-                {
-                    TempData["ThongBao"] = "Không tìm thấy ghế đã chọn.";
                     return RedirectToAction("DatVe", new { id = model.SuKienId });
                 }
 
-                foreach (var ghe in gheChon)
+                // =========================================
+                // GIẢI PHÓNG TOÀN BỘ ĐƠN GIỮ GHẾ ĐÃ HẾT HẠN
+                // =========================================
+
+                if (ghe.DonHangGiuId.HasValue &&
+                    (!ghe.ThoiGianHetHanGiu.HasValue ||
+                     ghe.ThoiGianHetHanGiu.Value <= now))
                 {
-                    if (!string.Equals(ghe.TrangThai, "Trong", StringComparison.OrdinalIgnoreCase))
-                        continue;
+                    int donHangCuId = ghe.DonHangGiuId.Value;
 
-                    string maVe = $"V{DateTime.Now:yyyyMMddHHmmss}{Guid.NewGuid().ToString("N")[..4]}";
+                    // Hủy các vé chưa thanh toán của đơn cũ
+                    await _db.Database.ExecuteSqlInterpolatedAsync($@"
+                        UPDATE dbo.Ve
+                        SET TrangThai = N'Huy'
+                        WHERE DonHangId = {donHangCuId}
+                          AND TrangThai = N'ChuaThanhToan';
+                    ");
 
-                    var ve = new Ve
-                    {
-                        NguoiDungId = userId,
-                        LoaiVeId = ghe.LoaiVeId,
-                        SuKienId = sk.SuKienId,
-                        ChoNgoiId = ghe.ChoNgoiId,
-                        MaVe = maVe,
-                        NgayDat = DateTime.Now,
-                        TrangThai = "ChuaThanhToan",
-                        DonHangId = donHang.DonHangId
-                    };
+                    // Hủy đơn hàng cũ
+                    await _db.Database.ExecuteSqlInterpolatedAsync($@"
+                        UPDATE dbo.DonHang
+                        SET TrangThai = N'Huy'
+                        WHERE DonHangId = {donHangCuId}
+                          AND TrangThai = N'DangXuLy';
+                    ");
 
-                    _db.Ve.Add(ve);
-                    tongTien += ghe.LoaiVe.GiaVe;
+                    // Giải phóng tất cả ghế thuộc đơn cũ
+                    await _db.Database.ExecuteSqlInterpolatedAsync($@"
+                        UPDATE dbo.SoDoChoNgoi
+                        SET DonHangGiuId = NULL,
+                            ThoiGianHetHanGiu = NULL
+                        WHERE DonHangGiuId = {donHangCuId}
+                          AND (
+                              ThoiGianHetHanGiu IS NULL
+                              OR ThoiGianHetHanGiu <= {now}
+                          );
+                    ");
                 }
-            }
-            else
-            {
-                // ===== ĐẶT VÉ TRỰC TUYẾN =====
-                var loaiVe = await _db.LoaiVe
-                    .FirstOrDefaultAsync(l => l.LoaiVeId == model.LoaiVeId!.Value && l.SuKienId == sk.SuKienId);
 
-                if (loaiVe == null)
+                // =========================================
+                // GIỮ GHẾ 5 PHÚT BẰNG CẬP NHẬT CÓ ĐIỀU KIỆN
+                // =========================================
+
+                int soDongCapNhat =
+                    await _db.Database.ExecuteSqlInterpolatedAsync($@"
+                        UPDATE dbo.SoDoChoNgoi
+                        SET DonHangGiuId = {donHang.DonHangId},
+                            ThoiGianHetHanGiu = {hetHan}
+                        WHERE ChoNgoiId = {ghe.ChoNgoiId}
+                          AND TrangThai = N'Trong'
+                          AND (
+                              DonHangGiuId IS NULL
+                              OR ThoiGianHetHanGiu IS NULL
+                              OR ThoiGianHetHanGiu <= {now}
+                          );
+                    ");
+
+                if (soDongCapNhat != 1)
                 {
-                    TempData["ThongBao"] = "Loại vé không hợp lệ.";
+                    await transaction.RollbackAsync();
+
+                    TempData["ThongBao"] =
+                        $"Ghế {ghe.Hang}{ghe.Cot} đang được khách khác giữ hoặc đã được đặt. Vui lòng chọn ghế khác.";
+
                     return RedirectToAction("DatVe", new { id = model.SuKienId });
                 }
 
-                for (int i = 0; i < model.SoLuong; i++)
+                // Tạo vé thuộc đơn mới
+                var ve = new Ve
                 {
-                    string maVe = $"V{DateTime.Now:yyyyMMddHHmmss}{Guid.NewGuid().ToString("N")[..4]}";
+                    NguoiDungId = userId,
+                    LoaiVeId = ghe.LoaiVeId,
+                    SuKienId = sk.SuKienId,
+                    ChoNgoiId = ghe.ChoNgoiId,
+                    MaVe = $"V{DateTime.Now:yyyyMMddHHmmss}{Guid.NewGuid().ToString("N")[..4]}",
+                    NgayDat = now,
+                    TrangThai = "ChuaThanhToan",
+                    DonHangId = donHang.DonHangId
+                };
 
-                    var ve = new Ve
-                    {
-                        NguoiDungId = userId,
-                        LoaiVeId = loaiVe.LoaiVeId,
-                        SuKienId = sk.SuKienId,
-                        ChoNgoiId = null,
-                        MaVe = maVe,
-                        NgayDat = DateTime.Now,
-                        TrangThai = "ChuaThanhToan",
-                        DonHangId = donHang.DonHangId
-                    };
-
-                    _db.Ve.Add(ve);
-                    tongTien += loaiVe.GiaVe;
-                }
+                _db.Ve.Add(ve);
+                tongTien += ghe.LoaiVe.GiaVe;
             }
-
-            if (tongTien <= 0)
-            {
-                TempData["ThongBao"] = "Không tạo được vé hợp lệ.";
-                return RedirectToAction("ChiTiet", new { id = model.SuKienId });
-            }
-
-            donHang.TongTien = tongTien;
-
-            try
-            {
-                await _db.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                TempData["ThongBao"] = "Có lỗi khi lưu dữ liệu. Vui lòng thử lại.";
-                return RedirectToAction("ChiTiet", new { id = model.SuKienId });
-            }
-
-            return RedirectToAction("ThanhToan", new { id = donHang.DonHangId });
         }
+        else
+        {
+            // =========================================
+            // ĐẶT VÉ TRỰC TUYẾN
+            // =========================================
+
+            var loaiVe = await _db.LoaiVe
+                .FirstOrDefaultAsync(l =>
+                    l.LoaiVeId == model.LoaiVeId!.Value &&
+                    l.SuKienId == sk.SuKienId);
+
+            if (loaiVe == null)
+            {
+                await transaction.RollbackAsync();
+                TempData["ThongBao"] = "Loại vé không hợp lệ.";
+                return RedirectToAction("DatVe", new { id = model.SuKienId });
+            }
+
+            for (int i = 0; i < model.SoLuong; i++)
+            {
+                var ve = new Ve
+                {
+                    NguoiDungId = userId,
+                    LoaiVeId = loaiVe.LoaiVeId,
+                    SuKienId = sk.SuKienId,
+                    ChoNgoiId = null,
+                    MaVe = $"V{DateTime.Now:yyyyMMddHHmmss}{Guid.NewGuid().ToString("N")[..4]}",
+                    NgayDat = now,
+                    TrangThai = "ChuaThanhToan",
+                    DonHangId = donHang.DonHangId
+                };
+
+                _db.Ve.Add(ve);
+                tongTien += loaiVe.GiaVe;
+            }
+        }
+
+        if (tongTien <= 0)
+        {
+            await transaction.RollbackAsync();
+            TempData["ThongBao"] = "Không tạo được vé hợp lệ.";
+            return RedirectToAction("ChiTiet", new { id = model.SuKienId });
+        }
+
+        donHang.TongTien = tongTien;
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return RedirectToAction("ThanhToan", new { id = donHang.DonHangId });
+    }
+    catch (DbUpdateException ex)
+    {
+        await transaction.RollbackAsync();
+
+        _logger.LogError(ex, "Lỗi lưu đơn đặt vé.");
+
+        TempData["ThongBao"] =
+            "Ghế vừa được khách khác đặt hoặc có lỗi khi lưu dữ liệu. Vui lòng thử lại.";
+
+        return RedirectToAction("DatVe", new { id = model.SuKienId });
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+
+        _logger.LogError(ex, "Lỗi xử lý đặt vé.");
+
+        TempData["ThongBao"] =
+            "Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.";
+
+        return RedirectToAction("DatVe", new { id = model.SuKienId });
+    }
+}
 
         // ============================================================
         // ========== THANH TOÁN (GIẢ LẬP QR) =========================
         // ============================================================
 
-        [Authorize(Roles = "KhachHang")]
-        [HttpGet]
-        public async Task<IActionResult> ThanhToan(int id)
+
+[Authorize(Roles = "KhachHang")]
+[HttpGet]
+public async Task<IActionResult> ThanhToan(int id)
+{
+    int userId = GetCurrentUserId();
+
+    await using var transaction =
+        await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+    try
+    {
+        var donHang = await _db.DonHang
+            .Include(d => d.Ves)
+                .ThenInclude(v => v.SuKien)
+            .Include(d => d.Ves)
+                .ThenInclude(v => v.LoaiVe)
+            .Include(d => d.Ves)
+                .ThenInclude(v => v.ChoNgoi)
+            .FirstOrDefaultAsync(d =>
+                d.DonHangId == id &&
+                d.NguoiDungId == userId);
+
+        if (donHang == null)
+            return NotFound();
+
+        if (donHang.TrangThai == "ThanhCong")
         {
-            int userId = GetCurrentUserId();
-
-            var donHang = await _db.DonHang
-                .Include(d => d.Ves)
-                    .ThenInclude(v => v.SuKien)
-                .Include(d => d.Ves)
-                    .ThenInclude(v => v.LoaiVe)
-                .Include(d => d.Ves)
-                    .ThenInclude(v => v.ChoNgoi)
-                .FirstOrDefaultAsync(d => d.DonHangId == id && d.NguoiDungId == userId);
-
-            if (donHang == null) return NotFound();
-
-            ViewBag.CanhBaoTrungLich = TempData["CanhBaoTrungLich"];
-
-            var vm = new ThanhToanKhVM
-            {
-                DonHangId = donHang.DonHangId,
-                TongTien = donHang.TongTien,
-                Ves = donHang.Ves.Select(v => new VeThanhToanItemVM
-                {
-                    VeId = v.VeId,
-                    MaVe = v.MaVe,
-                    TenSuKien = v.SuKien.TenSuKien,
-                    TenLoaiVe = v.LoaiVe.TenLoai ?? string.Empty,
-                    Hang = v.ChoNgoi?.Hang,
-                    Cot = v.ChoNgoi?.Cot,
-                    GiaVe = v.LoaiVe.GiaVe
-                }).ToList()
-            };
-
-            return View(vm);
+            await transaction.RollbackAsync();
+            return RedirectToAction("ThanhToanThanhCong", new { id });
         }
 
-        [Authorize(Roles = "KhachHang")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ThanhToanXacNhan(int id)
+        if (donHang.TrangThai != "DangXuLy")
         {
-            int userId = GetCurrentUserId();
+            await transaction.RollbackAsync();
+            TempData["ThongBao"] = "Đơn hàng đã bị hủy hoặc không còn hiệu lực.";
+            return RedirectToAction("VeCuaToi");
+        }
 
-            var donHang = await _db.DonHang
-                .Include(d => d.Ves)
-                    .ThenInclude(v => v.ChoNgoi)
-                .Include(d => d.Ves)
-                    .ThenInclude(v => v.LoaiVe)
-                .FirstOrDefaultAsync(d => d.DonHangId == id && d.NguoiDungId == userId);
+        if (!donHang.Ves.Any())
+        {
+            await transaction.RollbackAsync();
+            TempData["ThongBao"] = "Đơn hàng không có vé hợp lệ.";
+            return RedirectToAction("VeCuaToi");
+        }
 
-            if (donHang == null) return NotFound();
+        var veCoGhe = donHang.Ves
+            .Where(v => v.ChoNgoiId.HasValue)
+            .ToList();
 
-            if (donHang.TrangThai == "ThanhCong")
-            {
-                TempData["ThongBao"] = "Đơn hàng này đã được thanh toán trước đó.";
-                return RedirectToAction("ThanhToan", new { id });
-            }
+        if (veCoGhe.Any())
+        {
+            var gheIds = veCoGhe
+                .Select(v => v.ChoNgoiId!.Value)
+                .ToList();
 
-            foreach (var ve in donHang.Ves)
-            {
-                var tt = new ThanhToan
+            var gheList = await _db.SoDoChoNgoi
+                .Where(g => gheIds.Contains(g.ChoNgoiId))
+                .ToListAsync();
+
+            bool hetHan = gheList.Count != gheIds.Count ||
+                veCoGhe.Any(v =>
                 {
-                    VeId = ve.VeId,
-                    PhuongThuc = "QR Demo",
-                    MaGiaoDich = "DEMO-" + Guid.NewGuid().ToString("N")[..8],
-                    TrangThai = "ThanhCong",
-                    NgayThanhToan = DateTime.Now,
-                    SoTien = ve.LoaiVe.GiaVe
-                };
-                _db.ThanhToan.Add(tt);
+                    var ghe = gheList.FirstOrDefault(
+                        g => g.ChoNgoiId == v.ChoNgoiId);
 
-                ve.TrangThai = "DaThanhToan";
+                    return ghe == null ||
+                           ghe.DonHangGiuId != donHang.DonHangId ||
+                           !ghe.ThoiGianHetHanGiu.HasValue ||
+                           ghe.ThoiGianHetHanGiu.Value <= DateTime.Now ||
+                           ghe.TrangThai != "Trong";
+                });
 
-                if (ve.ChoNgoiId.HasValue && ve.ChoNgoi != null)
+            if (hetHan)
+            {
+                foreach (var ve in donHang.Ves)
                 {
-                    ve.ChoNgoi.TrangThai = "DaDat";
+                    if (ve.TrangThai == "ChuaThanhToan")
+                        ve.TrangThai = "Huy";
                 }
+
+                donHang.TrangThai = "Huy";
+
+                foreach (var ghe in gheList.Where(
+                    g => g.DonHangGiuId == donHang.DonHangId))
+                {
+                    ghe.DonHangGiuId = null;
+                    ghe.ThoiGianHetHanGiu = null;
+                }
+
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["ThongBao"] =
+                    "Thời gian giữ ghế đã hết hạn. Vui lòng đặt vé lại.";
+
+                return RedirectToAction("VeCuaToi");
             }
-
-            donHang.TrangThai = "ThanhCong";
-            await _db.SaveChangesAsync();
-
-            TempData["ThongBao"] = "Thanh toán thành công (giả lập). Vé của bạn đã được kích hoạt.";
-            return RedirectToAction("ThanhToanThanhCong", new { id = donHang.DonHangId });
         }
+
+        await transaction.CommitAsync();
+
+        ViewBag.CanhBaoTrungLich = TempData["CanhBaoTrungLich"];
+
+        var vm = new ThanhToanKhVM
+        {
+            DonHangId = donHang.DonHangId,
+            TongTien = donHang.TongTien,
+            Ves = donHang.Ves.Select(v => new VeThanhToanItemVM
+            {
+                VeId = v.VeId,
+                MaVe = v.MaVe,
+                TenSuKien = v.SuKien.TenSuKien,
+                TenLoaiVe = v.LoaiVe.TenLoai ?? string.Empty,
+                Hang = v.ChoNgoi?.Hang,
+                Cot = v.ChoNgoi?.Cot,
+                GiaVe = v.LoaiVe.GiaVe
+            }).ToList()
+        };
+
+        return View(vm);
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        _logger.LogError(ex, "Lỗi kiểm tra đơn hàng trước thanh toán.");
+
+        TempData["ThongBao"] =
+            "Không thể kiểm tra đơn hàng. Vui lòng thử lại.";
+
+        return RedirectToAction("VeCuaToi");
+    }
+}
+
 
 // ============================================================
 // ========== VÉ CỦA TÔI ======================================
@@ -927,6 +1244,114 @@ public async Task<IActionResult> YeuCauHoanHuy(YeuCauHoanHuyVM model)
         // ============================================================
         // ========== SAU KHI THANH TOÁN THÀNH CÔNG ===================
         // ============================================================
+
+[Authorize(Roles = "KhachHang")]
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> ThanhToanXacNhan(int id)
+{
+    int userId = GetCurrentUserId();
+
+    await using var transaction =
+        await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+    try
+    {
+        var donHang = await _db.DonHang
+            .Include(d => d.Ves)
+            .FirstOrDefaultAsync(d =>
+                d.DonHangId == id &&
+                d.NguoiDungId == userId);
+
+        if (donHang == null)
+            return NotFound();
+
+        if (donHang.TrangThai == "ThanhCong")
+        {
+            await transaction.RollbackAsync();
+            TempData["ThongBao"] = "Đơn hàng đã được thanh toán trước đó.";
+            return RedirectToAction("ThanhToanThanhCong", new { id });
+        }
+
+        if (donHang.TrangThai != "DangXuLy" ||
+            !donHang.Ves.Any() ||
+            donHang.Ves.Any(v => v.TrangThai != "ChuaThanhToan"))
+        {
+            await transaction.RollbackAsync();
+            TempData["ThongBao"] = "Đơn hàng không còn hợp lệ để thanh toán.";
+            return RedirectToAction("VeCuaToi");
+        }
+
+        var gheIds = donHang.Ves
+            .Where(v => v.ChoNgoiId.HasValue)
+            .Select(v => v.ChoNgoiId!.Value)
+            .ToList();
+
+        if (gheIds.Any())
+        {
+            var gheList = await _db.SoDoChoNgoi
+                .Where(g => gheIds.Contains(g.ChoNgoiId))
+                .ToListAsync();
+
+            bool gheKhongHopLe =
+                gheList.Count != gheIds.Count ||
+                gheList.Any(g =>
+                    g.DonHangGiuId != donHang.DonHangId ||
+                    !g.ThoiGianHetHanGiu.HasValue ||
+                    g.ThoiGianHetHanGiu.Value <= DateTime.Now ||
+                    g.TrangThai != "Trong");
+
+            if (gheKhongHopLe)
+            {
+                await transaction.RollbackAsync();
+                TempData["ThongBao"] =
+                    "Thời gian giữ ghế đã hết hạn hoặc ghế không còn thuộc đơn hàng. Vui lòng đặt vé lại.";
+
+                return RedirectToAction("VeCuaToi");
+            }
+
+            foreach (var ghe in gheList)
+            {
+                ghe.TrangThai = "DaDat";
+                ghe.DonHangGiuId = null;
+                ghe.ThoiGianHetHanGiu = null;
+            }
+        }
+
+        foreach (var ve in donHang.Ves)
+        {
+            ve.TrangThai = "DaThanhToan";
+        }
+
+        donHang.TrangThai = "ThanhCong";
+
+        _db.ThanhToan.Add(new ThanhToan
+        {
+            VeId = donHang.Ves.First().VeId,
+            PhuongThuc = "QR Demo",
+            MaGiaoDich = "DEMO-" + Guid.NewGuid().ToString("N")[..12],
+            TrangThai = "ThanhCong",
+            NgayThanhToan = DateTime.Now,
+            SoTien = donHang.TongTien
+        });
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        TempData["ThongBao"] = "Thanh toán QR Demo thành công.";
+
+        return RedirectToAction("ThanhToanThanhCong", new { id });
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        _logger.LogError(ex, "Lỗi xác nhận thanh toán QR Demo.");
+
+        TempData["ThongBao"] = "Thanh toán thất bại. Vui lòng thử lại.";
+
+        return RedirectToAction("ThanhToan", new { id });
+    }
+}
 
         [Authorize(Roles = "KhachHang")]
         public async Task<IActionResult> ThanhToanThanhCong(int id)
