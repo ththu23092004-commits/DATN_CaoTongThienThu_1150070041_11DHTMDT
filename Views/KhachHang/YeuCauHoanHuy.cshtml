@@ -1,7 +1,7 @@
 @model VeSuKienWeb.Models.KhachHang.YeuCauHoanHuyVM
 
 @{
-    ViewData["Title"] = "Yêu cầu hủy/hoàn vé";
+    ViewData["Title"] = "Yêu cầu hủy vé";
 
     var danhSachGhe = !string.IsNullOrWhiteSpace(Model.DanhSachGhe)
         ? Model.DanhSachGhe.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList()
@@ -268,7 +268,7 @@
 <div class="refund-page">
     <div class="refund-wrap">
         <div class="refund-header">
-            <h2>Yêu cầu hủy/hoàn vé</h2>
+            <h2>Yêu cầu hủy vé</h2>
             <p>Kiểm tra thông tin vé và nhập lý do để gửi yêu cầu xử lý.</p>
         </div>
 
@@ -312,7 +312,7 @@
                         }
 
                         <div class="info-box amount-box">
-                            <div class="info-label">Số tiền dự kiến hoàn</div>
+                            <div class="info-label">Thông tin vé yêu cầu hủy</div>
                             <div class="amount-value">@Model.SoTien.ToString("N0") đ</div>
                         </div>
                     </div>
@@ -323,13 +323,13 @@
 
                         <div>
                             <label asp-for="LyDo" class="refund-label">
-                                Lý do hủy/hoàn vé
+                                Lý do hủy vé
                             </label>
 
                             <textarea asp-for="LyDo"
                                       class="form-control refund-textarea"
                                       rows="4"
-                                      placeholder="Vui lòng nhập lý do hủy vé hoặc yêu cầu hoàn tiền..."></textarea>
+                                      placeholder="Vui lòng nhập lý do bạn muốn hủy vé..."></textarea>
 
                             <span asp-validation-for="LyDo" class="text-danger small"></span>
                         </div>
@@ -359,14 +359,14 @@
 
                 <div class="note-body">
                     <ul class="note-list">
-                        <li>Chỉ gửi yêu cầu khi vé còn đủ điều kiện hủy hoặc hoàn.</li>
+                        <li>Chỉ gửi yêu cầu khi vé còn đủ điều kiện hủy.</li>
                         <li>Lý do càng rõ ràng thì quá trình xét duyệt càng thuận tiện.</li>
                         <li>Yêu cầu sau khi gửi sẽ ở trạng thái chờ duyệt.</li>
-                        <li>Vé đã check-in hoặc sự kiện đã diễn ra có thể không được hoàn tiền.</li>
+                        <li>Vé đã check-in hoặc sự kiện đã diễn ra sẽ không đủ điều kiện hủy.</li>
                     </ul>
 
                     <div class="policy-box">
-                        <strong>Ghi chú:</strong> Số tiền hoàn thực tế có thể thay đổi theo chính sách của ban tổ chức.
+                        <strong>Ghi chú:</strong> Yêu cầu hủy vé sẽ được ban tổ chức xem xét theo chính sách của sự kiện.
                     </div>
                 </div>
             </div>

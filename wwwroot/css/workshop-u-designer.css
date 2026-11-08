@@ -1,0 +1,84 @@
+.ws-u-part {
+    position: absolute;
+    background: #f5e4cc;
+    border: 3px solid #2f2418;
+    z-index: 2;
+    box-sizing: border-box;
+}
+
+.ws-u-left {
+    border-right: 0;
+    border-radius: 14px 0 0 14px;
+}
+
+.ws-u-right {
+    border-left: 0;
+    border-radius: 0 14px 14px 0;
+}
+
+.ws-u-bottom {
+    border-top: 0;
+    border-radius: 0 0 14px 14px;
+}
+
+.ws-u-head-table {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5e4cc;
+    border: 2px solid #a97842;
+    border-radius: 10px;
+    color: #68451f;
+    font-size: 14px;
+    font-weight: 700;
+    z-index: 2;
+}
+
+.ws-u-door {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e2f3eb;
+    border: 2px solid #47977a;
+    color: #267254;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 2;
+}
+
+#wsUControls {
+    margin-top: 8px;
+}
+
+#wsUControls .ws-control-group {
+    margin-bottom: 16px;
+}
+
+#wsUControls input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: #926024;
+}
+
+#wsMap .ws-seat {
+    border-radius: 50%;
+    border: 2px solid #4e91d9;
+    background: #dcebff;
+    color: #24508a;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#wsMap .ws-seat.removed {
+    border: 1px dashed #b7bfd1;
+    background: #efe9f9;
+    color: #8b7ca6;
+    opacity: 0.85;
+}

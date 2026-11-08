@@ -1,0 +1,443 @@
+
+@{
+    Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
+    ViewData["Title"] = "Quét QR Check-in";
+}
+
+<style>
+    .qr-page {
+        padding: 20px 0 35px;
+        color: #172033;
+    }
+
+    .qr-page h1 {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .qr-description {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .qr-card {
+        width: 100%;
+        max-width: 850px;
+        background: #fff;
+        border: 1px solid #e4eaf2;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 8px 28px rgba(15,23,42,.05);
+    }
+
+    .qr-camera {
+        width: 100%;
+        max-width: 560px;
+        margin: 18px auto;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .qr-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .qr-message {
+        margin-top: 18px;
+        padding: 13px 15px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        color: #475569;
+        font-size: 14px;
+    }
+
+    .qr-success {
+        display: none;
+        margin-top: 16px;
+        padding: 18px;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 12px;
+        color: #065f46;
+        overflow-wrap: anywhere;
+    }
+
+    .qr-note {
+        margin-top: 16px;
+        color: #64748b;
+        font-size: 13px;
+    }
+    
+#qrContent {
+    display: block;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    margin-top: 10px;
+    line-height: 1.8;
+}
+
+</style>
+
+<div class="qr-page">
+
+    <h1>Quét QR Check-in</h1>
+
+    <p class="qr-description">
+        Sử dụng webcam laptop để đọc mã QR trên vé điện tử
+        của khách tham gia sự kiện.
+    </p>
+
+    <div class="qr-card">
+
+        <h5 class="fw-bold mb-3">
+            <i class="bi bi-qr-code-scan"></i>
+            Camera quét mã QR
+        </h5>
+
+        <p class="text-muted">
+            Nhấn bật camera, sau đó đưa mã QR
+            trên điện thoại vào trước webcam.
+        </p>
+
+<div class="mb-3">
+    <label for="suKienId" class="form-label fw-bold">
+        Chọn sự kiện cần check-in
+    </label>
+
+    <select id="suKienId"
+            class="form-select"
+            asp-items="ViewBag.DanhSachSuKien">
+        <option value="">-- Chọn sự kiện --</option>
+    </select>
+</div>
+
+<form id="qrAntiForgery" style="display:none">
+    @Html.AntiForgeryToken()
+</form>
+
+        <div class="qr-buttons">
+            <button type="button"
+                    id="btnStart"
+                    class="btn btn-primary"
+                    onclick="batCamera()">
+                <i class="bi bi-camera-video"></i>
+                Bật camera
+            </button>
+
+            <button type="button"
+                    id="btnStop"
+                    class="btn btn-outline-secondary"
+                    onclick="tatCamera()">
+                <i class="bi bi-camera-video-off"></i>
+                Tắt camera
+            </button>
+        </div>
+
+        <div id="qr-reader" class="qr-camera"></div>
+
+        <div id="qrMessage" class="qr-message">
+            Camera chưa được bật.
+        </div>
+
+
+<div id="qrResult" class="qr-success" role="status" aria-live="polite">
+    <strong id="qrResultTitle">
+        <i id="qrResultIcon" class="bi bi-check-circle-fill"></i>
+        <span id="qrResultText">Check-in thành công!</span>
+    </strong>
+
+    <div id="qrResultLabel" class="mt-2">
+        Thông tin đơn hàng:
+    </div>
+
+    <code id="qrContent"></code>
+</div>
+
+
+            <code id="qrContent"></code>
+        </div>
+
+
+<div class="qr-note">
+    Hệ thống xác thực mã QR và ghi nhận check-in
+    cho toàn bộ vé trong cùng đơn hàng.
+    Mỗi đơn chỉ được check-in một lần.
+</div>
+
+
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+
+<script>
+    let qrScanner = null;
+    let cameraDangBat = false;
+    let dangXuLy = false;
+
+    const qrMessage = document.getElementById("qrMessage");
+    const qrResult = document.getElementById("qrResult");
+    const qrContent = document.getElementById("qrContent");
+    const qrResultText = document.getElementById("qrResultText");
+    const qrResultIcon = document.getElementById("qrResultIcon");
+    const qrResultLabel = document.getElementById("qrResultLabel");
+    const suKienSelect = document.getElementById("suKienId");
+
+    function hienThiKetQua(thanhCong, tieuDe, noiDung) {
+        qrResult.style.display = "block";
+
+        qrResult.style.background = thanhCong
+            ? "#ecfdf5"
+            : "#fef2f2";
+
+        qrResult.style.borderColor = thanhCong
+            ? "#86efac"
+            : "#fecaca";
+
+        qrResult.style.color = thanhCong
+            ? "#065f46"
+            : "#991b1b";
+
+        qrResultText.textContent = tieuDe;
+
+        qrResultIcon.className = thanhCong
+            ? "bi bi-check-circle-fill"
+            : "bi bi-x-circle-fill";
+
+        qrResultLabel.textContent = thanhCong
+            ? "Thông tin đơn hàng:"
+            : "Lý do:";
+
+        qrContent.textContent = noiDung;
+        qrContent.style.color = thanhCong
+            ? "#047857"
+            : "#b91c1c";
+    }
+
+    async function dungCamera() {
+        const scanner = qrScanner;
+
+        if (!scanner) {
+            cameraDangBat = false;
+            return;
+        }
+
+        qrScanner = null;
+
+        try {
+            if (cameraDangBat) {
+                await scanner.stop();
+            }
+
+            scanner.clear();
+        } catch (error) {
+            console.error("Lỗi tắt camera:", error);
+
+            try {
+                scanner.clear();
+            } catch (_) {}
+        } finally {
+            cameraDangBat = false;
+        }
+    }
+
+    async function batCamera() {
+        const suKienId = suKienSelect.value;
+
+        if (!suKienId) {
+            qrMessage.textContent =
+                "Vui lòng chọn sự kiện trước khi bật camera.";
+            return;
+        }
+
+        if (cameraDangBat || dangXuLy || qrScanner) {
+            return;
+        }
+
+        if (typeof Html5Qrcode === "undefined") {
+            qrMessage.textContent =
+                "Không tải được thư viện quét mã QR.";
+            return;
+        }
+
+        qrResult.style.display = "none";
+        qrMessage.textContent = "Đang bật webcam...";
+
+        const scanner = new Html5Qrcode("qr-reader");
+        qrScanner = scanner;
+
+        try {
+            await scanner.start(
+                { facingMode: "user" },
+                {
+                    fps: 10,
+                    qrbox: {
+                        width: 220,
+                        height: 220
+                    }
+                },
+                async (decodedText) => {
+                    if (dangXuLy) return;
+
+                    dangXuLy = true;
+
+                    // Chặn đọc lặp lại ngay khi phát hiện QR.
+                    try {
+                        scanner.pause(true);
+                    } catch (_) {}
+
+                    qrMessage.textContent =
+                        "Đã đọc QR. Đang kiểm tra dữ liệu...";
+
+                    await dungCamera();
+
+                    if (!decodedText.startsWith("CHECKIN|")) {
+                        qrMessage.textContent =
+                            "Check-in không thành công.";
+
+                        hienThiKetQua(
+                            false,
+                            "Mã QR không hợp lệ!",
+                            "Đây không phải mã QR vé của hệ thống."
+                        );
+
+                        dangXuLy = false;
+                        return;
+                    }
+
+                    const tokenInput = document.querySelector(
+                        '#qrAntiForgery input[name="__RequestVerificationToken"]'
+                    );
+
+                    if (!tokenInput) {
+                        qrMessage.textContent =
+                            "Không tìm thấy mã xác thực bảo mật.";
+
+                        hienThiKetQua(
+                            false,
+                            "Không thể check-in!",
+                            "Vui lòng tải lại trang và thử lại."
+                        );
+
+                        dangXuLy = false;
+                        return;
+                    }
+
+                    const formData = new FormData();
+
+                    formData.append("maQr", decodedText);
+                    formData.append("suKienId", suKienId);
+                    formData.append(
+                        "__RequestVerificationToken",
+                        tokenInput.value
+                    );
+
+                    try {
+                        const response = await fetch(
+                            '@Url.Action("XacNhanCheckInDonHang", "BanToChuc")',
+                            {
+                                method: "POST",
+                                body: formData,
+                                credentials: "same-origin"
+                            }
+                        );
+
+                        const contentType = response.headers.get(
+                            "content-type"
+                        ) || "";
+
+                        if (!contentType.includes("application/json")) {
+                            throw new Error(
+                                "Máy chủ không trả về dữ liệu JSON."
+                            );
+                        }
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success === true) {
+                            qrMessage.textContent =
+                                data.message ||
+                                "Check-in thành công.";
+
+                            const danhSachGhe = Array.isArray(data.danhSachGhe)
+                                ? data.danhSachGhe.join(", ")
+                                : "Không có thông tin ghế";
+
+                            const noiDung =
+                                "Đơn #" + (data.donHangId ?? "Lẻ") +
+                                "\nSố vé: " + data.soVe +
+                                "\nGhế: " + danhSachGhe +
+                                "\nThời gian: " + data.thoiGianCheckIn;
+
+                            hienThiKetQua(
+                                true,
+                                "Check-in thành công!",
+                                noiDung
+                            );
+                        } else {
+                            const loi = data.message ||
+                                "Vé không đủ điều kiện check-in.";
+
+                            qrMessage.textContent =
+                                "Check-in bị từ chối.";
+
+                            hienThiKetQua(
+                                false,
+                                "Check-in không thành công!",
+                                loi
+                            );
+                        }
+
+                    } catch (error) {
+                        console.error(
+                            "Lỗi gửi yêu cầu check-in:",
+                            error
+                        );
+
+                        qrMessage.textContent =
+                            "Không xác định được kết quả từ máy chủ.";
+
+                        hienThiKetQua(
+                            false,
+                            "Không thể xác nhận check-in!",
+                            "Vui lòng kiểm tra trạng thái vé trên hệ thống " +
+                            "trước khi quét lại để tránh xử lý nhầm."
+                        );
+                    } finally {
+                        dangXuLy = false;
+                    }
+                },
+                () => {}
+            );
+
+            cameraDangBat = true;
+
+            qrMessage.textContent =
+                "Webcam đang hoạt động. Đưa mã QR vào khung hình.";
+
+        } catch (error) {
+            console.error("Lỗi bật webcam:", error);
+
+            await dungCamera();
+
+            qrMessage.textContent =
+                "Không mở được webcam: " + error.message;
+
+            dangXuLy = false;
+        }
+    }
+
+    async function tatCamera() {
+        if (dangXuLy) return;
+
+        await dungCamera();
+
+        qrMessage.textContent = "Camera đã tắt.";
+    }
+</script>
+

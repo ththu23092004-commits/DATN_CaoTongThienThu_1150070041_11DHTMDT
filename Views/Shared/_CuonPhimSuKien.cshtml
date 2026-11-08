@@ -1,0 +1,239 @@
+
+@model List<VeSuKienWeb.Models.SuKien>
+
+@{
+    var danhSachPhim = (Model ?? new List<VeSuKienWeb.Models.SuKien>())
+        .Where(s =>
+            s.TrangThaiDuyet == "DaDuyet" &&
+            s.ThoiGianKetThuc > DateTime.Now &&
+            !string.IsNullOrWhiteSpace(s.AnhSuKien))
+        .OrderBy(s => s.ThoiGianBatDau)
+        .Take(8)
+        .ToList();
+}
+
+@if (danhSachPhim.Any())
+{
+    <link rel="stylesheet"
+          href="~/css/cuon-phim-su-kien.css"
+          asp-append-version="true" />
+
+    <section class="film-event-section"
+             aria-label="Dải phim kỷ niệm sự kiện">
+
+        <div class="film-event-heading">
+            <span class="film-event-eyebrow">
+                ✦ MỘT CHÚT CẢM HỨNG ✦
+            </span>
+
+            <h2>
+                Mỗi khoảnh khắc,
+                <span>một câu chuyện.</span>
+            </h2>
+
+            <p>
+                Lướt qua những trải nghiệm đang chờ bạn khám phá.
+            </p>
+        </div>
+
+        <div class="film-event-scene">
+
+            <div class="film-event-ambient"
+                 aria-hidden="true"></div>
+
+            <canvas id="film-event-canvas"
+                    class="film-event-canvas"
+                    width="1400"
+                    height="255"
+                    role="img"
+                    aria-label="Dải cuộn phim uốn lượn hiển thị hình ảnh sự kiện">
+            </canvas>
+
+<!-- DAI PHIM UON VAO CUON BAC -->
+
+
+            <!-- CUON PHIM KIM LOAI XOAY BEN TRAI -->
+            <div class="film-event-reel"
+                 aria-hidden="true">
+
+                <div class="film-event-reel-glow"></div>
+
+                <svg class="film-event-reel-svg"
+                     viewBox="0 0 180 180"
+                     xmlns="http://www.w3.org/2000/svg">
+
+                    <defs>
+                        <linearGradient id="film-metal"
+                                        x1="0" y1="0"
+                                        x2="1" y2="1">
+
+                            <stop offset="0%"
+                                  stop-color="#fffaff" />
+
+                            <stop offset="22%"
+                                  stop-color="#b6b1c9" />
+
+                            <stop offset="47%"
+                                  stop-color="#f5effb" />
+
+                            <stop offset="72%"
+                                  stop-color="#87849e" />
+
+                            <stop offset="100%"
+                                  stop-color="#e6deef" />
+                        </linearGradient>
+
+                        <linearGradient id="film-edge"
+                                        x1="0" y1="0"
+                                        x2="1" y2="1">
+
+                            <stop offset="0%"
+                                  stop-color="#ffffff" />
+
+                            <stop offset="55%"
+                                  stop-color="#77718c" />
+
+                            <stop offset="100%"
+                                  stop-color="#e3d9f0" />
+                        </linearGradient>
+
+                        <radialGradient id="film-hub">
+                            <stop offset="0%"
+                                  stop-color="#ffffff" />
+                            <stop offset="55%"
+                                  stop-color="#c2bbd0" />
+                            <stop offset="100%"
+                                  stop-color="#67617b" />
+                        </radialGradient>
+
+                        <mask id="film-reel-holes">
+                            <rect width="180"
+                                  height="180"
+                                  fill="white" />
+
+                            <g transform="translate(90 90)">
+                                <g id="film-hole-shapes"
+                                   fill="black">
+                                    <ellipse cx="0"
+                                             cy="-47"
+                                             rx="18"
+                                             ry="27" />
+                                    <ellipse cx="0"
+                                             cy="-47"
+                                             rx="18"
+                                             ry="27"
+                                             transform="rotate(72)" />
+                                    <ellipse cx="0"
+                                             cy="-47"
+                                             rx="18"
+                                             ry="27"
+                                             transform="rotate(144)" />
+                                    <ellipse cx="0"
+                                             cy="-47"
+                                             rx="18"
+                                             ry="27"
+                                             transform="rotate(216)" />
+                                    <ellipse cx="0"
+                                             cy="-47"
+                                             rx="18"
+                                             ry="27"
+                                             transform="rotate(288)" />
+                                </g>
+                            </g>
+                        </mask>
+                    </defs>
+
+                    <!-- Bo phan quay -->
+                    <g class="film-event-reel-rotor">
+
+                        <circle cx="90"
+                                cy="90"
+                                r="85"
+                                fill="url(#film-edge)" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="78"
+                                fill="#494054" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="75"
+                                fill="url(#film-metal)"
+                                mask="url(#film-reel-holes)" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="73"
+                                fill="none"
+                                stroke="#ffffff"
+                                stroke-opacity=".8"
+                                stroke-width="2" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="84"
+                                fill="none"
+                                stroke="#5d536e"
+                                stroke-width="2.5" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="22"
+                                fill="url(#film-hub)"
+                                stroke="#5e536c"
+                                stroke-width="3" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="9"
+                                fill="#665c75"
+                                stroke="#efe6f7"
+                                stroke-width="3" />
+
+                        <circle cx="90"
+                                cy="90"
+                                r="3"
+                                fill="#faf6ff" />
+                    </g>
+                </svg>
+
+                <div class="film-event-reel-base"></div>
+
+            </div>
+
+        </div>
+
+        <div class="film-event-bottom">
+            <span class="film-event-line"></span>
+
+            <span class="film-event-note">
+                <i class="bi bi-film"></i>
+                Những khoảnh khắc đáng nhớ
+            </span>
+
+            <span class="film-event-line"></span>
+        </div>
+
+        <!-- ANH NGUON TU SQL SERVER -->
+        <div id="film-event-images"
+             class="film-event-sources"
+             hidden
+             aria-hidden="true">
+
+            @foreach (var sk in danhSachPhim)
+            {
+                <img src="@Url.Content(sk.AnhSuKien!)"
+                     alt=""
+                     data-title="@sk.TenSuKien"
+                     loading="eager"
+                     decoding="async" />
+            }
+        </div>
+
+    </section>
+
+    <script src="~/js/cuon-phim-su-kien.js"
+            asp-append-version="true"
+            defer></script>
+}

@@ -7,21 +7,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!dataElement || !map) return;
 
-    let data;
-
-    try {
-        data = JSON.parse(dataElement.textContent);
-    } catch {
-        data = null;
-    }
-
     const canvas = document.getElementById("bookingCanvas");
     const message = document.getElementById("bookingSeatMessage");
     const bookingForm = document.getElementById("bookingForm");
 
-    if (!data || !Array.isArray(data.ghe) || data.ghe.length === 0) {
-        map.replaceChildren();
+    let data;
 
+    try {
+        data = JSON.parse(dataElement.textContent || "null");
+    } catch (error) {
+        console.error("Lỗi đọc sơ đồ:", error);
+        data = null;
+    }
+
+    if (!data || !Array.isArray(data.ghe) || !data.ghe.length) {
+        map.replaceChildren();
         if (message) message.hidden = false;
         return;
     }
@@ -29,28 +29,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const width = Number(data.chieuRong) || 1000;
     const height = Number(data.chieuCao) || 700;
 
-    let zoom = 1;
+    const components = Array.isArray(data.thanhPhan)
+        ? data.thanhPhan
+        : [];
 
     const selected = new Map();
 
-    const formatMoney = value =>
-        new Intl.NumberFormat("vi-VN").format(value) + " đ";
-
-    map.style.aspectRatio = `${width} / ${height}`;
-    map.style.width = "100%";
-    map.style.height = "auto";
-    map.style.maxWidth = "740px";
-    map.style.margin = "0 auto";
-
-    function position(element, x, y, w, h) {
-        element.style.left = `${x / width * 100}%`;
-        element.style.top = `${y / height * 100}%`;
-        element.style.width = `${w / width * 100}%`;
-        element.style.height = `${h / height * 100}%`;
-    }
+    let zoom = 1;
 
     function normalizeText(value) {
-        return String(value || "")
+        return String(value ?? "")
             .replace(/đ/g, "d")
             .replace(/Đ/g, "D")
             .normalize("NFD")
@@ -63,51 +51,143 @@ document.addEventListener("DOMContentLoaded", () => {
         return normalizeText(seat.trangThai);
     }
 
-    function getSeatSize(seat) {
-        const sameRow = data.ghe
-            .filter(s =>
-                s.hang === seat.hang &&
-                s.id !== seat.id
-            )
-            .map(s =>
-                Math.abs(Number(s.x) - Number(seat.x))
-            )
-            .filter(v => v > 0)
+    function formatMoney(value) {
+        return new Intl.NumberFormat("vi-VN").format(value) + " đ";
+    }
+
+    const componentTypes = components.map(
+        item => normalizeText(item.loai)
+    );
+
+    const isWorkshop = componentTypes.some(type =>
+        type.includes("bantron") ||
+        type.includes("banchuu")
+    );
+
+    // Giữ tỷ lệ tọa độ của BTC.
+    const baseMapWidth = Math.min(
+        1000,
+        Math.max(280, (canvas?.clientWidth || 760) - 32)
+    );
+
+    map.style.aspectRatio = `${width} / ${height}`;
+    map.style.width = `${baseMapWidth}px`;
+    map.style.height = "auto";
+    map.style.maxWidth = "none";
+    map.style.margin = "0 auto";
+
+    function position(element, x, y, w, h) {
+        element.style.left = `${x / width * 100}%`;
+        element.style.top = `${y / height * 100}%`;
+        element.style.width = `${w / width * 100}%`;
+        element.style.height = `${h / height * 100}%`;
+    }
+
+    // =====================================
+    // TÍNH KÍCH THƯỚC GHẾ GIỐNG TRANG CHI TIẾT
+    // =====================================
+
+    function median(values, fallback) {
+        const sorted = values
+            .filter(value => Number.isFinite(value) && value > 0)
             .sort((a, b) => a - b);
 
-        const sameColumn = data.ghe
-            .filter(s =>
-                s.cot === seat.cot &&
-                s.id !== seat.id
-            )
-            .map(s =>
-                Math.abs(Number(s.y) - Number(seat.y))
-            )
-            .filter(v => v > 0)
+        if (!sorted.length) return fallback;
+
+        const middle = Math.floor(sorted.length / 2);
+
+        return sorted.length % 2
+            ? sorted[middle]
+            : (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    function positiveGaps(values) {
+        const result = [];
+
+        for (let i = 1; i < values.length; i++) {
+            const gap = values[i] - values[i - 1];
+
+            if (gap > 0 && gap < 150) {
+                result.push(gap);
+            }
+        }
+
+        return result;
+    }
+
+    function getSeatSize() {
+        // Ghế Workshop tròn, đường kính 48 đơn vị.
+        if (isWorkshop) {
+            return {
+                width: 48,
+                height: 48
+            };
+        }
+
+        const rows = new Map();
+
+        data.ghe.forEach(seat => {
+            const row = String(seat.hang ?? "");
+
+            if (!rows.has(row)) {
+                rows.set(row, []);
+            }
+
+            rows.get(row).push(Number(seat.x));
+        });
+
+        const xGaps = [];
+
+        for (const xs of rows.values()) {
+            const sorted = [...new Set(xs)]
+                .filter(Number.isFinite)
+                .sort((a, b) => a - b);
+
+            xGaps.push(...positiveGaps(sorted));
+        }
+
+        const ys = [...new Set(
+            data.ghe.map(seat => Number(seat.y))
+        )]
+            .filter(Number.isFinite)
             .sort((a, b) => a - b);
 
-        const w = sameRow.length ? sameRow[0] * 0.75 : 16;
-        const h = sameColumn.length ? sameColumn[0] * 0.75 : 16;
+        const cellWidth = median(xGaps, 80);
+        const cellHeight = median(positiveGaps(ys), 80);
 
         return {
-            width: Math.max(10, Math.min(40, w)),
-            height: Math.max(10, Math.min(40, h))
+            width: Math.max(
+                7,
+                cellWidth - Math.min(5, cellWidth * 0.12)
+            ),
+            height: Math.max(
+                7,
+                cellHeight - Math.min(6, cellHeight * 0.12)
+            )
         };
     }
 
-    // =========================
-    // VẼ CÁC THÀNH PHẦN SƠ ĐỒ
-    // =========================
+    const seatSize = getSeatSize();
+
+    // =====================================
+    // VẼ SÂN KHẤU, BÀN, LỐI ĐI VÀ CỬA
+    // =====================================
 
     function renderComponents() {
-        (data.thanhPhan || []).forEach(item => {
+        components.forEach(item => {
             const element = document.createElement("div");
+
             const type = normalizeText(item.loai);
             const name = item.ten || "";
 
-            if (type.includes("sankhau")) {
+            if (
+                type.includes("sankhau") ||
+                type.includes("manhinh")
+            ) {
                 element.className = "customer-stage";
-                element.textContent = name;
+                element.textContent =
+                    name || "SÂN KHẤU / MÀN HÌNH";
+
             } else if (
                 type.includes("loidi") ||
                 type.includes("aisle")
@@ -118,9 +198,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     "aria-label",
                     name || "Lối đi"
                 );
+
             } else if (type.includes("cua")) {
                 element.className = "customer-door";
                 element.textContent = name;
+
+            } else if (type.includes("bantron")) {
+                element.className =
+                    "customer-component customer-round-table";
+                element.textContent = name;
+
+            } else if (type.includes("banchuu")) {
+                element.className =
+                    "customer-component customer-u-part";
+
+            } else if (type.includes("banchutoa")) {
+                element.className =
+                    "customer-component customer-chair-table";
+                element.textContent = name || "BÀN CHỦ TỌA";
+
             } else {
                 element.className = "customer-component";
                 element.textContent = name;
@@ -138,9 +234,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // =========================
-    // THỐNG KÊ VÀ THANH TOÁN
-    // =========================
+    // =====================================
+    // CẬP NHẬT THANH TOÁN
+    // =====================================
 
     function updateSummary() {
         const seats = [...selected.values()];
@@ -150,9 +246,14 @@ document.addEventListener("DOMContentLoaded", () => {
             0
         );
 
-        const countElement = document.getElementById("selectedCount");
-        const totalElement = document.getElementById("bookingTotal");
-        const details = document.getElementById("selectedTicketDetails");
+        const countElement =
+            document.getElementById("selectedCount");
+
+        const totalElement =
+            document.getElementById("bookingTotal");
+
+        const details =
+            document.getElementById("selectedTicketDetails");
 
         if (countElement) {
             countElement.textContent = seats.length;
@@ -169,11 +270,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const empty = document.createElement("p");
                 empty.className = "ticket-empty";
                 empty.textContent = "Chưa có ghế được chọn.";
-
                 details.appendChild(empty);
-            } else {
-                // Hiển thị mã ghế
 
+            } else {
                 const codeTitle = document.createElement("div");
                 codeTitle.className = "payment-detail-label";
                 codeTitle.textContent = "Vị trí ghế";
@@ -185,14 +284,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const tag = document.createElement("span");
 
                     tag.className = "payment-seat-code";
-                    tag.textContent = seat.hang + seat.cot;
+                    tag.textContent =
+                        `${seat.hang}${seat.cot}`;
 
                     codeList.appendChild(tag);
                 });
 
                 details.append(codeTitle, codeList);
-
-                // Thống kê từng loại vé
 
                 const groups = {};
 
@@ -210,13 +308,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     groups[name].total += seat.giaVe;
                 });
 
-                const priceTitle = document.createElement("div");
+                const priceTitle =
+                    document.createElement("div");
 
                 priceTitle.className =
                     "payment-detail-label payment-price-heading";
 
                 priceTitle.textContent = "Chi tiết giá vé";
-
                 details.appendChild(priceTitle);
 
                 Object.entries(groups).forEach(([name, item]) => {
@@ -238,36 +336,38 @@ document.addEventListener("DOMContentLoaded", () => {
                     left.append(title, unitPrice);
 
                     const subtotal = document.createElement("strong");
-
                     subtotal.className = "ticket-detail-price";
                     subtotal.textContent = formatMoney(item.total);
 
                     row.append(left, subtotal);
-
                     details.appendChild(row);
                 });
             }
         }
 
-        // Thống kê trạng thái ghế
-
-        const available = data.ghe.filter(seat =>
-            getSeatStatus(seat) === "trong"
+        // Thống kê ghế từ dữ liệu hiện tại.
+        const available = data.ghe.filter(
+            seat => getSeatStatus(seat) === "trong"
         ).length;
 
-        const holding = data.ghe.filter(seat =>
-            getSeatStatus(seat) === "danggiu"
+        const holding = data.ghe.filter(
+            seat => getSeatStatus(seat) === "danggiu"
         ).length;
 
         const booked = data.ghe.length - available - holding;
 
-const totalSeatsElement = document.getElementById("totalSeats");
-const availableElement = document.getElementById("availableSeats");
-const bookedElement = document.getElementById("bookedSeats");
+        const totalSeatsElement =
+            document.getElementById("totalSeats");
 
-if (totalSeatsElement) {
-    totalSeatsElement.textContent = data.ghe.length;
-}
+        const availableElement =
+            document.getElementById("availableSeats");
+
+        const bookedElement =
+            document.getElementById("bookedSeats");
+
+        if (totalSeatsElement) {
+            totalSeatsElement.textContent = data.ghe.length;
+        }
 
         if (availableElement) {
             availableElement.textContent = available;
@@ -277,9 +377,8 @@ if (totalSeatsElement) {
             bookedElement.textContent = booked;
         }
 
-        // Bổ sung số ghế đang giữ
-
-        let holdingElement = document.getElementById("holdingSeats");
+        let holdingElement =
+            document.getElementById("holdingSeats");
 
         if (!holdingElement) {
             const countContainer =
@@ -303,38 +402,54 @@ if (totalSeatsElement) {
         }
     }
 
-    // =========================
-    // VẼ GHẾ
-    // =========================
+    // =====================================
+    // VẼ GHẾ VÀ XỬ LÝ CHỌN GHẾ
+    // =====================================
 
     function renderSeats() {
         data.ghe.forEach(seat => {
             const label = document.createElement("label");
             const input = document.createElement("input");
+            const text = document.createElement("span");
 
-            const isVip = normalizeText(seat.khu).includes("vip");
+            const id = Number(seat.id);
             const status = getSeatStatus(seat);
+
+            const isVip =
+                normalizeText(seat.khu).includes("vip");
 
             const isAvailable = status === "trong";
             const isHolding = status === "danggiu";
             const isBooked = !isAvailable && !isHolding;
 
-            const isSelected = selected.has(Number(seat.id));
+            const isSelected = selected.has(id);
 
             label.className = "customer-seat";
+
+            if (isWorkshop) {
+                label.classList.add("workshop-seat");
+            }
 
             if (isBooked) {
                 label.classList.add("booked");
                 label.title = "Ghế đã được đặt";
+
             } else if (isHolding) {
                 label.classList.add("holding");
                 label.title = "Ghế đang được khách khác giữ";
+
             } else if (isSelected) {
                 label.classList.add("selected");
                 label.title = "Ghế bạn đang chọn";
+
             } else {
-                label.classList.add(isVip ? "vip" : "normal");
-                label.title = isVip ? "Ghế VIP" : "Ghế thường";
+                label.classList.add(
+                    isVip ? "vip" : "normal"
+                );
+
+                label.title = isVip
+                    ? "Ghế VIP"
+                    : "Ghế thường";
             }
 
             input.type = "checkbox";
@@ -344,31 +459,28 @@ if (totalSeatsElement) {
             input.disabled = !isAvailable;
             input.className = "customer-seat-input";
 
-            const text = document.createElement("span");
-
             text.textContent =
                 `${seat.hang || ""}${seat.cot || ""}`;
 
             label.append(input, text);
 
-            const size = getSeatSize(seat);
-
             position(
                 label,
                 Number(seat.x) || 0,
                 Number(seat.y) || 0,
-                size.width,
-                size.height
+                seatSize.width,
+                seatSize.height
             );
 
             input.addEventListener("change", () => {
-                const id = Number(seat.id);
-
                 if (input.checked) {
                     if (selected.size >= 10) {
                         input.checked = false;
 
-                        alert("Bạn chỉ được chọn tối đa 10 ghế.");
+                        alert(
+                            "Bạn chỉ được chọn tối đa 10 ghế."
+                        );
+
                         return;
                     }
 
@@ -376,9 +488,11 @@ if (totalSeatsElement) {
                         id,
                         hang: seat.hang,
                         cot: seat.cot,
-                        tenLoai: seat.tenLoai || seat.khu || "Thường",
+                        tenLoai:
+                            seat.tenLoai || seat.khu || "Thường",
                         giaVe: Number(seat.giaVe) || 0
                     });
+
                 } else {
                     selected.delete(id);
                 }
@@ -390,9 +504,9 @@ if (totalSeatsElement) {
         });
     }
 
-    // =========================
-    // RENDER TOÀN BỘ SƠ ĐỒ
-    // =========================
+    // =====================================
+    // VẼ LẠI SƠ ĐỒ
+    // =====================================
 
     function render() {
         map.replaceChildren();
@@ -402,18 +516,20 @@ if (totalSeatsElement) {
         updateSummary();
     }
 
-    // =========================
+    // =====================================
     // PHÓNG TO / THU NHỎ
-    // =========================
+    // =====================================
 
     function applyZoom() {
-        map.style.transform = `scale(${zoom})`;
-        map.style.transformOrigin = "top left";
+        // Thay đổi chiều rộng thực thay vì transform scale.
+        // Tránh lỗi vùng cuộn và lệch vị trí.
+        map.style.transform = "none";
 
-        if (canvas) {
-            canvas.style.minHeight =
-                `${Math.max(350, map.offsetHeight * zoom + 30)}px`;
-        }
+        map.style.width =
+            `${Math.round(baseMapWidth * zoom)}px`;
+
+        map.style.margin =
+            zoom > 1 ? "0" : "0 auto";
 
         const zoomValue =
             document.getElementById("bookingZoomValue");
@@ -424,29 +540,31 @@ if (totalSeatsElement) {
         }
     }
 
-    document.getElementById("bookingZoomIn")?.addEventListener("click", () => {
-        zoom = Math.min(2, zoom + 0.2);
-        applyZoom();
-    });
+    document.getElementById("bookingZoomIn")
+        ?.addEventListener("click", () => {
+            zoom = Math.min(2, zoom + 0.2);
+            applyZoom();
+        });
 
-    document.getElementById("bookingZoomOut")?.addEventListener("click", () => {
-        zoom = Math.max(0.5, zoom - 0.2);
-        applyZoom();
-    });
+    document.getElementById("bookingZoomOut")
+        ?.addEventListener("click", () => {
+            zoom = Math.max(0.5, zoom - 0.2);
+            applyZoom();
+        });
 
-    document.getElementById("bookingZoomReset")?.addEventListener("click", () => {
-        zoom = 1;
-        applyZoom();
-    });
+    document.getElementById("bookingZoomReset")
+        ?.addEventListener("click", () => {
+            zoom = 1;
+            applyZoom();
+        });
 
-    // =========================
+    // =====================================
     // KIỂM TRA TRƯỚC KHI ĐẶT VÉ
-    // =========================
+    // =====================================
 
     bookingForm?.addEventListener("submit", event => {
         if (selected.size === 0) {
             event.preventDefault();
-
             alert("Vui lòng chọn ít nhất một ghế.");
             return;
         }
@@ -454,7 +572,9 @@ if (totalSeatsElement) {
         if (selected.size > 10) {
             event.preventDefault();
 
-            alert("Bạn chỉ được chọn tối đa 10 ghế.");
+            alert(
+                "Bạn chỉ được chọn tối đa 10 ghế."
+            );
         }
     });
 

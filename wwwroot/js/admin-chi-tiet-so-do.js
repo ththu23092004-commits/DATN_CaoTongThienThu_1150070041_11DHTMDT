@@ -1,6 +1,8 @@
 
 "use strict";
 
+const NS = "http://www.w3.org/2000/svg";
+
 document.addEventListener("DOMContentLoaded", () => {
     const svg = document.getElementById("adminSeatMap");
     const source = document.getElementById("adminSeatMapData");
@@ -9,32 +11,97 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!svg || !source) return;
 
-    let data;
+    let data = null;
 
     try {
         data = JSON.parse(source.textContent || "null");
-    } catch {
-        data = null;
+    } catch (error) {
+        console.error("Không đọc được dữ liệu sơ đồ:", error);
     }
 
-    if (!data) {
+    const seats = Array.isArray(data?.seats)
+        ? data.seats
+        : Array.isArray(data?.ghe)
+            ? data.ghe
+            : [];
+
+    const components = Array.isArray(data?.components)
+        ? data.components
+        : Array.isArray(data?.thanhPhan)
+            ? data.thanhPhan
+            : [];
+
+    if (!data || (!seats.length && !components.length)) {
         svg.hidden = true;
-        if (empty) empty.hidden = false;
+
+        if (empty) {
+            empty.hidden = false;
+        }
+
         return;
     }
 
-    const NS = "http://www.w3.org/2000/svg";
-    const width = Number(data.chieuRong) || 1000;
-    const height = Number(data.chieuCao) || 700;
-    const seats = Array.isArray(data.ghe) ? data.ghe : [];
-    const parts = Array.isArray(data.thanhPhan)
-        ? data.thanhPhan
-        : [];
+    const width = Number(data.width ?? data.chieuRong) || 1000;
+    const height = Number(data.height ?? data.chieuCao) || 700;
 
     let zoom = 1;
-    let seatLabels = [];
+    const seatLabels = [];
+
+    function getType(item) {
+        return String(item.type ?? item.loai ?? "");
+    }
+
+    function getName(item) {
+        return String(item.name ?? item.ten ?? getType(item));
+    }
+
+    function getValue(item, ...keys) {
+        for (const key of keys) {
+            if (item[key] !== undefined && item[key] !== null) {
+                return Number(item[key]);
+            }
+        }
+
+        return NaN;
+    }
+
+    const hasUShape = components.some(
+        item => getType(item) === "BanChuU"
+    );
+
+    const hasRoundTable = components.some(
+        item => getType(item) === "BanTron"
+    );
+
+    // Ưu tiên nhận diện theo thành phần sơ đồ thực tế.
+    // Admin hiện tại có thể gán nhầm layout="round" cho sự kiện trực tiếp.
+    let layout;
+
+    if (hasUShape) {
+        layout = "u";
+    } else if (hasRoundTable) {
+        layout = "round";
+    } else {
+        layout = "direct";
+    }
+
+    const isWorkshop = layout === "round" || layout === "u";
+
+    const validSeats = seats.filter(seat =>
+        seat.x != null &&
+        seat.y != null &&
+        Number.isFinite(Number(seat.x)) &&
+        Number.isFinite(Number(seat.y))
+    );
+
+    svg.hidden = false;
+
+    if (empty) {
+        empty.hidden = true;
+    }
 
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.replaceChildren();
 
     function add(tag, attributes, parent = svg) {
@@ -45,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         parent.appendChild(node);
+
         return node;
     }
 
@@ -60,12 +128,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }, parent);
 
         node.textContent = content || "";
+
         return node;
     }
 
     function addTitle(node, content) {
         const title = document.createElementNS(NS, "title");
+
         title.textContent = content;
+
         node.appendChild(title);
     }
 
@@ -73,73 +144,91 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!values.length) return fallback;
 
         const sorted = [...values].sort((a, b) => a - b);
-        const mid = Math.floor(sorted.length / 2);
+        const middle = Math.floor(sorted.length / 2);
 
         return sorted.length % 2
-            ? sorted[mid]
-            : (sorted[mid - 1] + sorted[mid]) / 2;
+            ? sorted[middle]
+            : (sorted[middle - 1] + sorted[middle]) / 2;
     }
 
-    const validSeats = seats.filter(s =>
-        s.x != null &&
-        s.y != null &&
-        Number.isFinite(Number(s.x)) &&
-        Number.isFinite(Number(s.y))
-    );
-
+    // Tính kích thước ghế trực tiếp dựa trên tọa độ đã lưu.
     const rowGroups = new Map();
 
     validSeats.forEach(seat => {
-        const key = String(seat.hang || "");
+        const row = String(seat.row ?? seat.hang ?? "");
 
-        if (!rowGroups.has(key)) {
-            rowGroups.set(key, []);
+        if (!rowGroups.has(row)) {
+            rowGroups.set(row, []);
         }
 
-        rowGroups.get(key).push(seat);
+        rowGroups.get(row).push(seat);
     });
 
-    const xGaps = [];
+    const xSteps = [];
 
     rowGroups.forEach(row => {
-        const xs = [...new Set(row.map(s => Number(s.x)))]
-            .sort((a, b) => a - b);
+        const xs = [...new Set(
+            row.map(seat => Number(seat.x))
+        )].sort((a, b) => a - b);
 
         for (let i = 1; i < xs.length; i++) {
-            const gap = xs[i] - xs[i - 1];
+            const step = xs[i] - xs[i - 1];
 
-            if (gap > 0 && gap < 150) {
-                xGaps.push(gap);
+            if (step > 0 && step < 150) {
+                xSteps.push(step);
             }
         }
     });
 
-    const ys = [...new Set(validSeats.map(s => Number(s.y)))]
-        .sort((a, b) => a - b);
+    const ySteps = [];
 
-    const yGaps = [];
+    const uniqueY = [...new Set(
+        validSeats.map(seat => Number(seat.y))
+    )].sort((a, b) => a - b);
 
-    for (let i = 1; i < ys.length; i++) {
-        const gap = ys[i] - ys[i - 1];
+    for (let i = 1; i < uniqueY.length; i++) {
+        const step = uniqueY[i] - uniqueY[i - 1];
 
-        if (gap > 0 && gap < 150) {
-            yGaps.push(gap);
+        if (step > 0 && step < 150) {
+            ySteps.push(step);
         }
     }
 
-    const columnStep = median(xGaps, 70);
-    const rowStep = median(yGaps, 62);
+    const xStep = median(xSteps, 64);
+    const yStep = median(ySteps, 64);
 
-    const seatWidth = Math.max(
-        7,
-        Math.min(58, columnStep * 0.82)
-    );
+    const seatWidth = isWorkshop
+        ? 48
+        : Math.max(12, Math.min(70, xStep - Math.min(5, xStep * 0.12)));
 
-    const seatHeight = Math.max(
-        7,
-        Math.min(55, rowStep * 0.78)
-    );
+    const seatHeight = isWorkshop
+        ? 48
+        : Math.max(12, Math.min(70, yStep - Math.min(6, yStep * 0.12)));
 
+    // Tạo họa tiết lối đi chéo giống sơ đồ thiết kế trực tiếp.
+    const defs = add("defs", {});
+
+    const pattern = add("pattern", {
+        id: "adminSeatAislePattern",
+        width: 12,
+        height: 12,
+        patternUnits: "userSpaceOnUse",
+        patternTransform: "rotate(135)"
+    }, defs);
+
+    add("rect", {
+        width: 12,
+        height: 12,
+        fill: "#f5f6f7"
+    }, pattern);
+
+    add("rect", {
+        width: 5,
+        height: 12,
+        fill: "#e9ecef"
+    }, pattern);
+
+    // Nền sơ đồ.
     add("rect", {
         x: 0,
         y: 0,
@@ -148,99 +237,235 @@ document.addEventListener("DOMContentLoaded", () => {
         fill: "#ffffff"
     });
 
-    const order = {
+    const partOrder = {
         LoiDi: 1,
         VatCan: 2,
-        SanKhau: 3,
+        BanTron: 3,
+        BanChuU: 3,
+        BanChuToa: 3,
+        SanKhau: 4,
         ManHinh: 4,
         CuaVao: 5,
-        CuaThoatHiem: 6
+        CuaThoatHiem: 5,
+        CuaRaVao: 5
     };
 
-    [...parts]
+    // Vẽ sân khấu, lối đi, bàn và cửa.
+    [...components]
         .sort((a, b) =>
-            (order[a.loai] || 10) - (order[b.loai] || 10)
+            (partOrder[getType(a)] ?? 10) -
+            (partOrder[getType(b)] ?? 10)
         )
         .forEach(part => {
-            const x = Number(part.x);
-            const y = Number(part.y);
-            const w = Number(part.rong);
-            const h = Number(part.cao);
+            const x = getValue(part, "x", "viTriX");
+            const y = getValue(part, "y", "viTriY");
+            const w = getValue(part, "width", "rong", "chieuRong");
+            const h = getValue(part, "height", "cao", "chieuCao");
+
+            const type = getType(part);
+            const name = getName(part);
 
             if (![x, y, w, h].every(Number.isFinite)) return;
             if (w <= 0 || h <= 0) return;
 
+            const isRoundTable = type === "BanTron";
+            const isUShape = type === "BanChuU";
+            const isHeadTable = type === "BanChuToa";
+
             const isStage =
-                part.loai === "SanKhau" ||
-                part.loai === "ManHinh";
+                type === "SanKhau" ||
+                type === "ManHinh";
 
             const isDoor =
-                part.loai === "CuaVao" ||
-                part.loai === "CuaThoatHiem";
+                type === "CuaVao" ||
+                type === "CuaThoatHiem" ||
+                type === "CuaRaVao";
 
-            const isAisle = part.loai === "LoiDi";
+            const isAisle = type === "LoiDi";
+            const isObstacle = type === "VatCan";
 
-            const fill = isStage
-                ? "#e1eaf6"
-                : isDoor
-                    ? "#e8f5ee"
-                    : isAisle
-                        ? "#f0f3f7"
-                        : "#e7ebef";
+            // Bàn chữ U được vẽ chung ở phần dưới.
+            if (isUShape) return;
 
-            const stroke = isStage
-                ? "#9cb4d3"
-                : isDoor
-                    ? "#8ac6a6"
-                    : isAisle
-                        ? "#e2e7ed"
-                        : "#bdc6d2";
+            let fill;
+            let stroke;
+            let textColor;
+
+            if (isStage && isWorkshop) {
+                fill = "#956022";
+                stroke = "#956022";
+                textColor = "#ffffff";
+            } else if (isStage) {
+                fill = "#e1eaf6";
+                stroke = "#9cb4d3";
+                textColor = "#344e71";
+            } else if (isDoor) {
+                fill = "#e8f5ee";
+                stroke = "#80c9a5";
+                textColor = "#27694d";
+            } else if (isAisle) {
+                fill = "url(#adminSeatAislePattern)";
+                stroke = "none";
+                textColor = "#27694d";
+            } else if (isRoundTable || isHeadTable) {
+                fill = "#f7e9d4";
+                stroke = "#a98552";
+                textColor = "#76512c";
+            } else {
+                fill = "#e7ebef";
+                stroke = "#bdc6d2";
+                textColor = "#27694d";
+            }
 
             const group = add("g", {});
+            let shape;
 
-            const rect = add("rect", {
-                x,
-                y,
-                width: w,
-                height: h,
-                rx: isAisle ? 2 : 10,
-                fill,
-                stroke,
-                "stroke-width": isAisle ? 0.5 : 1.5
-            }, group);
+            if (isRoundTable) {
+                shape = add("circle", {
+                    cx: x + w / 2,
+                    cy: y + h / 2,
+                    r: Math.min(w, h) / 2,
+                    fill,
+                    stroke,
+                    "stroke-width": 2
+                }, group);
+            } else {
+                shape = add("rect", {
+                    x,
+                    y,
+                    width: w,
+                    height: h,
+                    rx: isAisle ? 0 : isDoor ? 8 : 10,
+                    fill,
+                    stroke,
+                    "stroke-width": isAisle ? 0 : 1.5
+                }, group);
+            }
 
-            addTitle(rect, part.ten || part.loai);
+            addTitle(shape, name);
 
-            if (!isAisle && part.loai !== "VatCan") {
+            if (!isAisle && !isObstacle) {
                 addText(
                     x + w / 2,
                     y + h / 2,
-                    part.ten || part.loai,
-                    isStage ? 13 : 10,
-                    isStage ? "#344e71" : "#27694d",
+                    name,
+                    isRoundTable ? 12 : isStage ? 13 : isHeadTable ? 12 : 10,
+                    textColor,
                     group
                 );
             }
         });
 
+    // Vẽ bàn chữ U thành một hình liền mạch.
+    if (layout === "u") {
+        const uParts = components
+            .filter(part => getType(part) === "BanChuU")
+            .map(part => ({
+                x: getValue(part, "x", "viTriX"),
+                y: getValue(part, "y", "viTriY"),
+                width: getValue(part, "width", "rong", "chieuRong"),
+                height: getValue(part, "height", "cao", "chieuCao")
+            }))
+            .filter(part =>
+                [part.x, part.y, part.width, part.height]
+                    .every(Number.isFinite)
+            );
+
+        const verticalParts = uParts
+            .filter(part => part.height > part.width);
+
+        const horizontalParts = uParts
+            .filter(part => part.width >= part.height);
+
+        const leftLeg = verticalParts
+            .sort((a, b) => a.x - b.x)[0];
+
+        const rightLeg = verticalParts
+            .sort((a, b) => b.x - a.x)[0];
+
+        const bottomBar = horizontalParts
+            .sort((a, b) => b.y - a.y)[0];
+
+        if (leftLeg && rightLeg && bottomBar) {
+            const left = leftLeg.x;
+            const right = rightLeg.x + rightLeg.width;
+
+            const outerTop = Math.min(
+                leftLeg.y,
+                rightLeg.y
+            );
+
+            const innerLeft = leftLeg.x + leftLeg.width;
+            const innerRight = rightLeg.x;
+            const innerBottom = bottomBar.y;
+
+            const bottom = Math.max(
+                leftLeg.y + leftLeg.height,
+                rightLeg.y + rightLeg.height,
+                bottomBar.y + bottomBar.height
+            );
+
+            const path = add("path", {
+                d: [
+                    `M ${left} ${outerTop}`,
+                    `H ${innerLeft}`,
+                    `V ${innerBottom}`,
+                    `H ${innerRight}`,
+                    `V ${outerTop}`,
+                    `H ${right}`,
+                    `V ${bottom}`,
+                    `H ${left}`,
+                    "Z"
+                ].join(" "),
+                fill: "#f7e9d4",
+                stroke: "#a98552",
+                "stroke-width": 2,
+                "stroke-linejoin": "round"
+            });
+
+            addTitle(path, "Bàn chủ tọa chữ U");
+        }
+    }
+
+    // Vẽ ghế.
     let booked = 0;
+
     const seatGroup = add("g", {});
     const labelGroup = add("g", {});
 
     validSeats.forEach(seat => {
         const x = Number(seat.x);
         const y = Number(seat.y);
-        const code = `${seat.hang || ""}${seat.cot || ""}`;
-        const zone = String(seat.khu || "");
-        const vip = zone.toLowerCase().includes("vip");
 
-        const status = String(seat.trangThai || "Trong")
-            .trim()
-            .toLowerCase();
+        const row = String(seat.row ?? seat.hang ?? "");
+        const col = Number(seat.col ?? seat.cot ?? 0);
 
-        const isBooked =
-            status !== "trong" &&
-            status !== "trống";
+        const code = String(
+            seat.code ?? `${row}${col}`
+        );
+
+        const zone = String(
+            seat.zone ??
+            seat.khu ??
+            seat.tenLoai ??
+            "Thường"
+        );
+
+        const isVip = zone.toLowerCase().includes("vip");
+
+        const status = String(
+            seat.trangThai ??
+            seat.status ??
+            "Trong"
+        ).trim().toLowerCase();
+
+        const isBooked = ![
+            "trong",
+            "trống",
+            "available",
+            "con trong",
+            "còn trống"
+        ].includes(status);
 
         if (isBooked) booked++;
 
@@ -250,37 +475,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const stroke = isBooked
             ? "#a0aab7"
-            : vip
+            : isVip
                 ? "#d4a51e"
                 : "#80c783";
 
         const textColor = isBooked
             ? "#748092"
-            : vip
+            : isVip
                 ? "#9a710a"
                 : "#32763b";
 
-        const seatRect = add("rect", {
-            x,
-            y,
-            width: seatWidth,
-            height: seatHeight,
-            rx: Math.min(5, seatWidth * 0.14),
-            fill,
-            stroke,
-            "stroke-width": validSeats.length > 500 ? 0.7 : 1.3
-        }, seatGroup);
+        let seatShape;
+
+        if (isWorkshop) {
+            // Workshop: ghế hình tròn.
+            seatShape = add("circle", {
+                cx: x + seatWidth / 2,
+                cy: y + seatHeight / 2,
+                r: Math.min(seatWidth, seatHeight) / 2,
+                fill,
+                stroke,
+                "stroke-width": 1.5
+            }, seatGroup);
+        } else {
+            // Sự kiện trực tiếp: ghế hình chữ nhật.
+            seatShape = add("rect", {
+                x,
+                y,
+                width: seatWidth,
+                height: seatHeight,
+                rx: 4,
+                fill,
+                stroke,
+                "stroke-width": validSeats.length > 500 ? 0.7 : 1.3
+            }, seatGroup);
+        }
 
         addTitle(
-            seatRect,
-            `Ghế ${code} | ${zone || "Thường"} | ${isBooked ? "Đã đặt" : "Còn trống"}`
+            seatShape,
+            `Ghế ${code} | ${zone} | ${isBooked ? "Đã đặt" : "Còn trống"}`
         );
 
         const label = addText(
             x + seatWidth / 2,
             y + seatHeight / 2,
             code,
-            Math.min(10, seatWidth * 0.24, seatHeight * 0.28),
+            isWorkshop
+                ? 10
+                : Math.max(
+                    6,
+                    Math.min(10, seatWidth * 0.19, seatHeight * 0.22)
+                ),
             textColor,
             labelGroup
         );
@@ -288,6 +533,7 @@ document.addEventListener("DOMContentLoaded", () => {
         seatLabels.push(label);
     });
 
+    // Cập nhật thống kê.
     const totalEl = document.getElementById("adminSeatTotal");
     const bookedEl = document.getElementById("adminSeatBooked");
 
@@ -299,9 +545,10 @@ document.addEventListener("DOMContentLoaded", () => {
         bookedEl.textContent = booked.toLocaleString("vi-VN");
     }
 
+    // Điều khiển phóng to, thu nhỏ.
     const baseWidth = Math.max(
         500,
-        Math.min(1100, viewport?.clientWidth - 40 || 900)
+        Math.min(1100, (viewport?.clientWidth || 940) - 40)
     );
 
     function updateZoom() {
@@ -316,13 +563,12 @@ document.addEventListener("DOMContentLoaded", () => {
             zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
         }
 
-        const showSeatCodes =
-            validSeats.length <= 250 ||
-            (validSeats.length <= 500 && zoom >= 1.4) ||
-            zoom >= 2;
+        const showLabels =
+            validSeats.length <= 500 ||
+            zoom >= 1.5;
 
         seatLabels.forEach(label => {
-            label.style.display = showSeatCodes ? "" : "none";
+            label.style.display = showLabels ? "" : "none";
         });
     }
 

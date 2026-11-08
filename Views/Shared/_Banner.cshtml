@@ -1,6 +1,44 @@
 @model List<VeSuKienWeb.Models.SuKien>
 
 @{
+
+    var suKienGoiY =
+        ViewBag.GoiYSuKien as List<VeSuKienWeb.Models.SuKien>
+        ?? new List<VeSuKienWeb.Models.SuKien>();
+
+    var laKhachHang =
+        User.Identity?.IsAuthenticated == true &&
+        User.IsInRole("KhachHang");
+
+
+var giaVeTheoSuKien =
+    ViewBag.GiaVeTheoSuKien as Dictionary<int, decimal>
+    ?? new Dictionary<int, decimal>();
+
+string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
+{
+    decimal? gia = null;
+
+    if (giaVeTheoSuKien.TryGetValue(
+        sk.SuKienId, out var giaLoaiVe))
+    {
+        gia = giaLoaiVe;
+    }
+    else
+    {
+        gia = sk.GiaVeMacDinh;
+    }
+
+    if (!gia.HasValue)
+        return "Liên hệ";
+
+    if (gia.Value == 0)
+        return "Miễn phí";
+
+    return "Từ " + gia.Value.ToString("N0") + " đ";
+}
+
+
     var data = Model ?? new List<VeSuKienWeb.Models.SuKien>();
     var now = DateTime.Now;
 
@@ -518,27 +556,119 @@
 
 <div class="home-page-pro">
 
-    <section class="home-hero">
-        <div class="home-hero-inner">
-            <div>
-                <h1 class="home-hero-title">Khám phá sự kiện dành cho bạn</h1>
+ 
 
-                <p class="home-hero-desc">
-                    Tìm kiếm các sự kiện nổi bật, đặt vé nhanh chóng và check-in tiện lợi bằng mã QR.
-                </p>
+<partial name="_VeSuKienCarousel" model="Model" />
+<partial name="_CuonPhimSuKien" model="Model" />
+@if (laKhachHang)
+{
+    <section class="home-section" id="goi-y-ca-nhan">
+        <div class="section-head">
+            <div class="section-label">
+                <i class="bi bi-stars"></i>
+                GỢI Ý SỰ KIỆN
+            </div>
 
-                <form method="get" action="/KhachHang/Index" class="home-search">
-                    <i class="bi bi-search"></i>
+            <h2 class="section-title">
+                Dành riêng cho bạn
+            </h2>
 
-                    <input type="text"
-                           name="search"
-                           placeholder="Tìm kiếm sự kiện, ca sĩ, địa điểm..." />
-
-                    <button type="submit">Tìm kiếm</button>
-                </form>
+            <div class="section-sub">
+                Khám phá những sự kiện được lựa chọn
+                dựa trên sở thích và hoạt động của bạn.
+                Khi chưa đủ dữ liệu, hệ thống ưu tiên
+                các sự kiện sắp diễn ra.
             </div>
         </div>
+
+        @if (suKienGoiY.Any())
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+                @foreach (var sk in suKienGoiY)
+                {
+                    var img = Url.Content(
+                        string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                            ? "~/images/default-event.jpg"
+                            : sk.AnhSuKien);
+
+                    <div class="col">
+                        <a asp-controller="KhachHang"
+                           asp-action="ChiTiet"
+                           asp-route-id="@sk.SuKienId"
+                           class="event-link">
+
+                            <div class="event-card">
+                                <div class="event-image">
+                                    <img src="@img"
+                                         alt="@sk.TenSuKien"
+                                         loading="lazy" />
+
+                                    <div class="date-badge">
+                                        <strong>
+                                            @sk.ThoiGianBatDau.ToString("dd")
+                                        </strong>
+                                        <span>
+                                            TH @sk.ThoiGianBatDau.ToString("MM")
+                                        </span>
+                                    </div>
+
+                                    <div class="event-status">
+                                        <i class="bi bi-stars"></i>
+                                        Gợi ý
+                                    </div>
+                                </div>
+
+                                <div class="event-body">
+                                    <span class="event-type">
+                                        @(sk.LoaiSuKien?.TenLoai ?? "Sự kiện")
+                                    </span>
+
+                                    <div class="event-name">
+                                        @sk.TenSuKien
+                                    </div>
+
+                                    <div class="event-time">
+                                        <i class="bi bi-clock"></i>
+                                        @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                    </div>
+
+                                    @if (sk.DiaDiem != null)
+                                    {
+                                        <div class="event-location">
+                                            <i class="bi bi-geo-alt"></i>
+                                            @(string.IsNullOrWhiteSpace(
+                                                sk.DiaDiem.TenDiaDiem)
+                                                ? sk.DiaDiem.DiaChi
+                                                : sk.DiaDiem.TenDiaDiem)
+                                        </div>
+                                    }
+
+                                    <div class="event-bottom">
+<div class="event-price">
+    @HienThiGiaVe(sk)
+</div>
+
+                                        <div class="event-view">
+                                            Chi tiết
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-box">
+                Hiện chưa có sự kiện phù hợp để gợi ý.
+                Hãy quay lại khi có thêm sự kiện mới nhé!
+            </div>
+        }
     </section>
+}
+
 
     <section class="home-section">
         <div class="section-head">
@@ -598,11 +728,9 @@
 }
 
                                     <div class="event-bottom">
-                                        <div class="event-price">
-                                            @(sk.GiaVeMacDinh.HasValue && sk.GiaVeMacDinh.Value > 0
-                                                ? "Từ " + sk.GiaVeMacDinh.Value.ToString("N0") + " đ"
-                                                : "Miễn phí")
-                                        </div>
+<div class="event-price">
+    @HienThiGiaVe(sk)
+</div>
 
                                         <div class="event-view">Chi tiết</div>
                                     </div>
@@ -676,11 +804,9 @@
 }
 
                                     <div class="event-bottom">
-                                        <div class="event-price">
-                                            @(sk.GiaVeMacDinh.HasValue && sk.GiaVeMacDinh.Value > 0
-                                                ? "Từ " + sk.GiaVeMacDinh.Value.ToString("N0") + " đ"
-                                                : "Miễn phí")
-                                        </div>
+<div class="event-price">
+    @HienThiGiaVe(sk)
+</div>
 
                                         <div class="event-view">Chi tiết</div>
                                     </div>
@@ -830,3 +956,7 @@
     </footer>
 
 </div>
+
+
+<partial name="_YeuThichWidget" />
+

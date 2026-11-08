@@ -4,7 +4,8 @@ using VeSuKienWeb.Data;
 using VeSuKienWeb.Config;
 using VeSuKienWeb.Services;
 
-
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 // =======================
@@ -44,8 +45,31 @@ builder.Services.AddAuthorization();
 //  MVC
 // =======================
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<GoiYSuKienService>();
 
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+
+    options.AddFixedWindowLimiter("kham-pha", limiter =>
+    {
+        limiter.PermitLimit = 8;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 0;
+        limiter.AutoReplenishment = true;
+    });
+});
+
+
+builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<GoiYSuKienService>();
+
+// Khám phá sự kiện thông minh
+builder.Services.AddHttpClient<AiIntentService>();
+
+// Tìm kiếm và xếp hạng Top-3 từ SQL Server
+builder.Services.AddScoped<KhamPhaSuKienService>();
 // =======================
 //  BUILD APP
 // =======================
@@ -63,7 +87,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseRateLimiter();
 // Authentication luôn trước Authorization
 app.UseAuthentication();
 app.UseAuthorization();

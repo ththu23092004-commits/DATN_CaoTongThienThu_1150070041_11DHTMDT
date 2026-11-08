@@ -41,6 +41,10 @@
       href="~/css/admin-chi-tiet-su-kien.css"
       asp-append-version="true" />
 
+<link rel="stylesheet"
+      href="~/css/so-do-xem-chi-tiet.css"
+      asp-append-version="true" />
+
 <div class="admin-event-detail">
     <div class="aed-heading">
         <div>
@@ -187,21 +191,25 @@
                 </div>
 
                 <div class="aed-card-body">
-                    <div class="aed-map-viewport" id="adminSeatViewport">
-                        <svg id="adminSeatMap"
-                             class="aed-seat-svg"
-                             viewBox="0 0 1000 700"
-                             xmlns="http://www.w3.org/2000/svg"
-                             role="img"
-                             aria-label="Sơ đồ chỗ ngồi của sự kiện">
-                        </svg>
+               
 
-                        <div id="adminSeatEmpty"
-                             class="aed-map-empty"
-                             hidden>
-                            Sự kiện này chưa có sơ đồ chỗ ngồi mới.
-                        </div>
-                    </div>
+<div class="aed-map-viewport" id="adminSeatViewport">
+    <svg id="adminSeatMap"
+         class="aed-seat-svg"
+         viewBox="0 0 1000 700"
+         xmlns="http://www.w3.org/2000/svg"
+         role="img"
+         aria-label="Sơ đồ chỗ ngồi của sự kiện">
+    </svg>
+
+    <div id="adminSeatEmpty"
+         class="aed-map-empty"
+         hidden>
+        Sự kiện này chưa có sơ đồ chỗ ngồi mới.
+    </div>
+</div>
+
+
 
                     <div class="aed-map-legend">
                         <div class="aed-legend-item">
@@ -409,6 +417,9 @@
         </div>
     }
 </div>
+<script id="adminSeatMapData" type="application/json">
+    @Html.Raw(ViewBag.SoDoJson ?? "null")
+</script>
 
-<script id="adminSeatMapData" type="application/json">@Html.Raw(ViewBag.SoDoJson ?? "null")</script>
-<script src="~/js/admin-chi-tiet-so-do.js" asp-append-version="true"></script>
+<script src="~/js/admin-chi-tiet-so-do.js"
+        asp-append-version="true"></script>

@@ -24,10 +24,10 @@ namespace VeSuKienWeb.Models
         [MaxLength(20)]
         public string TrangThai { get; set; } = "ChoDuyet";
 
-        // HoanTien hoặc ChuyenVe
+        // HuyVe (giữ cột để tương thích dữ liệu cũ)
         [Required]
         [MaxLength(20)]
-        public string HinhThuc { get; set; } = "HoanTien";
+        public string HinhThuc { get; set; } = "HuyVe";
 
         // Navigation
         public Ve Ve { get; set; } = null!;

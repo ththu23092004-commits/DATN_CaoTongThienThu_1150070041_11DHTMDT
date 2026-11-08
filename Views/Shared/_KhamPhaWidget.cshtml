@@ -1,0 +1,159 @@
+
+@* Widget khám phá sự kiện cho trang khách hàng *@
+
+<link rel="stylesheet"
+      href="~/css/kham-pha-widget.css"
+      asp-append-version="true" />
+
+<div id="kpWidget" class="kp-widget">
+
+    <button type="button"
+            id="kpLauncher"
+            class="kp-launcher"
+            aria-label="Mở khám phá sự kiện thông minh"
+            aria-controls="kpPanel"
+            aria-expanded="false">
+        <span class="kp-launcher-icon">✦</span>
+        <span class="kp-launcher-label">
+            Khám phá sự kiện
+        </span>
+        <span class="kp-launcher-dot"></span>
+    </button>
+
+    <section id="kpPanel"
+             class="kp-panel"
+             role="dialog"
+             aria-label="Khám phá sự kiện thông minh"
+             hidden>
+
+        <div class="kp-header">
+            <div class="kp-header-avatar">
+                ✦
+            </div>
+
+            <div class="kp-header-info">
+                <div class="kp-header-title">
+                    Khám phá sự kiện thông minh
+                </div>
+                <div class="kp-header-subtitle">
+                    <span class="kp-status-dot"></span>
+                    Tìm sự kiện theo cách của bạn
+                </div>
+            </div>
+
+            <button type="button"
+                    id="kpClose"
+                    class="kp-header-close"
+                    aria-label="Đóng cửa sổ">
+                &times;
+            </button>
+        </div>
+
+        <div class="kp-body" id="kpMessages"
+             role="log"
+             aria-live="polite"
+             aria-relevant="additions">
+
+            <div class="kp-date-divider">
+                Khám phá cùng chúng mình
+            </div>
+
+            <div class="kp-message kp-message-bot">
+                <div class="kp-bot-avatar">✦</div>
+                <div class="kp-bubble">
+                    <div class="kp-bubble-title">
+                        Xin chào! 👋
+                    </div>
+
+                    <p>
+                        Bạn muốn tham gia sự kiện như thế nào?
+                        Hãy mô tả chủ đề, nơi tổ chức,
+                        thời gian hoặc ngân sách nhé.
+                    </p>
+
+                    <p>
+                        Mình sẽ tìm tối đa
+                        <strong>3 sự kiện phù hợp nhất</strong>
+                        từ hệ thống.
+                    </p>
+                </div>
+            </div>
+
+            <div class="kp-suggestions" id="kpSuggestions">
+                <button type="button"
+                        class="kp-chip"
+                        data-kp-question="Tìm sự kiện âm nhạc ở TP.HCM">
+                    🎵 Âm nhạc tại TP.HCM
+                </button>
+
+                <button type="button"
+                        class="kp-chip"
+                        data-kp-question="Tìm sự kiện sân khấu sắp diễn ra">
+                    🎭 Sân khấu
+                </button>
+
+                <button type="button"
+                        class="kp-chip"
+                        data-kp-question="Tìm workshop về công nghệ và AI">
+                    ✨ Công nghệ &amp; AI
+                </button>
+            </div>
+        </div>
+
+        <div class="kp-bottom">
+
+            <div class="kp-bottom-tools">
+                <span>Gợi ý dựa trên dữ liệu sự kiện</span>
+
+                <button type="button"
+                        id="kpReset"
+                        class="kp-reset"
+                        title="Bắt đầu cuộc tìm kiếm mới">
+                    ↻ Tìm mới
+                </button>
+            </div>
+
+            <form id="kpForm" class="kp-form" method="post">
+                @Html.AntiForgeryToken()
+
+                <label for="kpInput"
+                       class="kp-visually-hidden">
+                    Nội dung tìm kiếm sự kiện
+                </label>
+
+                <textarea id="kpInput"
+                          name="noiDung"
+                          maxlength="500"
+                          rows="1"
+                          placeholder="Bạn muốn tìm sự kiện gì?"
+                          autocomplete="off"
+                          required></textarea>
+
+                <button type="submit"
+                        id="kpSend"
+                        class="kp-send"
+                        aria-label="Gửi câu hỏi">
+                    <svg width="19" height="19"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2.4"
+                         stroke-linecap="round"
+                         stroke-linejoin="round">
+                        <path d="M12 19V5"></path>
+                        <path d="m5 12 7-7 7 7"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="kp-note">
+                Thông tin giá và vé có thể thay đổi.
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/js/kham-pha-widget.js"
+        asp-append-version="true"
+        defer></script>
+

@@ -5,6 +5,13 @@ namespace VeSuKienWeb.Models
 {
     public class DonHang
     {
+        
+public decimal SoTienHoan { get; set; } = 0;
+
+public DateTime? NgayHoan { get; set; }
+
+public string? TrangThaiHoan { get; set; }
+
         public int DonHangId { get; set; }
         public int NguoiDungId { get; set; }
         public DateTime NgayDat { get; set; }

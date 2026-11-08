@@ -1,0 +1,607 @@
+
+/* ==========================================
+   EVENT SPACE - WAVY FILM WITH SPINNING REEL
+   Chi ap dung cho cuon phim trang tri
+   ========================================== */
+
+.film-event-section,
+.film-event-section * {
+    box-sizing: border-box;
+}
+
+.film-event-section {
+    position: relative;
+    width: 100%;
+    margin: 10px auto 48px;
+    padding: 10px 0 15px;
+    background: transparent;
+    font-family:
+        "Be Vietnam Pro",
+        "Segoe UI",
+        Arial,
+        sans-serif;
+}
+
+/* ==========================================
+   TIEU DE
+   ========================================== */
+
+.film-event-heading {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 16px 12px;
+}
+
+.film-event-eyebrow {
+    display: block;
+    margin-bottom: 10px;
+    color: #a64b93;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.film-event-heading h2 {
+    margin: 0;
+    color: #30193e;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 900;
+    line-height: 1.4;
+    letter-spacing: -0.6px;
+}
+
+.film-event-heading h2 span {
+    color: #bc4993;
+}
+
+.film-event-heading p {
+    margin: 8px 0 0;
+    color: #75617f;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* ==========================================
+   SAN KHAU CUON PHIM
+   ========================================== */
+
+.film-event-scene {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: calc(100vw - 12px);
+    max-width: 1700px;
+    height: 255px;
+
+    overflow: hidden;
+    isolation: isolate;
+}
+
+/* Vung sang mem phia sau */
+
+.film-event-ambient {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            ellipse 62% 72% at 45% 50%,
+            rgba(167, 92, 194, 0.18),
+            rgba(211, 164, 228, 0.08) 60%,
+            transparent 100%
+        );
+}
+
+/* Dai phim ve bang Canvas */
+
+.film-event-canvas {
+    position: relative;
+    z-index: 1;
+    display: block;
+
+    width: 100%;
+    height: 255px;
+
+    background: transparent;
+    pointer-events: none;
+}
+
+/* ==========================================
+   CUON PHIM BAC BEN TRAI
+   ========================================== */
+
+.film-event-reel {
+    position: absolute;
+    z-index: 3;
+
+    left: clamp(6px, 2vw, 28px);
+    top: 50%;
+
+    width: 150px;
+    height: 150px;
+
+    transform:
+        translateY(-50%)
+        rotate(-13deg);
+
+    pointer-events: none;
+}
+
+/* Quang sang quanh cuon kim loai */
+
+.film-event-reel-glow {
+    position: absolute;
+    inset: -12px;
+
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.55),
+        rgba(213, 154, 238, 0.21) 55%,
+        transparent 78%
+    );
+
+    filter: blur(13px);
+}
+
+/* SVG cuon phim */
+
+.film-event-reel-svg {
+    position: relative;
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: visible;
+
+    filter:
+        drop-shadow(0 8px 12px rgba(38, 16, 59, 0.33))
+        drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+}
+
+/* Chi phan dia kim loai xoay */
+
+.film-event-reel-rotor {
+    transform-box: view-box;
+    transform-origin: 90px 90px;
+
+    animation:
+        film-reel-spin 8s linear infinite;
+
+    will-change: transform;
+}
+
+@keyframes film-reel-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Bong nho phia duoi cuon */
+
+.film-event-reel-base {
+    position: absolute;
+
+    width: 105px;
+    height: 15px;
+
+    left: 23px;
+    bottom: -5px;
+
+    border-radius: 50%;
+
+    background: rgba(72, 35, 103, 0.25);
+    filter: blur(10px);
+
+    z-index: -1;
+}
+
+/* ==========================================
+   DONG CHU PHIA DUOI
+   ========================================== */
+
+.film-event-bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 13px;
+
+    margin-top: 2px;
+    padding: 0 15px;
+}
+
+.film-event-line {
+    display: block;
+    width: 55px;
+    height: 1px;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #b58fc9,
+        transparent
+    );
+}
+
+.film-event-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    color: #886e99;
+    font-size: 10px;
+    text-align: center;
+}
+
+.film-event-note i {
+    color: #a35abd;
+    font-size: 14px;
+}
+
+/* Khong hien anh nguon */
+
+.film-event-sources {
+    display: none !important;
+}
+
+/* ==========================================
+   TABLET
+   ========================================== */
+
+@media (max-width: 991px) {
+    .film-event-reel {
+        width: 125px;
+        height: 125px;
+        left: 8px;
+    }
+
+    .film-event-scene,
+    .film-event-canvas {
+        height: 235px;
+    }
+}
+
+/* ==========================================
+   DIEN THOAI
+   ========================================== */
+
+@media (max-width: 767px) {
+    .film-event-section {
+        margin: 8px auto 32px;
+        padding-top: 8px;
+    }
+
+    .film-event-heading {
+        padding-bottom: 9px;
+    }
+
+    .film-event-heading h2 {
+        font-size: 23px;
+    }
+
+    .film-event-heading p {
+        font-size: 11px;
+    }
+
+    .film-event-scene,
+    .film-event-canvas {
+        height: 200px;
+    }
+
+    .film-event-reel {
+        width: 88px;
+        height: 88px;
+        left: 4px;
+    }
+
+    .film-event-reel-base {
+        width: 65px;
+        left: 12px;
+        bottom: -3px;
+    }
+
+    .film-event-note {
+        font-size: 9px;
+    }
+}
+
+/* ==========================================
+   TAT CHUYEN DONG NEU NGUOI DUNG YEU CAU
+   ========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .film-event-reel-rotor {
+        animation: none;
+        will-change: auto;
+    }
+}
+
+/* ==========================================
+   CUON PHIM 3D NGHIENG - EVENT SPACE
+   Chi dieu chinh cuon bac va dai phim noi
+   ========================================== */
+
+/* Dai phim cong noi vao cuon */
+
+.film-event-feed {
+    position: absolute;
+    z-index: 2;
+
+    left: 105px;
+    top: 50%;
+
+    width: 240px;
+    height: 205px;
+
+    transform: translateY(-43%);
+
+    overflow: visible;
+    pointer-events: none;
+
+    filter: drop-shadow(
+        0 9px 9px rgba(57, 24, 76, 0.22)
+    );
+}
+
+.film-feed-shadow,
+.film-feed-body,
+.film-feed-center,
+.film-feed-shine {
+    fill: none;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+}
+
+.film-feed-shadow {
+    stroke: rgba(66, 31, 89, 0.24);
+    stroke-width: 92;
+    transform: translateY(7px);
+    filter: blur(7px);
+}
+
+.film-feed-body {
+    stroke-width: 86;
+}
+
+.film-feed-center {
+    stroke: #e5d0f0;
+    stroke-width: 65;
+}
+
+/* Anh sang nho doc theo dai phim */
+
+.film-feed-shine {
+    stroke: rgba(255, 255, 255, 0.48);
+    stroke-width: 3;
+
+    stroke-dasharray: 35 24;
+
+    animation:
+        film-feed-light 3.5s linear infinite;
+}
+
+@keyframes film-feed-light {
+    to {
+        stroke-dashoffset: 118;
+    }
+}
+
+/* ==========================================
+   CUON BAC NGHIENG 3D
+   ========================================== */
+
+.film-event-reel {
+    position: absolute;
+    z-index: 4;
+
+    left: 12px;
+    top: 50%;
+
+    width: 192px;
+    height: 192px;
+
+    transform: translateY(-50%);
+
+    perspective: 650px;
+    pointer-events: none;
+}
+
+/* Quang sang sau cuon */
+
+.film-event-reel-glow {
+    position: absolute;
+    inset: -15px;
+
+    border-radius: 50%;
+
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(232, 188, 248, 0.35) 45%,
+        transparent 77%
+    );
+
+    filter: blur(14px);
+}
+
+/* Lam dia bac nghieng giong anh mau */
+
+.film-event-reel-svg {
+    position: relative;
+    z-index: 2;
+
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    overflow: visible;
+
+    transform:
+        rotateY(-36deg)
+        rotateX(9deg)
+        rotateZ(-18deg);
+
+    transform-origin: center;
+    transform-style: preserve-3d;
+
+    filter:
+        drop-shadow(12px 12px 0 rgba(66, 52, 78, 0.32))
+        drop-shadow(17px 18px 12px rgba(42, 20, 60, 0.28))
+        drop-shadow(-3px -3px 5px rgba(255, 255, 255, 0.75));
+}
+
+/* Dia xoay deu, giu nguyen goc nghieng */
+
+.film-event-reel-rotor {
+    transform-box: view-box;
+    transform-origin: 90px 90px;
+
+    animation:
+        film-reel-spin 7s linear infinite;
+
+    will-change: transform;
+}
+
+@keyframes film-reel-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Bong do nhe duoi cuon */
+
+.film-event-reel-base {
+    position: absolute;
+
+    width: 135px;
+    height: 18px;
+
+    bottom: 2px;
+    left: 20px;
+
+    background: rgba(64, 34, 87, 0.24);
+    border-radius: 50%;
+    filter: blur(12px);
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 991px) {
+    .film-event-reel {
+        width: 155px;
+        height: 155px;
+        left: 4px;
+    }
+
+    .film-event-feed {
+        left: 75px;
+        width: 205px;
+        height: 178px;
+    }
+}
+
+@media (max-width: 767px) {
+    .film-event-reel {
+        width: 106px;
+        height: 106px;
+        left: 0;
+    }
+
+    .film-event-feed {
+        left: 46px;
+        width: 145px;
+        height: 125px;
+    }
+
+    .film-event-reel-base {
+        width: 78px;
+        left: 12px;
+        bottom: -2px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .film-event-reel-rotor,
+    .film-feed-shine {
+        animation: none;
+    }
+}
+
+/* ==========================================
+   DAI PHIM CO ANH CHAY VAO CUON BAC
+   Khong tao them dai phim gia
+   ========================================== */
+
+/* An phan dai phim nam ben trai cuon bac.
+   Phan dai phim co anh van chay binh thuong. */
+
+.film-event-canvas {
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0px,
+        transparent 100px,
+        rgba(0, 0, 0, 0.25) 135px,
+        rgba(0, 0, 0, 0.75) 165px,
+        #000 195px,
+        #000 100%
+    );
+
+    mask-image: linear-gradient(
+        to right,
+        transparent 0px,
+        transparent 100px,
+        rgba(0, 0, 0, 0.25) 135px,
+        rgba(0, 0, 0, 0.75) 165px,
+        #000 195px,
+        #000 100%
+    );
+}
+
+/* Cuon bac nam phia truoc dai phim */
+
+.film-event-reel {
+    z-index: 5;
+}
+
+/* Giu dia bac va goc nghieng da chot */
+
+.film-event-reel-svg {
+    z-index: 2;
+}
+
+/* Dien thoai: thu nho vung phim chay vao cuon */
+
+@media (max-width: 767px) {
+    .film-event-canvas {
+        -webkit-mask-image: linear-gradient(
+            to right,
+            transparent 0px,
+            transparent 55px,
+            #000 105px,
+            #000 100%
+        );
+
+        mask-image: linear-gradient(
+            to right,
+            transparent 0px,
+            transparent 55px,
+            #000 105px,
+            #000 100%
+        );
+    }
+}

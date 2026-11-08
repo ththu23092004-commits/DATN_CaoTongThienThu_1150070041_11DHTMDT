@@ -1,30 +1,67 @@
 @model List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>
 
+
 @{
     ViewData["Title"] = "Sự kiện";
+
     string? search = ViewBag.Search as string;
     string loai = Context.Request.Query["loai"].ToString();
 
     var data = Model ?? new List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>();
 
+    var goiYSuKien = ViewBag.GoiYSuKien as
+        List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>
+        ?? new List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>();
+
+bool hienThiGoiY = goiYSuKien.Any()
+    && string.IsNullOrWhiteSpace(search);
+
     if (!string.IsNullOrWhiteSpace(loai))
     {
         data = data
             .Where(x => !string.IsNullOrWhiteSpace(x.TenLoai)
-                     && x.TenLoai.Contains(loai, StringComparison.CurrentCultureIgnoreCase))
+                && x.TenLoai.Contains(loai, StringComparison.CurrentCultureIgnoreCase))
             .ToList();
     }
 
+    var idsGoiY = hienThiGoiY
+        ? goiYSuKien
+            .Where(x => !x.DaKetThuc)
+            .Select(x => x.SuKienId)
+            .Distinct()
+            .ToList()
+        : new List<int>();
+
+    var thuTuGoiY = idsGoiY
+        .Select((id, index) => new { id, index })
+        .ToDictionary(x => x.id, x => x.index);
+
     var suKienDangMo = data
         .Where(x => !x.DaKetThuc)
-        .OrderBy(x => x.ThoiGianBatDau)
         .ToList();
+
+    if (hienThiGoiY)
+    {
+        suKienDangMo = suKienDangMo
+            .OrderBy(x => thuTuGoiY.ContainsKey(x.SuKienId)
+                ? thuTuGoiY[x.SuKienId]
+                : int.MaxValue)
+            .ThenBy(x => x.ThoiGianBatDau)
+            .ToList();
+    }
+    else
+    {
+        suKienDangMo = suKienDangMo
+            .OrderBy(x => x.ThoiGianBatDau)
+            .ToList();
+    }
 
     var suKienDaDienRa = data
         .Where(x => x.DaKetThuc)
         .OrderByDescending(x => x.ThoiGianKetThuc)
         .ToList();
 }
+
 
 <style>
     .event-list-page {
@@ -208,6 +245,10 @@
         color: #64748b;
     }
 
+.status-pill.recommended {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
     .event-body-pro {
         padding: 16px 17px 17px;
     }
@@ -327,82 +368,96 @@
         </div>
     </div>
 
-    <section>
-        <div class="section-head-pro">
-            <h3 class="section-title-pro">Sự kiện đang mở đặt vé</h3>
-            <div class="section-sub-pro">Các sự kiện sắp diễn ra và còn mở cho khách đặt vé</div>
+
+
+<section>
+    <div class="section-head-pro">
+        <h3 class="section-title-pro">
+            Sự kiện đang mở đặt vé
+        </h3>
+
+        <div class="section-sub-pro">
+            Khám phá các sự kiện phù hợp với sở thích và những chương trình đang mở đăng ký.
         </div>
+    </div>
 
-        @if (suKienDangMo.Any())
-        {
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-                @foreach (var sk in suKienDangMo)
-                {
-                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
-                        ? "~/images/default-event.jpg"
-                        : sk.AnhSuKien);
+    @if (suKienDangMo.Any())
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            @foreach (var sk in suKienDangMo)
+            {
+                var laGoiY = hienThiGoiY && idsGoiY.Contains(sk.SuKienId);
+                var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                    ? "~/images/default-event.jpg"
+                    : sk.AnhSuKien);
 
-                    <div class="col">
-                        <a asp-controller="KhachHang"
-                           asp-action="ChiTiet"
-                           asp-route-id="@sk.SuKienId"
-                           class="event-card-link">
+                <div class="col">
+                    <a asp-controller="KhachHang"
+                       asp-action="ChiTiet"
+                       asp-route-id="@sk.SuKienId"
+                       class="event-card-link">
 
-                            <div class="event-card-pro">
-                                <div class="event-img-pro">
-                                    <img src="@img" alt="@sk.TenSuKien" />
+                        <div class="event-card-pro">
+                            <div class="event-img-pro">
+                                <img src="@img" alt="@sk.TenSuKien" />
 
-                                    <div class="date-badge-pro">
-                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
-                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
-                                    </div>
-
-                                    <div class="status-pill">Đang mở</div>
+                                <div class="date-badge-pro">
+                                    <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+                                    <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
                                 </div>
 
-                                <div class="event-body-pro">
-                                    <span class="event-type-pro">
-                                        @(string.IsNullOrWhiteSpace(sk.TenLoai) ? "Sự kiện" : sk.TenLoai)
-                                    </span>
+                                <div class="status-pill @(laGoiY ? "recommended" : "")">
+    @(laGoiY ? "Phù hợp với bạn" : "Đang mở")
+</div>
+                            </div>
 
-                                    <div class="event-name-pro">@sk.TenSuKien</div>
+                            <div class="event-body-pro">
+                                <span class="event-type-pro">
+                                    @(string.IsNullOrWhiteSpace(sk.TenLoai)
+                                        ? "Sự kiện" : sk.TenLoai)
+                                </span>
 
-                                    <div class="event-meta-pro">
+                                <div class="event-name-pro">@sk.TenSuKien</div>
+
+                                <div class="event-meta-pro">
+                                    <div>
+                                        <i class="bi bi-clock"></i>
+                                        @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
+                                    {
                                         <div>
-                                            <i class="bi bi-clock"></i>
-                                            @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                            <i class="bi bi-geo-alt"></i>
+                                            @sk.DiaDiem
                                         </div>
+                                    }
+                                </div>
 
-                                        @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
-                                        {
-                                            <div>
-                                                <i class="bi bi-geo-alt"></i>
-                                                @sk.DiaDiem
-                                            </div>
-                                        }
+                                <div class="event-bottom-pro">
+                                    <div class="event-price-pro">
+                                        @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
+                                            ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
+                                            : "Miễn phí")
                                     </div>
 
-                                    <div class="event-bottom-pro">
-                                        <div class="event-price-pro">
-                                            @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
-                                                ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
-                                                : "Miễn phí")
-                                        </div>
-
-                                        <div class="event-view-pro">Chi tiết</div>
-                                    </div>
+                                    <div class="event-view-pro">Chi tiết</div>
                                 </div>
                             </div>
-                        </a>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="empty-pro">Hiện chưa có sự kiện nào đang mở đặt vé.</div>
-        }
-    </section>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-pro">
+ Hiện chưa có sự kiện nào đang mở đặt vé.
+        </div>
+    }
+</section>
+
 
     <section>
         <div class="section-head-pro">
@@ -478,3 +533,5 @@
     </section>
 
 </div>
+
+<partial name="_YeuThichWidget" />

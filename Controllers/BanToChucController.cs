@@ -22,15 +22,18 @@ namespace VeSuKienWeb.Controllers
             _db = db;
         }
 
-private sealed class SoDoDuLieu
+public sealed class SoDoDuLieu
 {
     public int Width { get; set; }
     public int Height { get; set; }
+    public string? Layout { get; set; }
     public List<GheDuLieu> Seats { get; set; } = new();
     public List<ThanhPhanDuLieu> Components { get; set; } = new();
+
+    public SoDoDuLieu() { }
 }
 
-private sealed class GheDuLieu
+public sealed class GheDuLieu
 {
     public string Row { get; set; } = "";
     public int Col { get; set; }
@@ -38,9 +41,11 @@ private sealed class GheDuLieu
     public decimal X { get; set; }
     public decimal Y { get; set; }
     public string Zone { get; set; } = "";
+
+    public GheDuLieu() { }
 }
 
-private sealed class ThanhPhanDuLieu
+public sealed class ThanhPhanDuLieu
 {
     public string Type { get; set; } = "";
     public string Name { get; set; } = "";
@@ -48,6 +53,8 @@ private sealed class ThanhPhanDuLieu
     public decimal Y { get; set; }
     public decimal Width { get; set; }
     public decimal Height { get; set; }
+
+    public ThanhPhanDuLieu() { }
 }
 
 private static SoDoDuLieu? DocSoDo(string? json)
@@ -69,7 +76,7 @@ private static SoDoDuLieu? DocSoDo(string? json)
             data.Height != 700 ||
             data.Seats == null ||
             data.Components == null ||
-            data.Seats.Count is < 2 or > 1200 ||
+            data.Seats.Count is < 1 or > 1200 ||
             data.Components.Count > 20)
         {
             return null;
@@ -96,15 +103,19 @@ private static SoDoDuLieu? DocSoDo(string? json)
             }
         }
 
-        var allowed = new HashSet<string>
-        {
-            "SanKhau",
-            "ManHinh",
-            "LoiDi",
-            "CuaVao",
-            "CuaThoatHiem",
-            "VatCan"
-        };
+var allowed = new HashSet<string>
+{
+    "SanKhau",
+    "ManHinh",
+    "LoiDi",
+    "CuaVao",
+    "CuaThoatHiem",
+    "VatCan",
+    "BanTron",
+    "BanChuU",
+    "BanChuToa",
+    "CuaRaVao"
+};
 
         foreach (var part in data.Components)
         {
@@ -123,21 +134,63 @@ private static SoDoDuLieu? DocSoDo(string? json)
             }
         }
 
-        if (!data.Seats.Any(s => s.Zone == "VIP") ||
-            !data.Seats.Any(s => s.Zone == "Thuong"))
-        {
-            return null;
-        }
-
         return data;
     }
-    catch (JsonException)
+catch (JsonException)
+{
+    return null;
+}
+catch (NotSupportedException)
+{
+    return null;
+}
+}
+private static string TaoTenHangGhe(int index)
+{
+    var result = string.Empty;
+    index++;
+    while (index > 0)
     {
-        return null;
+        index--;
+        result = (char)('A' + (index % 26)) + result;
+        index /= 26;
     }
+    return result;
 }
 
+private static async Task<string?> KiemTraAnhSuKienAsync(IFormFile file)
+{
+    if (file.Length <= 0 || file.Length > 5 * 1024 * 1024)
+        return null;
+
+    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+    if (ext is not ".jpg" and not ".jpeg" and not ".png" and not ".webp")
+        return null;
+
+    var header = new byte[12];
+    await using var stream = file.OpenReadStream();
+    var read = await stream.ReadAsync(header, 0, header.Length);
+
+    bool jpg = read >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+    bool png = read >= 8 && header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47 && header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A;
+    bool webp = read >= 12 && header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 && header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50;
+
+    if ((ext is ".jpg" or ".jpeg") && jpg) return ".jpg";
+    if (ext == ".png" && png) return ".png";
+    if (ext == ".webp" && webp) return ".webp";
+    return null;
+}
+
+private async Task NapDanhSachChuDeAsync()
+{
+    ViewBag.ChuDes = await _db.ChuDeSuKien
+        .AsNoTracking()
+        .Where(x => x.TrangThai)
+        .OrderBy(x => x.TenChuDe)
+        .ToListAsync();
+}
         private int GetCurrentUserId()
+        
         {
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(idStr))
@@ -150,6 +203,7 @@ private static SoDoDuLieu? DocSoDo(string? json)
         private async Task<int> GetOrCreateToChucIdAsync()
         {
             var userId = GetCurrentUserId();
+            
 
             var toChuc = await _db.ToChucSuKien.FirstOrDefaultAsync(t => t.NguoiDungId == userId);
             if (toChuc != null) return toChuc.ToChucId;
@@ -210,6 +264,7 @@ private static SoDoDuLieu? DocSoDo(string? json)
         // ========= XÓA / ẨN SỰ KIỆN (THEO NGHIỆP VỤ BẠN YÊU CẦU) =========
         [HttpPost]
         [ValidateAntiForgeryToken]
+        
         public async Task<IActionResult> XoaSuKien(int id)
         {
             var toChucId = await GetOrCreateToChucIdAsync();
@@ -279,24 +334,50 @@ private static SoDoDuLieu? DocSoDo(string? json)
             if (loaiVes.Any())
                 _db.LoaiVe.RemoveRange(loaiVes);
 
-            // 4. Nhắc sự kiện
+            // Chỉ xóa hẳn khi chưa phát sinh vé; mọi thao tác xóa nằm trong cùng transaction.
+            await using var deleteTransaction = await _db.Database.BeginTransactionAsync();
 
+            // Xóa các dữ liệu phụ thuộc không gắn với vé.
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM dbo.NhacSuKien WHERE SuKienId = {suKienId}");
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM dbo.DanhGiaSuKien WHERE SuKienId = {suKienId}");
 
-            // Cuối cùng: XÓA SỰ KIỆN
+            // Xóa các dữ liệu phụ thuộc trực tiếp của sơ đồ và chủ đề.
+            var soDo = await _db.SoDoSuKien
+                .FirstOrDefaultAsync(x => x.SuKienId == suKienId);
+            if (soDo != null)
+            {
+                var khuVucs = await _db.KhuVucChoNgoi.Where(x => x.SoDoId == soDo.SoDoId).ToListAsync();
+                var thanhPhans = await _db.ThanhPhanSoDo.Where(x => x.SoDoId == soDo.SoDoId).ToListAsync();
+                _db.KhuVucChoNgoi.RemoveRange(khuVucs);
+                _db.ThanhPhanSoDo.RemoveRange(thanhPhans);
+                _db.SoDoSuKien.Remove(soDo);
+            }
+
+            var lienKetChuDe = await _db.SuKienChuDe
+                .Where(x => x.SuKienId == suKienId)
+                .ToListAsync();
+            _db.SuKienChuDe.RemoveRange(lienKetChuDe);
+
             _db.SuKien.Remove(sk);
-
             try
             {
                 await _db.SaveChangesAsync();
-                TempData["ThongBao"] = "Đã xóa sự kiện thành công (chưa có vé nào nên xóa hẳn).";
+                await deleteTransaction.CommitAsync();
+                TempData["ThongBao"] = "Đã xóa sự kiện thành công.";
             }
             catch (DbUpdateException)
             {
-                // Nếu vẫn dính FK (trong trường hợp còn chỗ nào sót),
-                // fallback: không xóa, chỉ ẩn cho an toàn
-                sk.TrangThaiDuyet = "An";
-                await _db.SaveChangesAsync();
-                TempData["ThongBao"] = "Không thể xóa hoàn toàn do ràng buộc dữ liệu. Sự kiện đã được ẩn.";
+                await deleteTransaction.RollbackAsync();
+                _db.ChangeTracker.Clear();
+                var eventAgain = await _db.SuKien.FirstOrDefaultAsync(x => x.SuKienId == suKienId && x.ToChucId == toChucId);
+                if (eventAgain != null)
+                {
+                    eventAgain.TrangThaiDuyet = "An";
+                    await _db.SaveChangesAsync();
+                }
+                TempData["ThongBao"] = "Sự kiện còn dữ liệu liên quan nên hệ thống đã ẩn sự kiện thay vì xóa hẳn.";
             }
 
             return RedirectToAction("Index");
@@ -329,12 +410,12 @@ private static SoDoDuLieu? DocSoDo(string? json)
                 .ToListAsync();
 
             ViewBag.LoaiId = new SelectList(loaiHienThi, "LoaiId", "TenLoai");
-
+await NapDanhSachChuDeAsync();
             var model = new TaoSuKienYeuCau
             {
                 ThoiGianBatDau = DateTime.Now.AddDays(1),
                 ThoiGianKetThuc = DateTime.Now.AddDays(1).AddHours(2),
-                TenLoaiVe1 = "VIP",
+                TenLoaiVe1 = null,
                 TenLoaiVe2 = "Thường",
 
                 SoHang = 6,
@@ -351,6 +432,35 @@ private static SoDoDuLieu? DocSoDo(string? json)
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TaoSuKien(TaoSuKienYeuCau model, IFormFile? AnhSuKienFile)
         {
+            model.ChuDeIds = (model.ChuDeIds ?? new List<int>())
+    .Distinct()
+    .ToList();
+
+            string? anhExtension = null;
+            if (AnhSuKienFile != null && AnhSuKienFile.Length > 0)
+            {
+                anhExtension = await KiemTraAnhSuKienAsync(AnhSuKienFile);
+                if (anhExtension == null)
+                    ModelState.AddModelError("AnhSuKienFile", "Ảnh phải là JPG, PNG hoặc WEBP hợp lệ và không vượt quá 5 MB.");
+            }
+
+var chuDeHopLe = await _db.ChuDeSuKien
+    .Where(x => model.ChuDeIds.Contains(x.ChuDeId) && x.TrangThai)
+    .Select(x => x.ChuDeId)
+    .ToListAsync();
+
+if (model.ChuDeIds.Count == 0)
+{
+    ModelState.AddModelError(
+        nameof(model.ChuDeIds),
+        "Vui lòng chọn ít nhất một chủ đề cho sự kiện.");
+}
+else if (chuDeHopLe.Count != model.ChuDeIds.Count)
+{
+    ModelState.AddModelError(
+        nameof(model.ChuDeIds),
+        "Có chủ đề không hợp lệ hoặc đã ngừng hoạt động.");
+}
             if (!ModelState.IsValid)
             {
                 var loaiHienThi = await _db.LoaiSuKien
@@ -358,6 +468,7 @@ private static SoDoDuLieu? DocSoDo(string? json)
                                 !x.TenLoai.Trim().ToLower().Contains("hybrid"))
                     .ToListAsync();
                 ViewBag.LoaiId = new SelectList(loaiHienThi, "LoaiId", "TenLoai", model.LoaiId);
+                await NapDanhSachChuDeAsync();
                 return View(model);
             }
 
@@ -369,6 +480,7 @@ private static SoDoDuLieu? DocSoDo(string? json)
                                 !x.TenLoai.Trim().ToLower().Contains("hybrid"))
                     .ToListAsync();
                 ViewBag.LoaiId = new SelectList(loaiHienThi, "LoaiId", "TenLoai", model.LoaiId);
+                await NapDanhSachChuDeAsync();
                 return View(model);
             }
 
@@ -383,6 +495,7 @@ private static SoDoDuLieu? DocSoDo(string? json)
                                 !x.TenLoai.Trim().ToLower().Contains("hybrid"))
                     .ToListAsync();
                 ViewBag.LoaiId = new SelectList(loaiHienThi, "LoaiId", "TenLoai", model.LoaiId);
+                await NapDanhSachChuDeAsync();
                 return View(model);
             }
 
@@ -391,14 +504,103 @@ private static SoDoDuLieu? DocSoDo(string? json)
             bool laTrucTiep = tenLoaiLower.Contains("trực tiếp") || tenLoaiLower.Contains("truc tiep");
             bool laWorkshop = tenLoaiLower.Contains("workshop");
 
+
+SoDoDuLieu? soDoWorkshop = null;
+
+if (laWorkshop)
+{
+    soDoWorkshop = DocSoDo(model.SoDoJson);
+
+    if (soDoWorkshop == null)
+    {
+        ModelState.AddModelError(
+            "SoDoJson",
+            "Sơ đồ Workshop không hợp lệ. Vui lòng thiết kế lại.");
+    }
+    else
+    {
+        string layout = (soDoWorkshop.Layout ?? "")
+            .Trim()
+            .ToLowerInvariant();
+
+        int soBanTron = soDoWorkshop.Components.Count(
+            x => x.Type == "BanTron");
+
+        int soThanhPhanBanU = soDoWorkshop.Components.Count(
+            x => x.Type == "BanChuU");
+
+        if (layout == "u")
+        {
+            if (soThanhPhanBanU != 3 || soBanTron != 0)
+            {
+                ModelState.AddModelError(
+                    "SoDoJson",
+                    "Sơ đồ bàn chữ U phải có đủ 3 cạnh và không được có bàn tròn.");
+            }
+        }
+        else if (layout == "round")
+        {
+            if (soBanTron < 1 || soThanhPhanBanU != 0)
+            {
+                ModelState.AddModelError(
+                    "SoDoJson",
+                    "Sơ đồ bàn tròn không hợp lệ.");
+            }
+        }
+        else
+        {
+            ModelState.AddModelError(
+                "SoDoJson",
+                "Kiểu bố trí Workshop không hợp lệ.");
+        }
+
+        int tongGhe = soDoWorkshop.Seats.Count;
+
+        if (soDoWorkshop.Seats.Any(x => x.Zone != "Thuong"))
+        {
+            ModelState.AddModelError(
+                "SoDoJson",
+                "Workshop chỉ được sử dụng ghế thường.");
+        }
+
+        if (model.SoChoNgoi != tongGhe)
+        {
+            ModelState.AddModelError(
+                "SoChoNgoi",
+                "Tổng số chỗ không khớp với số ghế trên sơ đồ.");
+        }
+
+        // Workshop chỉ có một loại vé Thường.
+        if (!string.IsNullOrWhiteSpace(model.TenLoaiVe1) ||
+            model.GiaVe1.GetValueOrDefault() != 0 ||
+            model.SoLuongVe1.GetValueOrDefault() != 0)
+        {
+            ModelState.AddModelError(
+                "TenLoaiVe1",
+                "Workshop không sử dụng vé VIP.");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.TenLoaiVe2) ||
+            !model.GiaVe2.HasValue ||
+            model.GiaVe2.Value <= 0 ||
+            model.SoLuongVe2.GetValueOrDefault() != tongGhe)
+        {
+            ModelState.AddModelError(
+                "TenLoaiVe2",
+                "Workshop cần một loại vé Thường có giá hợp lệ và số lượng bằng tổng số ghế.");
+        }
+    }
+}
+
+
             // ===== VALIDATE THEO LOẠI SỰ KIỆN =====
             if (laTrucTiep || laWorkshop)
             {
                 if (string.IsNullOrWhiteSpace(model.TenDiaDiem))
                     ModelState.AddModelError("TenDiaDiem", "Vui lòng nhập tên địa điểm.");
 
-                if (model.SoChoNgoi == null || model.SoChoNgoi <= 0)
-                    ModelState.AddModelError("SoChoNgoi", "Vui lòng nhập tổng số ghế > 0.");
+                if (model.SoChoNgoi == null || model.SoChoNgoi < 1 || model.SoChoNgoi > 1200)
+                    ModelState.AddModelError("SoChoNgoi", "Vui lòng nhập tổng số chỗ từ 1 đến 1200.");
 
                 bool coVe1 = !string.IsNullOrWhiteSpace(model.TenLoaiVe1);
                 bool coVe2 = !string.IsNullOrWhiteSpace(model.TenLoaiVe2);
@@ -426,10 +628,16 @@ private static SoDoDuLieu? DocSoDo(string? json)
                     (model.SoLuongVe1 ?? 0) +
                     (model.SoLuongVe2 ?? 0);
 
-                if (model.SoChoNgoi.HasValue && tongVe > model.SoChoNgoi.Value)
+                if (model.SoChoNgoi.HasValue && tongVe != model.SoChoNgoi.Value)
                 {
-                    ModelState.AddModelError("SoChoNgoi", "Tổng số lượng vé vượt quá tổng số ghế.");
+                    ModelState.AddModelError("SoChoNgoi", "Tổng số lượng vé VIP và Thường phải bằng tổng số chỗ của Workshop.");
                 }
+
+                if (coVe1 && (model.GiaVe1 == null || model.GiaVe1 <= 0 || model.SoLuongVe1 == null || model.SoLuongVe1 <= 0))
+                    ModelState.AddModelError("TenLoaiVe1", "Nếu sử dụng vé VIP, vui lòng nhập tên, giá và số lượng VIP hợp lệ.");
+
+                if (coVe2 && (model.GiaVe2 == null || model.GiaVe2 <= 0 || model.SoLuongVe2 == null || model.SoLuongVe2 <= 0))
+                    ModelState.AddModelError("TenLoaiVe2", "Nếu sử dụng vé Thường, vui lòng nhập tên, giá và số lượng vé Thường hợp lệ.");
 
                 if (!laWorkshop)
                 {
@@ -438,20 +646,6 @@ private static SoDoDuLieu? DocSoDo(string? json)
 
                     if (model.SoCotMoiHang == null || model.SoCotMoiHang <= 0)
                         ModelState.AddModelError("SoCotMoiHang", "Vui lòng nhập số ghế mỗi hàng > 0.");
-
-                    if (model.HangVipTu == null || model.HangVipDen == null)
-                    {
-                        ModelState.AddModelError("HangVipTu", "Vui lòng nhập khoảng hàng VIP (từ hàng nào đến hàng nào).");
-                    }
-                    else
-                    {
-                        if (model.HangVipTu < 1 || model.HangVipDen < model.HangVipTu)
-                            ModelState.AddModelError("HangVipTu", "Khoảng hàng VIP không hợp lệ.");
-
-                        if (model.SoHang.HasValue && model.HangVipDen > model.SoHang.Value)
-                            ModelState.AddModelError("HangVipDen", "Hàng VIP tối đa không được vượt quá tổng số hàng.");
-                    }
-
 
 var soDoNhap = DocSoDo(model.SoDoJson);
 
@@ -474,12 +668,32 @@ else
             "Tổng số ghế không khớp với sơ đồ.");
     }
 
-    if (model.SoLuongVe1 != soGheVip ||
-        model.SoLuongVe2 != soGheThuong)
+    if (soGheVip > 0)
     {
-        ModelState.AddModelError(
-            "SoDoJson",
-            "Số lượng vé VIP và Thường không khớp sơ đồ.");
+        if (string.IsNullOrWhiteSpace(model.TenLoaiVe1) ||
+            !model.GiaVe1.HasValue || model.GiaVe1 <= 0 ||
+            model.SoLuongVe1 != soGheVip)
+        {
+            ModelState.AddModelError("TenLoaiVe1", "Sơ đồ có ghế VIP nên cần khai báo tên, giá và số lượng vé VIP đúng bằng số ghế VIP.");
+        }
+    }
+    else if ((model.SoLuongVe1 ?? 0) > 0)
+    {
+        ModelState.AddModelError("SoLuongVe1", "Sơ đồ không có ghế VIP nên số lượng vé VIP phải bằng 0.");
+    }
+
+    if (soGheThuong > 0)
+    {
+        if (string.IsNullOrWhiteSpace(model.TenLoaiVe2) ||
+            !model.GiaVe2.HasValue || model.GiaVe2 <= 0 ||
+            model.SoLuongVe2 != soGheThuong)
+        {
+            ModelState.AddModelError("TenLoaiVe2", "Sơ đồ có ghế Thường nên cần khai báo tên, giá và số lượng vé Thường đúng bằng số ghế Thường.");
+        }
+    }
+    else if ((model.SoLuongVe2 ?? 0) > 0)
+    {
+        ModelState.AddModelError("SoLuongVe2", "Sơ đồ không có ghế Thường nên số lượng vé Thường phải bằng 0.");
     }
 
     if (model.SoLuongToiDa.HasValue &&
@@ -523,11 +737,15 @@ else
                                 !x.TenLoai.Trim().ToLower().Contains("hybrid"))
                     .ToListAsync();
                 ViewBag.LoaiId = new SelectList(loaiHienThi, "LoaiId", "TenLoai", model.LoaiId);
+                await NapDanhSachChuDeAsync();
                 return View(model);
             }
 
             await using var transaction = await _db.Database.BeginTransactionAsync();
+            string? anhDaLuu = null;
 
+            try
+            {
             var sk = new SuKien
             {
                 TenSuKien = model.TenSuKien,
@@ -538,7 +756,9 @@ else
                 ToChucId = toChucId,
 SoLuongToiDa = laTrucTiep
     ? DocSoDo(model.SoDoJson)?.Seats.Count
-    : model.SoLuongToiDa,
+    : laWorkshop
+        ? model.SoChoNgoi
+        : model.SoLuongToiDa,
 
 GiaVeMacDinh = laTrucTiep
     ? null
@@ -551,25 +771,32 @@ GiaVeMacDinh = laTrucTiep
             if (AnhSuKienFile != null && AnhSuKienFile.Length > 0)
             {
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "sukien");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
+                Directory.CreateDirectory(uploadsFolder);
 
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(AnhSuKienFile.FileName)}";
+                var fileName = $"{Guid.NewGuid():N}{anhExtension}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                await using (var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 {
                     await AnhSuKienFile.CopyToAsync(stream);
                 }
 
+                anhDaLuu = filePath;
                 sk.AnhSuKien = $"/uploads/sukien/{fileName}";
             }
 
             _db.SuKien.Add(sk);
             await _db.SaveChangesAsync(); // SuKienId
+if (model.ChuDeIds.Any())
+{
+    var danhSachChuDe = model.ChuDeIds.Select(chuDeId =>
+        new SuKienChuDe
+        {
+            SuKienId = sk.SuKienId,
+            ChuDeId = chuDeId
+        }).ToList();
 
+    _db.SuKienChuDe.AddRange(danhSachChuDe);
+}
             if (laTrucTiep || laWorkshop)
             {
                 var diaDiem = new DiaDiem
@@ -615,74 +842,80 @@ GiaVeMacDinh = laTrucTiep
 
                 await _db.SaveChangesAsync();
 
-                if (laWorkshop)
-                {
-                    int tongGheWorkshop = model.SoChoNgoi ?? 0;
+               if (laWorkshop)
+{
+var workshopData = soDoWorkshop
+    ?? throw new InvalidOperationException(
+        "Không đọc được sơ đồ Workshop.");
 
-                    // Quy ước workshop: 2 cánh dọc (trái/phải) là VIP, dãy đáy là thường.
-                    int moiCanh = Math.Max(1, tongGheWorkshop / 4);
-                    int gheDay = tongGheWorkshop - (moiCanh * 2);
-                    if (gheDay < 1)
-                    {
-                        gheDay = 1;
-                        moiCanh = Math.Max(1, (tongGheWorkshop - 1) / 2);
-                    }
+    if (loaiVeThuong == null)
+    {
+        throw new InvalidOperationException(
+            "Không tìm thấy loại vé Thường của Workshop.");
+    }
 
-                    int loaiVipId = loaiVeVip?.LoaiVeId ?? loaiVeThuong?.LoaiVeId ?? 0;
-                    int loaiThuongId = loaiVeThuong?.LoaiVeId ?? loaiVeVip?.LoaiVeId ?? 0;
-                    if (loaiVipId == 0 || loaiThuongId == 0)
-                        return RedirectToAction("Index");
+if (workshopData.Seats.Any(x => x.Zone != "Thuong"))
+{
+    throw new InvalidOperationException(
+        "Workshop không được có ghế VIP.");
+}
 
-                    for (int c = 1; c <= moiCanh; c++)
-                    {
-                        _db.SoDoChoNgoi.Add(new SoDoChoNgoi
-                        {
-                            DiaDiemId = diaDiem.DiaDiemId,
-                            Hang = "A",
-                            Cot = c,
-                            TrangThai = "Trong",
-                            LoaiVeId = loaiVipId
-                        });
-                    }
+    var soDo = new SoDoSuKien
+    {
+        SuKienId = sk.SuKienId,
+        ChieuRong = workshopData.Width,
+        ChieuCao = workshopData.Height,
+        TrangThai = "BanNhap",
+        NgayCapNhat = DateTime.UtcNow
+    };
 
-                    for (int c = 1; c <= moiCanh; c++)
-                    {
-                        _db.SoDoChoNgoi.Add(new SoDoChoNgoi
-                        {
-                            DiaDiemId = diaDiem.DiaDiemId,
-                            Hang = "B",
-                            Cot = c,
-                            TrangThai = "Trong",
-                            LoaiVeId = loaiVipId
-                        });
-                    }
+    _db.SoDoSuKien.Add(soDo);
+    await _db.SaveChangesAsync();
 
-                    for (int c = 1; c <= gheDay; c++)
-                    {
-                        _db.SoDoChoNgoi.Add(new SoDoChoNgoi
-                        {
-                            DiaDiemId = diaDiem.DiaDiemId,
-                            Hang = "C",
-                            Cot = c,
-                            TrangThai = "Trong",
-                            LoaiVeId = loaiThuongId
-                        });
-                    }
+    foreach (var part in workshopData.Components)
+    {
+        _db.ThanhPhanSoDo.Add(new ThanhPhanSoDo
+        {
+            SoDoId = soDo.SoDoId,
+            LoaiThanhPhan = part.Type,
+            TenHienThi = part.Name,
+            ViTriX = part.X,
+            ViTriY = part.Y,
+            ChieuRong = part.Width,
+            ChieuCao = part.Height,
+            GocXoay = 0
+        });
+    }
 
-                    await _db.SaveChangesAsync();
-                }
+    foreach (var seat in workshopData.Seats)
+    {
+        _db.SoDoChoNgoi.Add(new SoDoChoNgoi
+        {
+            DiaDiemId = diaDiem.DiaDiemId,
+            Hang = seat.Row,
+            Cot = seat.Col,
+            TrangThai = "Trong",
+            LoaiVeId = loaiVeThuong.LoaiVeId,
+            ViTriX = seat.X,
+            ViTriY = seat.Y
+        });
+    }
+
+    await _db.SaveChangesAsync();
+}
 
 else if (laTrucTiep)
 {
     var soDoNhap = DocSoDo(model.SoDoJson);
 
-    if (soDoNhap == null ||
-        loaiVeVip == null ||
-        loaiVeThuong == null)
-    {
-        throw new InvalidOperationException(
-            "Dữ liệu sơ đồ hoặc loại vé không hợp lệ.");
-    }
+    if (soDoNhap == null)
+        throw new InvalidOperationException("Dữ liệu sơ đồ không hợp lệ.");
+
+    bool coGheVip = soDoNhap.Seats.Any(x => x.Zone == "VIP");
+    bool coGheThuong = soDoNhap.Seats.Any(x => x.Zone == "Thuong");
+
+    if ((coGheVip && loaiVeVip == null) || (coGheThuong && loaiVeThuong == null))
+        throw new InvalidOperationException("Loại vé chưa khớp với khu vực ghế trong sơ đồ.");
 
     var soDo = new SoDoSuKien
     {
@@ -696,25 +929,35 @@ else if (laTrucTiep)
     _db.SoDoSuKien.Add(soDo);
     await _db.SaveChangesAsync();
 
-    var khuVip = new KhuVucChoNgoi
-    {
-        SoDoId = soDo.SoDoId,
-        TenKhu = "VIP",
-        MauSac = "#D4AF37",
-        LoaiVeId = loaiVeVip.LoaiVeId,
-        ThuTu = 1
-    };
+    KhuVucChoNgoi? khuVip = null;
+    KhuVucChoNgoi? khuThuong = null;
 
-    var khuThuong = new KhuVucChoNgoi
+    if (coGheVip)
     {
-        SoDoId = soDo.SoDoId,
-        TenKhu = "Thường",
-        MauSac = "#A9DCA9",
-        LoaiVeId = loaiVeThuong.LoaiVeId,
-        ThuTu = 2
-    };
+        khuVip = new KhuVucChoNgoi
+        {
+            SoDoId = soDo.SoDoId,
+            TenKhu = "VIP",
+            MauSac = "#D4AF37",
+            LoaiVeId = loaiVeVip!.LoaiVeId,
+            ThuTu = 1
+        };
+        _db.KhuVucChoNgoi.Add(khuVip);
+    }
 
-    _db.KhuVucChoNgoi.AddRange(khuVip, khuThuong);
+    if (coGheThuong)
+    {
+        khuThuong = new KhuVucChoNgoi
+        {
+            SoDoId = soDo.SoDoId,
+            TenKhu = "Thường",
+            MauSac = "#A9DCA9",
+            LoaiVeId = loaiVeThuong!.LoaiVeId,
+            ThuTu = 2
+        };
+        _db.KhuVucChoNgoi.Add(khuThuong);
+    }
+
     await _db.SaveChangesAsync();
 
     foreach (var seat in soDoNhap.Seats)
@@ -728,11 +971,11 @@ else if (laTrucTiep)
             Cot = seat.Col,
             TrangThai = "Trong",
             LoaiVeId = vip
-                ? loaiVeVip.LoaiVeId
-                : loaiVeThuong.LoaiVeId,
+                ? loaiVeVip!.LoaiVeId
+                : loaiVeThuong!.LoaiVeId,
             KhuVucId = vip
-                ? khuVip.KhuVucId
-                : khuThuong.KhuVucId,
+                ? khuVip!.KhuVucId
+                : khuThuong!.KhuVucId,
             ViTriX = seat.X,
             ViTriY = seat.Y
         });
@@ -786,10 +1029,27 @@ else if (laTrucTiep)
                 await _db.SaveChangesAsync();
             }
 
-            await transaction.CommitAsync();
+            await _db.SaveChangesAsync();
+await transaction.CommitAsync();
 
             TempData["ThongBao"] = "Đã gửi sự kiện cho Admin duyệt.";
             return RedirectToAction("Index");
+            }
+catch (Exception ex)
+{
+    await transaction.RollbackAsync();
+
+    if (!string.IsNullOrWhiteSpace(anhDaLuu) &&
+        System.IO.File.Exists(anhDaLuu))
+    {
+        System.IO.File.Delete(anhDaLuu);
+    }
+
+    TempData["ThongBao"] =
+        "Lỗi tạo sự kiện: " + ex.GetBaseException().Message;
+
+    return RedirectToAction("TaoSuKien");
+}
         }
 
         // ========= CHI TIẾT SỰ KIỆN CHO BAN TỔ CHỨC + THỐNG KÊ ĐƠN GIẢN =========
@@ -833,18 +1093,29 @@ else if (laTrucTiep)
 
             // ==== THỐNG KÊ CHUNG ====
             var veQuery = _db.Ve.Where(v => v.SuKienId == sk.SuKienId);
-            var tongVeDaBan = await veQuery.CountAsync();
+            var tongVeDaBan = await veQuery.CountAsync(v =>
+                v.TrangThai == "DaThanhToan" || v.TrangThai == "DaCheckIn");
 
             var thanhToanQuery = from tt in _db.ThanhToan
                                  join v in _db.Ve on tt.VeId equals v.VeId
                                  where v.SuKienId == sk.SuKienId && tt.TrangThai == "ThanhCong"
                                  select tt.SoTien;
 
-            decimal tongDoanhThu = 0;
-            if (await thanhToanQuery.AnyAsync())
-            {
-                tongDoanhThu = await thanhToanQuery.SumAsync();
-            }
+          
+decimal tongThanhToanSuKien =
+    await thanhToanQuery.SumAsync();
+
+decimal tongHoanSuKien = await _db.DonHang
+    .Where(d =>
+        d.TrangThaiHoan == "DaHoan" &&
+        _db.Ve.Any(v =>
+            v.DonHangId == d.DonHangId &&
+            v.SuKienId == sk.SuKienId))
+    .SumAsync(d => d.SoTienHoan);
+
+decimal tongDoanhThu =
+    tongThanhToanSuKien - tongHoanSuKien;
+
 
             var thamGiaQuery = from tg in _db.ThamGiaSuKien
                                join v in _db.Ve on tg.VeId equals v.VeId
@@ -857,7 +1128,7 @@ else if (laTrucTiep)
 
             var ycQuery = from yc in _db.YeuCauHoanHuyVe
                           join v in _db.Ve on yc.VeId equals v.VeId
-                          where v.SuKienId == sk.SuKienId
+                          where v.SuKienId == sk.SuKienId && yc.HinhThuc == "HuyVe"
                           select yc;
 
             var tongYeuCauHoanHuy = await ycQuery.CountAsync();
@@ -1040,6 +1311,16 @@ if (soDo != null && diaDiem != null)
                 return RedirectToAction("QuanLyVe", new { id = model.SuKienId });
             }
 
+            var soVeDaBan = await _db.Ve.CountAsync(v =>
+                v.LoaiVeId == loaiVe.LoaiVeId &&
+                (v.TrangThai == "DaThanhToan" || v.TrangThai == "DaCheckIn"));
+
+            if (model.SoLuong < soVeDaBan)
+            {
+                TempData["LoiLoaiVe"] = $"Số lượng không được nhỏ hơn {soVeDaBan} vé đã bán.";
+                return RedirectToAction("QuanLyVe", new { id = model.SuKienId });
+            }
+
             loaiVe.TenLoai = model.TenLoai;
             loaiVe.GiaVe = model.GiaVe;
             loaiVe.SoLuong = model.SoLuong;
@@ -1122,147 +1403,564 @@ if (soDo != null && diaDiem != null)
         }
 
 // ============================================================
-// ========== XỬ LÝ YÊU CẦU HOÀN / HỦY VÉ =====================
+// ========== XỬ LÝ YÊU CẦU HỦY VÉ =====================
 // ============================================================
 
-public async Task<IActionResult> YeuCauHoanHuy(string? trangThai)
+
+[HttpGet]
+public async Task<IActionResult> YeuCauHuyVe(string? trangThai)
 {
     var toChucId = await GetOrCreateToChucIdAsync();
 
-    var query = from yc in _db.YeuCauHoanHuyVe
-                join v in _db.Ve on yc.VeId equals v.VeId
-                join suKien in _db.SuKien on v.SuKienId equals suKien.SuKienId
-                join nd in _db.NguoiDung on v.NguoiDungId equals nd.NguoiDungId
-                where suKien.ToChucId == toChucId
-                select new { yc, v, suKien, nd };
+    var duLieu = await (
+        from yc in _db.YeuCauHoanHuyVe
+        join ve in _db.Ve on yc.VeId equals ve.VeId
+        join sk in _db.SuKien on ve.SuKienId equals sk.SuKienId
+        join nd in _db.NguoiDung on ve.NguoiDungId equals nd.NguoiDungId
+        where sk.ToChucId == toChucId
+              && yc.HinhThuc == "HuyVe"
+        select new
+        {
+            yc.YeuCauId,
+            yc.LyDo,
+            yc.NgayYeuCau,
+            yc.TrangThai,
+            ve.VeId,
+            ve.DonHangId,
+            ve.MaVe,
+            sk.TenSuKien,
+            nd.HoTen
+        }
+    ).AsNoTracking().ToListAsync();
 
-    if (!string.IsNullOrEmpty(trangThai))
+    // Gộp các yêu cầu theo đơn hàng.
+    // Vé không có DonHangId được xử lý riêng.
+    var danhSach = duLieu
+        .GroupBy(x => x.DonHangId.HasValue
+            ? $"DH_{x.DonHangId.Value}"
+            : $"VE_{x.VeId}")
+        .Select(g =>
+        {
+            // Ưu tiên yêu cầu đang chờ duyệt.
+            // Nếu không có, hiển thị yêu cầu gần nhất.
+            var daiDien = g
+                .OrderByDescending(x =>
+                    x.TrangThai == "ChoDuyet")
+                .ThenByDescending(x => x.NgayYeuCau)
+                .ThenByDescending(x => x.YeuCauId)
+                .First();
+
+            return new
+            {
+                DaiDien = daiDien,
+                DonHangId = daiDien.DonHangId,
+                VeId = daiDien.VeId
+            };
+        })
+        .ToList();
+
+    // Lọc sau khi gộp để mỗi đơn chỉ có một dòng.
+    if (!string.IsNullOrWhiteSpace(trangThai))
     {
-        query = query.Where(x => x.yc.TrangThai == trangThai);
+        danhSach = danhSach
+            .Where(x => x.DaiDien.TrangThai == trangThai)
+            .ToList();
     }
 
-    var list = await query
-        .OrderByDescending(x => x.yc.NgayYeuCau)
-        .Select(x => new YeuCauHoanHuyItemBtcVM
+    var list = new List<YeuCauHoanHuyItemBtcVM>();
+
+    foreach (var item in danhSach
+        .OrderByDescending(x => x.DaiDien.NgayYeuCau))
+    {
+        int soLuongVe;
+
+        if (item.DonHangId.HasValue)
         {
-            YeuCauId = x.yc.YeuCauId,
-            MaVe = x.v.MaVe,
-            TenSuKien = x.suKien.TenSuKien,
-            HoTenKhach = x.nd.HoTen,
-            TrangThai = x.yc.TrangThai,
-            HinhThuc = x.yc.HinhThuc,
-            LyDo = x.yc.LyDo,
-            NgayYeuCau = x.yc.NgayYeuCau
-        })
-        .ToListAsync();
+            soLuongVe = await _db.Ve
+                .CountAsync(v =>
+                    v.DonHangId == item.DonHangId.Value);
+        }
+        else
+        {
+            soLuongVe = 1;
+        }
+
+        // Lấy tất cả vé và ghế thuộc đơn hàng.
+        var chiTietGhe = await _db.Ve
+            .AsNoTracking()
+            .Where(v => item.DonHangId.HasValue
+                ? v.DonHangId == item.DonHangId.Value
+                : v.VeId == item.VeId)
+            .OrderBy(v => v.VeId)
+            .Select(v => new
+            {
+                Hang = v.ChoNgoi != null
+                    ? v.ChoNgoi.Hang
+                    : null,
+
+                Cot = v.ChoNgoi != null
+                    ? (int?)v.ChoNgoi.Cot
+                    : null,
+
+                TenLoaiVe = v.LoaiVe.TenLoai
+            })
+            .ToListAsync();
+
+        var danhSachGhe = chiTietGhe
+            .Select(g =>
+                !string.IsNullOrWhiteSpace(g.Hang) &&
+                g.Cot.HasValue
+                    ? $"{g.Hang}{g.Cot.Value} - {g.TenLoaiVe}"
+                    : $"Không chọn ghế - {g.TenLoaiVe}")
+            .ToList();
+
+        list.Add(new YeuCauHoanHuyItemBtcVM
+        {
+            
+            YeuCauId = item.DaiDien.YeuCauId,
+
+            MaVe = item.DonHangId.HasValue
+                ? $"Đơn #{item.DonHangId.Value} ({soLuongVe} vé)"
+                : item.DaiDien.MaVe,
+
+            TenSuKien = item.DaiDien.TenSuKien,
+            HoTenKhach = item.DaiDien.HoTen,
+            TrangThai = item.DaiDien.TrangThai,
+            HinhThuc = "HuyVe",
+            LyDo = item.DaiDien.LyDo,
+            NgayYeuCau = item.DaiDien.NgayYeuCau,
+            DanhSachGhe = danhSachGhe
+            
+        });
+    }
 
     ViewBag.TrangThai = trangThai;
     return View(list);
 }
 
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> DuyetYeuCauHoanHuy(int id)
-{
-    var toChucId = await GetOrCreateToChucIdAsync();
-
-    var data = await (
-        from ycHH in _db.YeuCauHoanHuyVe
-        join veHH in _db.Ve on ycHH.VeId equals veHH.VeId
-        join skhh in _db.SuKien on veHH.SuKienId equals skhh.SuKienId
-        where ycHH.YeuCauId == id && skhh.ToChucId == toChucId
-        select new
-        {
-            YeuCau = ycHH,
-            Ve = veHH,
-            SuKienHoanHuy = skhh
-        }
-    ).FirstOrDefaultAsync();
-
-    if (data == null) return Forbid();
-
-    var yeuCau = data.YeuCau;
-    var ve = data.Ve;
-    var suKienHoanHuy = data.SuKienHoanHuy;
-
-    if (yeuCau.TrangThai != "ChoDuyet")
-    {
-        TempData["ThongBao"] = "Yêu cầu đã được xử lý trước đó.";
-        return RedirectToAction("YeuCauHoanHuy");
-    }
-
-    yeuCau.TrangThai = "DaDuyet";
-    ve.TrangThai = "Huy";
-
-    if (ve.ChoNgoiId.HasValue)
-    {
-        var choNgoi = await _db.SoDoChoNgoi.FindAsync(ve.ChoNgoiId.Value);
-        if (choNgoi != null)
-        {
-            choNgoi.TrangThai = "Trong";
-        }
-    }
-
-    _db.ThongBao.Add(new ThongBao
-    {
-        NguoiDungId = ve.NguoiDungId,
-        NoiDung = $"Yêu cầu hoàn/hủy vé {ve.MaVe} cho sự kiện \"{suKienHoanHuy.TenSuKien}\" đã được chấp nhận.",
-        NgayGui = DateTime.Now,
-        DaDoc = false
-    });
-
-    await _db.SaveChangesAsync();
-
-    TempData["ThongBao"] = "Đã duyệt yêu cầu hoàn/hủy vé.";
-    return RedirectToAction("YeuCauHoanHuy");
-}
 
 [HttpPost]
 [ValidateAntiForgeryToken]
-public async Task<IActionResult> TuChoiYeuCauHoanHuy(int id)
+public async Task<IActionResult> ChapNhanYeuCauHuyVe(int id)
 {
     var toChucId = await GetOrCreateToChucIdAsync();
 
-    var data = await (
-        from ycHH in _db.YeuCauHoanHuyVe
-        join veHH in _db.Ve on ycHH.VeId equals veHH.VeId
-        join skhh in _db.SuKien on veHH.SuKienId equals skhh.SuKienId
-        where ycHH.YeuCauId == id && skhh.ToChucId == toChucId
-        select new
+    await using var transaction =
+        await _db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable);
+
+    try
+    {
+        // Kiểm tra yêu cầu thuộc sự kiện của BTC.
+        var data = await (
+            from yc in _db.YeuCauHoanHuyVe
+            join ve in _db.Ve on yc.VeId equals ve.VeId
+            join sk in _db.SuKien on ve.SuKienId equals sk.SuKienId
+            where yc.YeuCauId == id
+                  && yc.HinhThuc == "HuyVe"
+                  && sk.ToChucId == toChucId
+            select new
+            {
+                YeuCau = yc,
+                Ve = ve,
+                SuKien = sk
+            }
+        ).FirstOrDefaultAsync();
+
+        if (data == null)
+            return Forbid();
+
+        if (data.YeuCau.TrangThai != "ChoDuyet")
         {
-            YeuCau = ycHH,
-            Ve = veHH,
-            SuKienHoanHuy = skhh
+            TempData["ThongBao"] =
+                "Yêu cầu này đã được xử lý trước đó.";
+
+            return RedirectToAction("YeuCauHuyVe");
         }
-    ).FirstOrDefaultAsync();
 
-    if (data == null) return Forbid();
+        // Lấy toàn bộ vé thuộc cùng đơn.
+        IQueryable<Ve> queryVe = _db.Ve;
 
-    var yeuCau = data.YeuCau;
-    var ve = data.Ve;
-    var suKienHoanHuy = data.SuKienHoanHuy;
 
-    if (yeuCau.TrangThai != "ChoDuyet")
-    {
-        TempData["ThongBao"] = "Yêu cầu đã được xử lý trước đó.";
-        return RedirectToAction("YeuCauHoanHuy");
-    }
+if (data.Ve.DonHangId.HasValue)
+{
+    int maDonLayVe = data.Ve.DonHangId.Value;
 
-    yeuCau.TrangThai = "TuChoi";
-
-    _db.ThongBao.Add(new ThongBao
-    {
-        NguoiDungId = ve.NguoiDungId,
-        NoiDung = $"Yêu cầu hoàn/hủy vé {ve.MaVe} cho sự kiện \"{suKienHoanHuy.TenSuKien}\" đã bị từ chối.",
-        NgayGui = DateTime.Now,
-        DaDoc = false
-    });
-
-    await _db.SaveChangesAsync();
-
-    TempData["ThongBao"] = "Đã từ chối yêu cầu hoàn/hủy vé.";
-    return RedirectToAction("YeuCauHoanHuy");
+    queryVe = queryVe.Where(v =>
+        v.DonHangId == maDonLayVe);
 }
+
+        else
+        {
+            queryVe = queryVe.Where(v =>
+                v.VeId == data.Ve.VeId);
+        }
+
+        var danhSachVe = await queryVe
+            .OrderBy(v => v.VeId)
+            .ToListAsync();
+
+        if (!danhSachVe.Any())
+        {
+            TempData["ThongBao"] =
+                "Không tìm thấy vé trong đơn.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        // Không được xử lý lẫn vé của khách/sự kiện khác.
+        if (danhSachVe.Any(v =>
+            v.NguoiDungId != data.Ve.NguoiDungId ||
+            v.SuKienId != data.SuKien.SuKienId))
+        {
+            TempData["ThongBao"] =
+                "Dữ liệu đơn hàng không hợp lệ.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        var now = DateTime.Now;
+
+        // Chỉ hủy đơn chưa sử dụng, trước giờ bắt đầu.
+        if (data.SuKien.ThoiGianBatDau <= now ||
+            danhSachVe.Any(v =>
+                v.TrangThai != "DaThanhToan"))
+        {
+            TempData["ThongBao"] =
+                "Đơn hàng không còn đủ điều kiện hủy.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        var veIds = danhSachVe
+            .Select(v => v.VeId)
+            .ToList();
+
+        // Không hủy đơn có bất kỳ vé nào đã check-in.
+        bool daCheckIn = await _db.ThamGiaSuKien
+            .AnyAsync(tg =>
+                veIds.Contains(tg.VeId) &&
+                tg.TrangThai == "DaCheckIn");
+
+        if (daCheckIn)
+        {
+            TempData["ThongBao"] =
+                "Đơn có vé đã check-in nên không thể hủy.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        // Lấy cả các yêu cầu cũ thuộc cùng đơn.
+        var danhSachYeuCau = await _db.YeuCauHoanHuyVe
+            .Where(y =>
+                veIds.Contains(y.VeId) &&
+                y.HinhThuc == "HuyVe")
+            .ToListAsync();
+
+        // Tránh xử lý khi đơn từng được chấp thuận.
+        if (danhSachYeuCau.Any(y =>
+            y.TrangThai == "DaHuy"))
+        {
+            TempData["ThongBao"] =
+                "Đơn đã có yêu cầu hủy được chấp thuận.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        var yeuCauChoDuyet = danhSachYeuCau
+            .Where(y => y.TrangThai == "ChoDuyet")
+            .ToList();
+
+        if (!yeuCauChoDuyet.Any())
+        {
+            TempData["ThongBao"] =
+                "Không còn yêu cầu chờ duyệt.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        // Chấp thuận mọi yêu cầu đang chờ của đơn.
+
+
+
+        // Cập nhật trạng thái đơn hàng sau khi hủy vé.
+
+        // ==============================================
+        // HOÀN TIỀN MÔ PHỎNG CHO TOÀN BỘ ĐƠN HÀNG
+        // ==============================================
+
+        if (!data.Ve.DonHangId.HasValue)
+        {
+            TempData["ThongBao"] =
+                "Vé không có mã đơn hàng, không thể hoàn tiền tự động.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        int donHangId = data.Ve.DonHangId.Value;
+
+        var donHang = await _db.DonHang
+            .FirstOrDefaultAsync(d =>
+                d.DonHangId == donHangId &&
+                d.NguoiDungId == data.Ve.NguoiDungId);
+
+        if (donHang == null)
+        {
+            TempData["ThongBao"] =
+                "Không tìm thấy đơn hàng cần hoàn tiền.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        // Không ghi nhận hoàn tiền hai lần.
+        if (donHang.TrangThaiHoan == "DaHoan" ||
+            donHang.SoTienHoan > 0)
+        {
+            TempData["ThongBao"] =
+                "Đơn hàng đã được hoàn tiền trước đó.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        // Kiểm tra giao dịch thanh toán thành công.
+        decimal soTienDaThanhToan = await (
+            from tt in _db.ThanhToan
+            join v in _db.Ve on tt.VeId equals v.VeId
+            where v.DonHangId == donHangId &&
+                  tt.TrangThai == "ThanhCong"
+            select tt.SoTien
+        ).SumAsync();
+
+        if (soTienDaThanhToan <= 0 ||
+            soTienDaThanhToan > donHang.TongTien)
+        {
+            TempData["ThongBao"] =
+                "Không xác định được số tiền thanh toán hợp lệ.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        // Hoàn 100% số tiền đã thanh toán (mô phỏng).
+        donHang.SoTienHoan = soTienDaThanhToan;
+        donHang.NgayHoan = now;
+        donHang.TrangThaiHoan = "DaHoan";
+        donHang.TrangThai = "Huy";
+    
+
+        // Chỉ xử lý hủy vé sau khi đã kiểm tra
+        // đơn hàng và số tiền hoàn hợp lệ.
+
+        foreach (var yc in yeuCauChoDuyet)
+        {
+            yc.TrangThai = "DaHuy";
+        }
+
+        foreach (var ve in danhSachVe)
+        {
+            ve.TrangThai = "Huy";
+        }
+
+
+        // Giải phóng toàn bộ ghế của đơn.
+        var choNgoiIds = danhSachVe
+            .Where(v => v.ChoNgoiId.HasValue)
+            .Select(v => v.ChoNgoiId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (choNgoiIds.Any())
+        {
+            var danhSachGhe = await _db.SoDoChoNgoi
+                .Where(g =>
+                    choNgoiIds.Contains(g.ChoNgoiId))
+                .ToListAsync();
+
+            foreach (var ghe in danhSachGhe)
+            {
+                ghe.TrangThai = "Trong";
+                ghe.DonHangGiuId = null;
+                ghe.ThoiGianHetHanGiu = null;
+            }
+        }
+
+        string maDon = data.Ve.DonHangId.HasValue
+            ? $"#{data.Ve.DonHangId.Value}"
+            : data.Ve.MaVe;
+
+        _db.ThongBao.Add(new ThongBao
+        {
+            NguoiDungId = data.Ve.NguoiDungId,
+            NoiDung =
+                $"Yêu cầu hủy đơn {maDon} " +
+                $"({danhSachVe.Count} vé) của sự kiện " +
+                $"\"{data.SuKien.TenSuKien}\" đã được chấp thuận.",
+            NgayGui = now,
+            DaDoc = false
+        });
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+TempData["ThongBao"] =
+    $"Đã hủy {danhSachVe.Count} vé và ghi nhận hoàn tiền mô phỏng " +
+    $"{donHang.SoTienHoan:N0}đ cho đơn #{donHang.DonHangId}.";
+
+        return RedirectToAction("YeuCauHuyVe");
+    }
+    catch (Exception)
+    {
+        await transaction.RollbackAsync();
+
+        TempData["ThongBao"] =
+            "Có lỗi khi xử lý hủy đơn. Vui lòng thử lại.";
+
+        return RedirectToAction("YeuCauHuyVe");
+    }
+}
+
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> TuChoiYeuCauHuyVe(int id)
+{
+    var toChucId = await GetOrCreateToChucIdAsync();
+
+    await using var transaction =
+        await _db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable);
+
+    try
+    {
+        var data = await (
+            from yc in _db.YeuCauHoanHuyVe
+            join ve in _db.Ve on yc.VeId equals ve.VeId
+            join sk in _db.SuKien on ve.SuKienId equals sk.SuKienId
+            where yc.YeuCauId == id
+                  && yc.HinhThuc == "HuyVe"
+                  && sk.ToChucId == toChucId
+            select new
+            {
+                YeuCau = yc,
+                Ve = ve,
+                SuKien = sk
+            }
+        ).FirstOrDefaultAsync();
+
+        if (data == null)
+            return Forbid();
+
+        if (data.YeuCau.TrangThai != "ChoDuyet")
+        {
+            TempData["ThongBao"] =
+                "Yêu cầu đã được xử lý trước đó.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        IQueryable<Ve> queryVe = _db.Ve;
+
+        if (data.Ve.DonHangId.HasValue)
+        {
+            int donHangId = data.Ve.DonHangId.Value;
+
+            queryVe = queryVe.Where(v =>
+                v.DonHangId == donHangId);
+        }
+        else
+        {
+            queryVe = queryVe.Where(v =>
+                v.VeId == data.Ve.VeId);
+        }
+
+        var danhSachVe = await queryVe.ToListAsync();
+
+        if (!danhSachVe.Any() ||
+            danhSachVe.Any(v =>
+                v.NguoiDungId != data.Ve.NguoiDungId ||
+                v.SuKienId != data.SuKien.SuKienId))
+        {
+            TempData["ThongBao"] =
+                "Dữ liệu đơn hàng không hợp lệ.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        var veIds = danhSachVe
+            .Select(v => v.VeId)
+            .ToList();
+
+        var danhSachYeuCau = await _db.YeuCauHoanHuyVe
+            .Where(y =>
+                veIds.Contains(y.VeId) &&
+                y.HinhThuc == "HuyVe")
+            .ToListAsync();
+
+        // Không từ chối nếu đơn đã được chấp thuận hủy.
+        if (danhSachYeuCau.Any(y =>
+            y.TrangThai == "DaHuy"))
+        {
+            TempData["ThongBao"] =
+                "Đơn đã được chấp thuận hủy trước đó.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        var yeuCauChoDuyet = danhSachYeuCau
+            .Where(y => y.TrangThai == "ChoDuyet")
+            .ToList();
+
+        if (!yeuCauChoDuyet.Any())
+        {
+            TempData["ThongBao"] =
+                "Không còn yêu cầu chờ duyệt.";
+
+            return RedirectToAction("YeuCauHuyVe");
+        }
+
+        foreach (var yc in yeuCauChoDuyet)
+        {
+            yc.TrangThai = "TuChoi";
+        }
+
+        // Không thay đổi trạng thái vé và ghế.
+        // Vé đã thanh toán sẽ được sử dụng lại
+        // nếu vẫn còn trong thời gian hợp lệ.
+
+        string maDon = data.Ve.DonHangId.HasValue
+            ? $"#{data.Ve.DonHangId.Value}"
+            : data.Ve.MaVe;
+
+        _db.ThongBao.Add(new ThongBao
+        {
+            NguoiDungId = data.Ve.NguoiDungId,
+            NoiDung =
+                $"Yêu cầu hủy đơn {maDon} " +
+                $"({danhSachVe.Count} vé) của sự kiện " +
+                $"\"{data.SuKien.TenSuKien}\" đã bị từ chối.",
+            NgayGui = DateTime.Now,
+            DaDoc = false
+        });
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        TempData["ThongBao"] =
+            $"Đã từ chối yêu cầu hủy đơn gồm {danhSachVe.Count} vé.";
+
+        return RedirectToAction("YeuCauHuyVe");
+    }
+    catch (Exception)
+    {
+        await transaction.RollbackAsync();
+
+        TempData["ThongBao"] =
+            "Có lỗi khi từ chối yêu cầu. Vui lòng thử lại.";
+
+        return RedirectToAction("YeuCauHuyVe");
+    }
+}
+
+
         // ============================================================
         // ========== GỬI THÔNG BÁO CHO NGƯỜI ĐẶT VÉ ==================
         // ============================================================
@@ -1328,7 +2026,97 @@ public async Task<IActionResult> TuChoiYeuCauHoanHuy(int id)
             TempData["ThongBao"] = "Đã gửi thông báo tới những người đã đặt vé.";
             return RedirectToAction("ChiTiet", new { id = sk.SuKienId });
         }
+[HttpGet]
+public async Task<IActionResult> DoanhThuTheoSuKien()
+{
+    int toChucId = await GetOrCreateToChucIdAsync();
 
+    // Danh sách tất cả sự kiện của BTC
+    var suKiens = await _db.SuKien
+        .AsNoTracking()
+        .Where(s => s.ToChucId == toChucId)
+        .OrderByDescending(s => s.ThoiGianBatDau)
+        .Select(s => new DoanhThuSuKienItemVM
+        {
+            SuKienId = s.SuKienId,
+            TenSuKien = s.TenSuKien,
+            ThoiGianBatDau = s.ThoiGianBatDau
+        })
+        .ToListAsync();
+
+    var suKienIds = suKiens
+        .Select(s => s.SuKienId)
+        .ToList();
+
+    // Đếm vé còn hiệu lực
+    var veDaBan = await _db.Ve
+        .AsNoTracking()
+        .Where(v =>
+            suKienIds.Contains(v.SuKienId) &&
+            (v.TrangThai == "DaThanhToan" ||
+             v.TrangThai == "DaCheckIn"))
+        .GroupBy(v => v.SuKienId)
+        .Select(g => new
+        {
+            SuKienId = g.Key,
+            SoVe = g.Count()
+        })
+        .ToListAsync();
+
+    // Tổng thanh toán thành công theo sự kiện
+    var thanhToans = await (
+        from tt in _db.ThanhToan.AsNoTracking()
+        join v in _db.Ve.AsNoTracking()
+            on tt.VeId equals v.VeId
+        where suKienIds.Contains(v.SuKienId)
+              && tt.TrangThai == "ThanhCong"
+        group tt by v.SuKienId into g
+        select new
+        {
+            SuKienId = g.Key,
+            TongTien = g.Sum(x => x.SoTien)
+        }
+    ).ToListAsync();
+
+    // Mỗi đơn được tính hoàn tiền một lần,
+    // không nhân số tiền hoàn theo số vé.
+    var hoanTiens = await (
+        from d in _db.DonHang.AsNoTracking()
+        join v in _db.Ve.AsNoTracking()
+            on d.DonHangId equals v.DonHangId
+        where suKienIds.Contains(v.SuKienId)
+              && d.TrangThaiHoan == "DaHoan"
+        select new
+        {
+            d.DonHangId,
+            v.SuKienId,
+            d.SoTienHoan
+        }
+    ).Distinct().ToListAsync();
+
+    var tongHoanTheoSuKien = hoanTiens
+        .GroupBy(x => x.SuKienId)
+        .ToDictionary(
+            g => g.Key,
+            g => g.Sum(x => x.SoTienHoan)
+        );
+
+    foreach (var sk in suKiens)
+    {
+        sk.SoVeDaBan = veDaBan
+            .FirstOrDefault(x =>
+                x.SuKienId == sk.SuKienId)?.SoVe ?? 0;
+
+        sk.TongThanhToan = thanhToans
+            .FirstOrDefault(x =>
+                x.SuKienId == sk.SuKienId)?.TongTien ?? 0;
+
+        sk.TongHoan = tongHoanTheoSuKien
+            .GetValueOrDefault(sk.SuKienId);
+    }
+
+    return View(suKiens);
+}
 // ============================================================
 // ========== THỐNG KÊ TỔNG QUAN (DOANH THU THEO SỰ KIỆN) ======
 // ============================================================
@@ -1338,6 +2126,9 @@ public async Task<IActionResult> TuChoiYeuCauHoanHuy(int id)
 [HttpGet]
 public async Task<IActionResult> ThongKeTongQuan()
 {
+    
+
+
     var toChucId = await GetOrCreateToChucIdAsync();
 
     var suKienIds = await _db.SuKien
@@ -1362,8 +2153,26 @@ public async Task<IActionResult> ThongKeTongQuan()
     var yeuCauList = await _db.YeuCauHoanHuyVe
         .Include(y => y.Ve)
             .ThenInclude(v => v.SuKien)
-        .Where(y => suKienIds.Contains(y.Ve.SuKienId))
+        .Where(y => suKienIds.Contains(y.Ve.SuKienId) && y.HinhThuc == "HuyVe")
         .ToListAsync();
+
+
+    // Tổng tiền đã hoàn mô phỏng cho các đơn
+    // thuộc sự kiện của BTC hiện tại.
+    decimal tongTienHoan = await _db.DonHang
+        .Where(d =>
+            d.TrangThaiHoan == "DaHoan" &&
+            _db.Ve.Any(v =>
+                v.DonHangId == d.DonHangId &&
+                suKienIds.Contains(v.SuKienId)))
+        .SumAsync(d => d.SoTienHoan);
+
+    decimal tongThanhToan = thanhToanThanhCong
+        .Sum(t => t.SoTien);
+
+    decimal doanhThuThucNhan =
+        tongThanhToan - tongTienHoan;
+
 
     var vm = new ThongKeTongQuanDashboardVM
     {
@@ -1372,7 +2181,7 @@ public async Task<IActionResult> ThongKeTongQuan()
         TongVeDaBan = veList.Count(v =>
             v.TrangThai == "DaThanhToan" || v.TrangThai == "DaCheckIn"),
 
-        TongDoanhThu = thanhToanThanhCong.Sum(t => t.SoTien),
+        TongDoanhThu = doanhThuThucNhan,
 
         YeuCauChoDuyet = yeuCauList.Count(y => y.TrangThai == "ChoDuyet"),
 
@@ -1474,6 +2283,304 @@ public async Task<IActionResult> DanhSachVeTongQuan()
 
     return View(list); // Views/BanToChuc/DanhSachVeTongQuan.cshtml
 }
+
+        // ==============================================
+        // QUÉT QR CHECK-IN BẰNG WEBCAM
+        // ==============================================
+
+
+[HttpGet]
+public async Task<IActionResult> QuetMaQr()
+{
+    int toChucId = await GetOrCreateToChucIdAsync();
+
+    var suKiens = await _db.SuKien
+        .AsNoTracking()
+        .Where(s => s.ToChucId == toChucId)
+        .OrderByDescending(s => s.ThoiGianBatDau)
+        .Select(s => new
+        {
+            s.SuKienId,
+            s.TenSuKien
+        })
+        .ToListAsync();
+
+    ViewBag.DanhSachSuKien = new SelectList(
+        suKiens,
+        "SuKienId",
+        "TenSuKien"
+    );
+
+    return View();
+}
+
+
+        // ==========================================================
+        // CHECK-IN TOÀN BỘ ĐƠN BẰNG MỘT MÃ QR
+        // ==========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> XacNhanCheckInDonHang(
+            string? maQr,
+            int suKienId)
+        {
+            if (string.IsNullOrWhiteSpace(maQr) ||
+                maQr.Length > 256)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Mã QR không hợp lệ."
+                });
+            }
+
+            var parts = maQr.Trim().Split('|');
+
+            if (parts.Length != 3 ||
+                parts[0] != "CHECKIN" ||
+                !int.TryParse(parts[1], out int veId) ||
+                veId <= 0 ||
+                string.IsNullOrWhiteSpace(parts[2]))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Mã QR không đúng định dạng của hệ thống."
+                });
+            }
+
+            var toChucId = await GetOrCreateToChucIdAsync();
+
+            await using var transaction =
+                await _db.Database.BeginTransactionAsync(
+                    System.Data.IsolationLevel.Serializable);
+
+            try
+            {
+                // 1. Xác thực vé gốc của QR.
+                var veGoc = await _db.Ve
+                    .Include(v => v.SuKien)
+                    .FirstOrDefaultAsync(v => v.VeId == veId);
+
+                if (veGoc == null ||
+                    veGoc.MaVe != parts[2])
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Mã QR không tồn tại hoặc đã bị thay đổi."
+                    });
+                }
+
+                // 2. Chỉ BTC sở hữu sự kiện mới được check-in.
+                if (veGoc.SuKien.ToChucId != toChucId ||
+                    veGoc.SuKienId != suKienId)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Vé không thuộc sự kiện đang kiểm soát."
+                    });
+                }
+
+                // 3. Chỉ check-in trong thời gian cho phép.
+                var now = DateTime.Now;
+
+                if (now < veGoc.SuKien.ThoiGianBatDau.AddHours(-2) ||
+                    now >= veGoc.SuKien.ThoiGianKetThuc)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Chưa đến giờ check-in hoặc sự kiện đã kết thúc."
+                    });
+                }
+
+                // 4. Tìm tất cả vé cùng đơn.
+                IQueryable<Ve> queryVe = _db.Ve;
+
+                if (veGoc.DonHangId.HasValue)
+                {
+                    int donHangId = veGoc.DonHangId.Value;
+
+                    queryVe = queryVe.Where(v =>
+                        v.DonHangId == donHangId);
+                }
+                else
+                {
+                    queryVe = queryVe.Where(v =>
+                        v.VeId == veGoc.VeId);
+                }
+
+                var danhSachVe = await queryVe
+                    .Include(v => v.ChoNgoi)
+                    .Include(v => v.LoaiVe)
+                    .OrderBy(v => v.VeId)
+                    .ToListAsync();
+
+                if (danhSachVe.Count == 0 ||
+                    danhSachVe.Any(v =>
+                        v.SuKienId != suKienId ||
+                        v.NguoiDungId != veGoc.NguoiDungId))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Các vé trong đơn không hợp lệ."
+                    });
+                }
+
+                // 5. Kiểm tra đơn hàng chưa hủy, chưa hoàn.
+                if (veGoc.DonHangId.HasValue)
+                {
+                    int donHangId = veGoc.DonHangId.Value;
+
+                    var donHang = await _db.DonHang
+                        .FirstOrDefaultAsync(d =>
+                            d.DonHangId == donHangId &&
+                            d.NguoiDungId == veGoc.NguoiDungId);
+
+                    if (donHang == null ||
+                        donHang.TrangThai == "Huy" ||
+                        donHang.TrangThaiHoan == "DaHoan" ||
+                        donHang.SoTienHoan > 0)
+                    {
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = "Đơn hàng đã hủy, hoàn tiền hoặc không hợp lệ."
+                        });
+                    }
+                }
+
+                // 6. Tất cả vé phải ở trạng thái đã thanh toán.
+                if (danhSachVe.Any(v =>
+                    v.TrangThai != "DaThanhToan"))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Đơn có vé chưa thanh toán, đã hủy hoặc đã check-in."
+                    });
+                }
+
+                var veIds = danhSachVe
+                    .Select(v => v.VeId)
+                    .ToList();
+
+                // 7. Phải tồn tại giao dịch thanh toán thành công.
+                bool daThanhToan = await _db.ThanhToan
+                    .AnyAsync(tt =>
+                        veIds.Contains(tt.VeId) &&
+                        tt.TrangThai == "ThanhCong");
+
+                if (!daThanhToan)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Không xác nhận được giao dịch thanh toán thành công."
+                    });
+                }
+
+                // 8. Không check-in đơn đang chờ xử lý hủy.
+                bool dangChoHuy = await _db.YeuCauHoanHuyVe
+                    .AnyAsync(y =>
+                        veIds.Contains(y.VeId) &&
+                        y.TrangThai == "ChoDuyet");
+
+                if (dangChoHuy)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Đơn đang chờ xử lý yêu cầu hủy vé."
+                    });
+                }
+
+                // 9. Kiểm tra lịch sử check-in của tất cả vé.
+                var lichSu = await _db.ThamGiaSuKien
+                    .Where(t => veIds.Contains(t.VeId))
+                    .ToListAsync();
+
+                if (lichSu.Any(t => t.TrangThai == "DaCheckIn"))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Đơn đã có vé được check-in trước đó."
+                    });
+                }
+
+                // Phòng trường hợp dữ liệu cũ có nhiều bản ghi
+                // check-in trùng cho cùng một vé.
+                if (lichSu.GroupBy(t => t.VeId)
+                    .Any(g => g.Count() > 1))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Lịch sử check-in bị trùng. Cần kiểm tra dữ liệu."
+                    });
+                }
+
+                // 10. Ghi nhận toàn bộ vé trong cùng transaction.
+                foreach (var ve in danhSachVe)
+                {
+                    ve.TrangThai = "DaCheckIn";
+
+                    var thamGia = lichSu
+                        .FirstOrDefault(t => t.VeId == ve.VeId);
+
+                    if (thamGia == null)
+                    {
+                        _db.ThamGiaSuKien.Add(
+                            new ThamGiaSuKien
+                            {
+                                VeId = ve.VeId,
+                                TrangThai = "DaCheckIn",
+                                ThoiGianCheckIn = now
+                            });
+                    }
+                    else
+                    {
+                        thamGia.TrangThai = "DaCheckIn";
+                        thamGia.ThoiGianCheckIn = now;
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // 11. Trả kết quả cho giao diện webcam.
+                var ghe = danhSachVe.Select(v =>
+                    v.ChoNgoi != null
+                        ? $"{v.ChoNgoi.Hang}{v.ChoNgoi.Cot} - {v.LoaiVe.TenLoai}"
+                        : $"Vé {v.MaVe} - {v.LoaiVe.TenLoai}"
+                ).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Check-in thành công {danhSachVe.Count} vé.",
+                    donHangId = veGoc.DonHangId,
+                    soVe = danhSachVe.Count,
+                    danhSachGhe = ghe,
+                    thoiGianCheckIn = now.ToString("dd/MM/yyyy HH:mm:ss")
+                });
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Có lỗi khi ghi nhận check-in. Không có vé nào được xác nhận."
+                });
+            }
+        }
+
 
     }
 }

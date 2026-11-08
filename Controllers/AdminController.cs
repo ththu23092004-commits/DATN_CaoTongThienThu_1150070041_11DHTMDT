@@ -46,9 +46,13 @@ namespace VeSuKienWeb.Controllers
             var loai = sk.LoaiSuKien;
             var toChuc = sk.ToChucSuKien;
 
+
+
             // Địa điểm (nếu là sự kiện trực tiếp)
             var diaDiem = await _db.DiaDiem
                 .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
+
+
 
             // Thông tin trực tuyến (nếu là sự kiện online)
             var trucTuyen = await _db.SuKienTrucTuyen
@@ -60,15 +64,22 @@ namespace VeSuKienWeb.Controllers
                 .ToListAsync();
 
 
+
+
+// Lấy sơ đồ theo cùng cách Ban tổ chức đang hiển thị
 var soDo = await _db.SoDoSuKien
     .AsNoTracking()
     .FirstOrDefaultAsync(x => x.SuKienId == sk.SuKienId);
+
+ViewBag.SoDoJson = "null";
 
 if (soDo != null && diaDiem != null)
 {
     var ghe = await _db.SoDoChoNgoi
         .AsNoTracking()
         .Where(x => x.DiaDiemId == diaDiem.DiaDiemId)
+        .OrderBy(x => x.Hang)
+        .ThenBy(x => x.Cot)
         .Select(x => new
         {
             id = x.ChoNgoiId,
@@ -81,8 +92,6 @@ if (soDo != null && diaDiem != null)
                 ? x.KhuVucChoNgoi.TenKhu
                 : x.LoaiVe.TenLoai
         })
-        .OrderBy(x => x.hang)
-        .ThenBy(x => x.cot)
         .ToListAsync();
 
     var thanhPhan = await _db.ThanhPhanSoDo
@@ -107,10 +116,7 @@ if (soDo != null && diaDiem != null)
         thanhPhan
     });
 }
-else
-{
-    ViewBag.SoDoJson = "null";
-}
+
 
 
             var vm = new SuKienChiTietVM
@@ -161,6 +167,7 @@ else
         public async Task<IActionResult> YeuCauHoanHuy()
         {
             var list = await _db.YeuCauHoanHuyVe
+                .Where(y => y.HinhThuc == "HuyVe")
                 .OrderByDescending(y => y.NgayYeuCau)
                 .ToListAsync();
 
@@ -202,7 +209,7 @@ else
         public async Task<IActionResult> DuyetYeuCauHoanHuy(int id)
         {
             var yc = await _db.YeuCauHoanHuyVe
-                .FirstOrDefaultAsync(y => y.YeuCauId == id);
+                .FirstOrDefaultAsync(y => y.YeuCauId == id && y.HinhThuc == "HuyVe");
 
             if (yc == null) return NotFound();
 
@@ -223,7 +230,13 @@ else
                 return RedirectToAction("YeuCauHoanHuy");
             }
 
-            // ✅ Cập nhật trạng thái vé
+            if (ve.TrangThai != "DaThanhToan" || ve.SuKien == null || ve.SuKien.ThoiGianBatDau <= DateTime.Now)
+            {
+                TempData["ThongBao"] = "Vé không còn đủ điều kiện để hủy.";
+                return RedirectToAction("YeuCauHoanHuy");
+            }
+
+            // Chỉ hủy vé, không thực hiện hoặc ghi nhận hoàn tiền.
             ve.TrangThai = "Huy";
 
             // ✅ Nếu có ghế thì mở lại ghế
@@ -233,20 +246,20 @@ else
             }
 
             // ✅ Đánh dấu yêu cầu đã duyệt
-            yc.TrangThai = "DaDuyet";
+            yc.TrangThai = "DaHuy";
 
             // ✅ Ghi thông báo cho khách
             _db.ThongBao.Add(new ThongBao
             {
                 NguoiDungId = ve.NguoiDungId,
-                NoiDung = $"Yêu cầu hủy/hoàn vé {ve.MaVe} cho sự kiện \"{ve.SuKien.TenSuKien}\" đã được chấp nhận.",
+                NoiDung = $"Yêu cầu hủy vé {ve.MaVe} cho sự kiện \"{ve.SuKien.TenSuKien}\" đã được chấp nhận.",
                 NgayGui = DateTime.Now,
                 DaDoc = false
             });
 
             await _db.SaveChangesAsync();
 
-            TempData["ThongBao"] = "Đã duyệt yêu cầu hủy/hoàn vé. Vé đã chuyển sang trạng thái Hủy và ghế được mở lại.";
+            TempData["ThongBao"] = "Đã chấp nhận yêu cầu hủy vé. Vé đã chuyển sang trạng thái Hủy và ghế được mở lại.";
             return RedirectToAction("YeuCauHoanHuy");
         }
 
@@ -255,7 +268,7 @@ else
         public async Task<IActionResult> TuChoiYeuCauHoanHuy(int id)
         {
             var yc = await _db.YeuCauHoanHuyVe
-                .FirstOrDefaultAsync(y => y.YeuCauId == id);
+                .FirstOrDefaultAsync(y => y.YeuCauId == id && y.HinhThuc == "HuyVe");
 
             if (yc == null) return NotFound();
 
@@ -276,7 +289,7 @@ else
                 _db.ThongBao.Add(new ThongBao
                 {
                     NguoiDungId = ve.NguoiDungId,
-                    NoiDung = $"Yêu cầu hủy/hoàn vé {ve.MaVe} cho sự kiện \"{ve.SuKien.TenSuKien}\" đã bị từ chối.",
+                    NoiDung = $"Yêu cầu hủy vé {ve.MaVe} cho sự kiện \"{ve.SuKien.TenSuKien}\" đã bị từ chối.",
                     NgayGui = DateTime.Now,
                     DaDoc = false
                 });
@@ -284,7 +297,7 @@ else
 
             await _db.SaveChangesAsync();
 
-            TempData["ThongBao"] = "Đã từ chối yêu cầu hủy/hoàn vé.";
+            TempData["ThongBao"] = "Đã từ chối yêu cầu hủy vé.";
             return RedirectToAction("YeuCauHoanHuy");
         }
     

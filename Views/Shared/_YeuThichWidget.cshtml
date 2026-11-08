@@ -1,0 +1,65 @@
+
+<div id="favoriteWidget" class="favorite-widget">
+    @Html.AntiForgeryToken()
+
+    <button type="button"
+            id="favoriteFloatingButton"
+            class="favorite-floating-button"
+            aria-label="Mở danh sách sự kiện yêu thích"
+            title="Sự kiện yêu thích">
+        <i class="bi bi-heart-fill"></i>
+        <span id="favoriteCount"
+              class="favorite-count"
+              hidden>0</span>
+    </button>
+
+    <div id="favoriteOverlay"
+         class="favorite-overlay"
+         hidden>
+    </div>
+
+    <section id="favoriteModal"
+             class="favorite-modal"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="favoriteModalTitle"
+             hidden>
+
+        <div class="favorite-modal-header">
+            <div>
+                <h3 id="favoriteModalTitle">
+                    <i class="bi bi-heart-fill"></i>
+                    Sự kiện yêu thích
+                </h3>
+                <p>Những sự kiện bạn đã lưu</p>
+            </div>
+
+            <button type="button"
+                    id="favoriteCloseButton"
+                    class="favorite-close-button"
+                    aria-label="Đóng">
+                &times;
+            </button>
+        </div>
+
+        <div id="favoriteModalList"
+             class="favorite-modal-list">
+        </div>
+    </section>
+</div>
+
+<link rel="stylesheet"
+      href="~/css/su-kien-yeu-thich.css"
+      asp-append-version="true" />
+
+<script>
+    window.favoriteConfig = {
+        listUrl: '@Url.Action("DanhSach", "SuKienYeuThich")',
+        toggleUrl: '@Url.Action("ChuyenTrangThai", "SuKienYeuThich")',
+        loginUrl: '@Url.Action("DangNhap", "TaiKhoan")'
+    };
+</script>
+
+<script src="~/js/su-kien-yeu-thich.js"
+        asp-append-version="true"></script>
+

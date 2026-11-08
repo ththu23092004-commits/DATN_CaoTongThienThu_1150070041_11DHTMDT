@@ -1,0 +1,189 @@
+
+@model List<VeSuKienWeb.Models.SuKien>
+
+@{
+    
+var giaVeTheoSuKien =
+    ViewBag.GiaVeTheoSuKien as Dictionary<int, decimal>
+    ?? new Dictionary<int, decimal>();
+
+string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
+{
+    decimal? gia = null;
+
+    if (giaVeTheoSuKien.TryGetValue(
+        sk.SuKienId, out var giaLoaiVe))
+    {
+        gia = giaLoaiVe;
+    }
+    else
+    {
+        gia = sk.GiaVeMacDinh;
+    }
+
+    if (!gia.HasValue)
+        return "Liên hệ";
+
+    return gia.Value == 0
+        ? "Miễn phí"
+        : gia.Value.ToString("N0") + "đ";
+}
+
+    var danhSachVe = (Model ?? new List<VeSuKienWeb.Models.SuKien>())
+        .Where(x => x.TrangThaiDuyet == "DaDuyet"
+                 && x.ThoiGianKetThuc > DateTime.Now)
+        .OrderBy(x => x.ThoiGianBatDau)
+        .Take(6)
+        .ToList();
+}
+
+<link rel="stylesheet" href="~/css/ve-carousel.css" asp-append-version="true" />
+
+<section class="ve3d-section" aria-label="Sự kiện đáng mong chờ">
+    <div class="ve3d-heading">
+        <div class="ve3d-eyebrow">
+            ✦ NHỮNG SỰ KIỆN ĐÁNG MONG CHỜ ✦
+        </div>
+
+        <h2>
+            Vé xinh, <span>trải nghiệm chất.</span>
+        </h2>
+
+        <p>
+            Tìm sự kiện bạn yêu thích và lưu giữ những kỷ niệm đẹp.
+        </p>
+    </div>
+
+    @if (danhSachVe.Any())
+    {
+        <svg class="ve3d-defs"
+             width="0"
+             height="0"
+             aria-hidden="true">
+            <defs>
+                <clipPath id="ve3d-ticket-clip"
+                          clipPathUnits="userSpaceOnUse">
+                    <path id="ve3d-ticket-shape"></path>
+                </clipPath>
+            </defs>
+        </svg>
+
+        <div class="ve3d-stage" id="ve3d-stage">
+            <div class="ve3d-glow"></div>
+
+            <div id="ve3d-cards">
+                @foreach (var sk in danhSachVe)
+                {
+                    var anh = Url.Content(
+                        string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                            ? "~/images/default-event.jpg"
+                            : sk.AnhSuKien
+                    );
+
+                    var diaDiem = sk.DiaDiem == null
+                        ? "Địa điểm đang cập nhật"
+                        : !string.IsNullOrWhiteSpace(sk.DiaDiem.TenDiaDiem)
+                            ? sk.DiaDiem.TenDiaDiem
+                            : !string.IsNullOrWhiteSpace(sk.DiaDiem.DiaChi)
+                                ? sk.DiaDiem.DiaChi
+                                : "Địa điểm đang cập nhật";
+
+                    <article class="ve3d-ticket"
+                             tabindex="0"
+                             aria-label="@sk.TenSuKien">
+
+                        <div class="ve3d-surface">
+                           
+<img class="ve3d-poster"
+     src="@anh"
+     alt="@sk.TenSuKien"
+     draggable="false" />
+
+
+                            <span class="ve3d-category">
+                                @(sk.LoaiSuKien?.TenLoai ?? "Sự kiện")
+                            </span>
+
+                            <div class="ve3d-info">
+                                <h3 class="ve3d-eventname"
+                                    title="@sk.TenSuKien">
+                                    @sk.TenSuKien
+                                </h3>
+
+
+
+<div class="ve3d-meta">
+    <i class="bi bi-calendar3"></i>
+    <span>
+        @sk.ThoiGianBatDau.ToString("dd/MM/yyyy") ·
+        @sk.ThoiGianBatDau.ToString("HH:mm")
+    </span>
+</div>
+
+
+
+                                <div class="ve3d-meta"
+                                     title="@diaDiem">
+                                    <i class="bi bi-geo-alt"></i>
+                                    <span>@diaDiem</span>
+                                </div>
+                            </div>
+
+                            <div class="ve3d-pricearea">
+                                <div>
+                                    <span class="ve3d-pricelabel">
+                                        Giá vé
+                                    </span>
+
+                      <span class="ve3d-price">
+    @HienThiGiaVe(sk)
+</span>
+                                </div>
+
+                                <a class="ve3d-view"
+                                   asp-controller="KhachHang"
+                                   asp-action="ChiTiet"
+                                   asp-route-id="@sk.SuKienId">
+                                    Xem chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+
+            <button type="button"
+                    class="ve3d-nav ve3d-prev"
+                    id="ve3d-prev"
+                    aria-label="Xem vé trước">
+                ‹
+            </button>
+
+            <button type="button"
+                    class="ve3d-nav ve3d-next"
+                    id="ve3d-next"
+                    aria-label="Xem vé tiếp theo">
+                ›
+            </button>
+        </div>
+
+        <div class="ve3d-dots" id="ve3d-dots"></div>
+
+        <div class="ve3d-footer">
+            <div class="ve3d-hint">
+                ↔ Kéo ngang, lăn chuột hoặc dùng mũi tên để chuyển vé
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="ve3d-empty">
+            Hiện chưa có sự kiện phù hợp để hiển thị.
+        </div>
+    }
+</section>
+
+<script src="~/js/ve-carousel.js"
+        asp-append-version="true"
+        defer></script>
+

@@ -30,14 +30,151 @@ public DbSet<ThanhPhanSoDo> ThanhPhanSoDo { get; set; } = null!;
         public DbSet<ThongBao> ThongBao { get; set; } = null!;
 
         public DbSet<DonHang> DonHang { get; set; } = null!;
+        public DbSet<ChuDeSuKien> ChuDeSuKien { get; set; } = null!;
 
+public DbSet<SuKienChuDe> SuKienChuDe { get; set; } = null!;
 
+public DbSet<HoSoSoThich> HoSoSoThich { get; set; } = null!;
 
+public DbSet<NguoiDungSoThich> NguoiDungSoThich { get; set; } = null!;
+
+public DbSet<LichSuXemSuKien> LichSuXemSuKien { get; set; } = null!;
+public DbSet<SuKienYeuThich> SuKienYeuThich { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+
+modelBuilder.Entity<SuKienYeuThich>(e =>
+{
+    e.ToTable("SuKienYeuThich");
+
+    e.HasKey(x => new
+    {
+        x.NguoiDungId,
+        x.SuKienId
+    });
+
+    e.Property(x => x.NgayYeuThich)
+        .HasColumnType("datetime2");
+
+    e.HasOne(x => x.NguoiDung)
+        .WithMany()
+        .HasForeignKey(x => x.NguoiDungId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.HasOne(x => x.SuKien)
+        .WithMany()
+        .HasForeignKey(x => x.SuKienId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+
+// ========================================
+// HỆ THỐNG GỢI Ý SỰ KIỆN CÁ NHÂN HÓA
+// ========================================
+
+modelBuilder.Entity<ChuDeSuKien>(e =>
+{
+    e.ToTable("ChuDeSuKien");
+
+    e.HasKey(x => x.ChuDeId);
+
+    e.Property(x => x.TenChuDe)
+        .HasMaxLength(100)
+        .IsRequired();
+
+    e.Property(x => x.MoTa)
+        .HasMaxLength(500);
+
+    e.HasIndex(x => x.TenChuDe)
+        .IsUnique();
+});
+
+modelBuilder.Entity<SuKienChuDe>(e =>
+{
+    e.ToTable("SuKienChuDe");
+
+    e.HasKey(x => new { x.SuKienId, x.ChuDeId });
+
+    e.HasOne(x => x.SuKien)
+        .WithMany()
+        .HasForeignKey(x => x.SuKienId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.HasOne(x => x.ChuDeSuKien)
+        .WithMany()
+        .HasForeignKey(x => x.ChuDeId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+modelBuilder.Entity<HoSoSoThich>(e =>
+{
+    e.ToTable("HoSoSoThich");
+
+    e.HasKey(x => x.HoSoId);
+
+    e.HasIndex(x => x.NguoiDungId)
+        .IsUnique();
+
+    e.Property(x => x.DiaDiemUuTien)
+        .HasMaxLength(100);
+
+    e.Property(x => x.HinhThucUuTien)
+        .HasMaxLength(30)
+        .IsRequired();
+
+    e.Property(x => x.NgayCapNhat)
+        .HasColumnType("datetime2");
+
+    e.HasOne(x => x.NguoiDung)
+        .WithMany()
+        .HasForeignKey(x => x.NguoiDungId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+modelBuilder.Entity<NguoiDungSoThich>(e =>
+{
+    e.ToTable("NguoiDungSoThich");
+
+    e.HasKey(x => new { x.NguoiDungId, x.ChuDeId });
+
+    e.Property(x => x.NgayChon)
+        .HasColumnType("datetime2");
+
+    e.HasOne(x => x.NguoiDung)
+        .WithMany()
+        .HasForeignKey(x => x.NguoiDungId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.HasOne(x => x.ChuDeSuKien)
+        .WithMany()
+        .HasForeignKey(x => x.ChuDeId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+modelBuilder.Entity<LichSuXemSuKien>(e =>
+{
+    e.ToTable("LichSuXemSuKien");
+
+    e.HasKey(x => x.LichSuId);
+
+    e.Property(x => x.ThoiGianXem)
+        .HasColumnType("datetime2");
+
+    e.HasIndex(x => new { x.NguoiDungId, x.SuKienId });
+
+    e.HasOne(x => x.NguoiDung)
+        .WithMany()
+        .HasForeignKey(x => x.NguoiDungId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    e.HasOne(x => x.SuKien)
+        .WithMany()
+        .HasForeignKey(x => x.SuKienId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
 modelBuilder.Entity<SoDoSuKien>(e =>
 {
     e.ToTable("SoDoSuKien");

@@ -1,0 +1,112 @@
+
+.detail-map-wrapper {
+    background: #f9f7f4;
+    border: 1px solid #e6ddd1;
+    border-radius: 16px;
+    padding: 18px;
+    overflow: auto;
+}
+
+#detailSeatMap {
+    background: #fcfbf9;
+    border: 1px solid #e7dfd4;
+    border-radius: 14px;
+}
+
+.detail-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #a06d28;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 10px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.detail-round-table {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #efe1c7;
+    border: 2px solid #b5843d;
+    border-radius: 50%;
+    color: #8a5b18;
+    font-weight: 700;
+    text-align: center;
+}
+
+.detail-chair-table {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #efe1c7;
+    border: 1.5px solid #b5843d;
+    border-radius: 10px;
+    color: #8a5b18;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.detail-u-part {
+    background: #efe1c7;
+    border: 2px solid #3d3024;
+    border-radius: 12px;
+}
+
+.detail-door {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #d8f0e8;
+    border: 1px solid #5ca68a;
+    border-radius: 8px;
+    color: #267657;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.detail-seat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #dcecff;
+    border: 1px solid #4f95f0;
+    border-radius: 999px;
+    color: #2462b6;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+}
+
+.detail-seat.vip {
+    background: #fff7db;
+    border-color: #d4a51e;
+    color: #9a710a;
+}
+
+.detail-seat.booked {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+    color: #6b7280;
+}
+
+.detail-aisle {
+    background: repeating-linear-gradient(
+        135deg,
+        #f0f0f0,
+        #f0f0f0 8px,
+        #fafafa 8px,
+        #fafafa 16px
+    );
+}
+
+.map-empty {
+    padding: 30px;
+    text-align: center;
+    color: #777;
+}

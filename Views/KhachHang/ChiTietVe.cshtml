@@ -491,7 +491,7 @@
                     Quay lại danh sách vé
                 </a>
 
-                @if (Model.LaTrucTiep)
+                @if (Model.LaTrucTiep && Model.DuocXemQr)
                 {
                     <a asp-action="XemMaQr"
                        asp-route-veId="@Model.VeId"

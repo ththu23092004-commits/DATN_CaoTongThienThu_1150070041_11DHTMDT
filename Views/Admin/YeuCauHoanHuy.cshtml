@@ -2,7 +2,7 @@
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Yêu cầu hủy/hoàn vé";
+    ViewData["Title"] = "Yêu cầu hủy vé";
 }
 
 <style>
@@ -82,9 +82,9 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="admin-page-title mb-1">Yêu cầu hủy/hoàn vé</h2>
+        <h2 class="admin-page-title mb-1">Yêu cầu hủy vé</h2>
         <div class="text-muted small">
-            Admin theo dõi và xử lý các yêu cầu hủy vé hoặc hoàn tiền từ khách hàng.
+            Admin theo dõi và xử lý các yêu cầu hủy vé từ khách hàng.
         </div>
     </div>
 </div>
@@ -99,7 +99,7 @@
 @if (!Model.Any())
 {
     <div class="alert alert-light border rounded-4 shadow-sm">
-        <div class="fw-semibold">Hiện không có yêu cầu hủy/hoàn vé nào.</div>
+        <div class="fw-semibold">Hiện không có yêu cầu hủy vé nào.</div>
         <div class="small text-muted">Khi khách hàng gửi yêu cầu, danh sách sẽ hiển thị tại đây.</div>
     </div>
 }
@@ -125,7 +125,7 @@ else
                 var badgeClass = item.TrangThai switch
                 {
                     "ChoDuyet" => "badge bg-warning text-dark badge-soft",
-                    "DaDuyet"  => "badge bg-success badge-soft",
+                    "DaHuy"  => "badge bg-success badge-soft",
                     "TuChoi"   => "badge bg-secondary badge-soft",
                     _          => "badge bg-light text-dark badge-soft"
                 };
@@ -133,14 +133,13 @@ else
                 var trangThaiTiengViet = item.TrangThai switch
                 {
                     "ChoDuyet" => "Chờ duyệt",
-                    "DaDuyet"  => "Đã duyệt",
+                    "DaHuy"  => "Đã hủy",
                     "TuChoi"   => "Từ chối",
                     _ => item.TrangThai
                 };
 
                 var hinhThucTiengViet = item.HinhThuc switch
                 {
-                    "HoanTien" => "Hoàn tiền",
                     "HuyVe" => "Hủy vé",
                     _ => item.HinhThuc
                 };

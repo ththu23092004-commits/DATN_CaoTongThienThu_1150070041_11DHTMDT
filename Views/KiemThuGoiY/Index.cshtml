@@ -1,0 +1,453 @@
+
+@model VeSuKienWeb.Services.BaoCaoDiemGoiY
+
+@{
+    Layout = null;
+
+    var top6 = Model.DanhSach
+        .Take(6)
+        .Select(x => x.SuKienId)
+        .ToHashSet();
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>Kiểm thử gợi ý cá nhân hóa</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #f5f7fb;
+            color: #192338;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+
+        .container {
+            width: min(1400px, 96%);
+            margin: 35px auto;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e5eaf2;
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.03);
+        }
+
+        .panel h2 {
+            margin: 0 0 18px;
+            font-size: 19px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input {
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            padding: 11px;
+            width: 140px;
+            font-size: 14px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            padding: 12px 17px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .stat-label {
+            display: block;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            font-size: 26px;
+        }
+
+        .profile {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .profile-item {
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 10px 14px;
+            border-radius: 10px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1050px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 13px 11px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        tr.top-six {
+            background: #f0fdf4;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        tr.top-six:hover {
+            background: #dcfce7;
+        }
+
+        .rank {
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .event-name {
+            font-weight: 600;
+            min-width: 200px;
+            line-height: 1.5;
+        }
+
+        .topic {
+            color: #475569;
+            min-width: 170px;
+            line-height: 1.5;
+        }
+
+        .number {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .total {
+            font-weight: bold;
+            color: #166534;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: bold;
+            color: #166534;
+            background: #dcfce7;
+            padding: 5px 8px;
+            border-radius: 7px;
+        }
+
+        .note {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        @@media (max-width: 700px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+        }
+
+        @@media print {
+            body {
+                background: white;
+            }
+
+            .toolbar, .no-print {
+                display: none !important;
+            }
+
+            .container {
+                width: 100%;
+                margin: 0;
+            }
+
+            .panel {
+                box-shadow: none;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>Kiểm thử thuật toán gợi ý sự kiện</h1>
+
+        <p class="subtitle">
+            Báo cáo nội bộ – Content-Based Filtering
+            kết hợp Cosine Similarity và trọng số hành vi.
+        </p>
+
+        <div class="panel">
+            <h2>Chọn tài khoản kiểm thử</h2>
+
+            <form method="get"
+                  action="/kiem-thu-goi-y"
+                  class="toolbar">
+
+                <label for="nguoiDungId">
+                    Mã người dùng:
+                </label>
+
+                <input type="number"
+                       id="nguoiDungId"
+                       name="nguoiDungId"
+                       value="@Model.NguoiDungId"
+                       min="1"
+                       required />
+
+                <button type="submit">
+                    Xem kết quả
+                </button>
+
+                <button type="button"
+                        onclick="window.print()">
+                    In báo cáo
+                </button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Tổng quan kiểm thử</h2>
+
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-label">
+                        Tài khoản kiểm thử
+                    </span>
+                    <span class="stat-value">
+                        #@Model.NguoiDungId
+                    </span>
+                </div>
+
+                <div class="stat">
+                    <span class="stat-label">
+                        Sự kiện đủ điều kiện
+                    </span>
+                    <span class="stat-value">
+                        @Model.DanhSach.Count
+                    </span>
+                </div>
+
+                <div class="stat">
+                    <span class="stat-label">
+                        Sự kiện gợi ý Top-N
+                    </span>
+                    <span class="stat-value">
+                        @Math.Min(6, Model.DanhSach.Count)
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Vector sở thích người dùng</h2>
+
+            @if (Model.HoSoChuDe.Any())
+            {
+                <div class="profile">
+                    @foreach (var item in Model.HoSoChuDe
+                        .OrderByDescending(x => x.Value))
+                    {
+                        <span class="profile-item">
+                            Chủ đề #@item.Key:
+                            <strong>
+                                @item.Value.ToString("0.##")
+                                điểm
+                            </strong>
+                        </span>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="note">
+                    Chưa có dữ liệu khảo sát hoặc hành vi.
+                    Hệ thống ưu tiên sự kiện sắp diễn ra.
+                </p>
+            }
+        </div>
+
+        <div class="panel">
+            <h2>Bảng điểm gợi ý chi tiết</h2>
+
+            <p class="note">
+                Các dòng nền xanh nhạt là Top-6 đang được
+                sử dụng trên Trang chủ. Những sự kiện còn lại
+                được hiển thị để đối chiếu.
+            </p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hạng</th>
+                            <th>Mã SK</th>
+                            <th>Tên sự kiện</th>
+                            <th>Chủ đề</th>
+                            <th>Cosine</th>
+                            <th>Điểm chủ đề</th>
+                            <th>Hình thức</th>
+                            <th>Địa điểm</th>
+                            <th>Tổng điểm</th>
+                            <th>Kết quả</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model.DanhSach)
+                        {
+                            <tr class="@(top6.Contains(item.SuKienId) ? "top-six" : "")">
+                                <td class="rank">
+                                    @item.ThuHang
+                                </td>
+
+                                <td>
+                                    @item.SuKienId
+                                </td>
+
+                                <td class="event-name">
+                                    @item.TenSuKien
+                                </td>
+
+                                <td class="topic">
+                                    @item.ChuDe
+                                </td>
+
+                                <td class="number">
+                                    @item.Cosine.ToString("0.0000")
+                                </td>
+
+                                <td class="number">
+                                    @item.DiemChuDe.ToString("0.00")
+                                </td>
+
+                                <td class="number">
+                                    @item.DiemHinhThuc.ToString("0.00")
+                                </td>
+
+                                <td class="number">
+                                    @item.DiemDiaDiem.ToString("0.00")
+                                </td>
+
+                                <td class="number total">
+                                    @item.TongDiem.ToString("0.00")
+                                </td>
+
+                                <td>
+                                    @if (item.ThuHang <= 6)
+                                    {
+                                        <span class="badge">
+                                            TOP 6
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Công thức tính điểm</h2>
+
+            <p>
+                <strong>
+                    Tổng điểm = Cosine × 10
+                    + Điểm hình thức + Điểm địa điểm
+                </strong>
+            </p>
+
+            <p class="note">
+                Hồ sơ sở thích được xây dựng từ khảo sát (+4),
+                lượt xem hợp lệ (tối đa 3 mỗi sự kiện),
+                yêu thích (+3) và sự kiện có vé thanh toán
+                thành công (+5).
+            </p>
+
+            <p class="note">
+                Sự kiện được sắp xếp theo tổng điểm giảm dần.
+                Nếu bằng điểm, ưu tiên thời gian bắt đầu sớm hơn.
+                Báo cáo này chỉ mô tả kết quả tính toán,
+                chưa phải phép đánh giá Precision@K hoặc Recall@K.
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>
+

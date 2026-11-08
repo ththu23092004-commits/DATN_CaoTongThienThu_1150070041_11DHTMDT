@@ -337,4 +337,312 @@ body {
     background: linear-gradient(90deg, #1e40af, #1d4ed8);
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(30, 64, 175, 0.45);
+
+    
+/* ==========================================
+   GIAO DIEN TIM CHU DAO - EVENT WEBSITE
+   ========================================== */
+
+body.event-theme-body {
+    --event-bg: #211337;
+    --event-bg-deep: #160e2b;
+    --event-purple: #372052;
+    --event-pink: #ff85c5;
+    --event-text: #faf5ff;
+    --event-muted: #d3c5e6;
+
+    min-height: 100vh;
+    color: var(--event-text);
+    background:
+        radial-gradient(
+            ellipse at 18% 16%,
+            rgba(141, 72, 171, 0.24),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 85% 42%,
+            rgba(91, 59, 154, 0.22),
+            transparent 39%
+        ),
+        linear-gradient(
+            145deg,
+            #2e1945 0%,
+            #241439 42%,
+            #19102d 100%
+        ) !important;
+
+    background-attachment: fixed !important;
+}
+
+/* HEADER DONG BO VOI NEN */
+
+body.event-theme-body .event-theme-navbar {
+    background: rgba(31, 17, 52, 0.92) !important;
+    border: 0 !important;
+    border-bottom: 1px solid
+        rgba(255,255,255,0.10) !important;
+
+    box-shadow:
+        0 8px 30px rgba(9, 5, 24, 0.16);
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
+
+body.event-theme-body .event-theme-navbar .nav-link {
+    color: #e8ddf5 !important;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 15px;
+    border-radius: 12px;
+    transition: background .2s, color .2s;
+}
+
+body.event-theme-body .event-theme-navbar .nav-link:hover,
+body.event-theme-body .event-theme-navbar .nav-link:focus {
+    color: #ffffff !important;
+    background: rgba(255,255,255,0.10);
+}
+
+body.event-theme-body .event-theme-navbar .navbar-text {
+    color: #e4d6ef !important;
+}
+
+body.event-theme-body .event-theme-navbar .btn-primary {
+    background: linear-gradient(
+        110deg,
+        #8142b5,
+        #bd5dba
+    ) !important;
+
+    border: 1px solid
+        rgba(255,255,255,0.15) !important;
+
+    color: white !important;
+    padding: 9px 18px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+body.event-theme-body .event-theme-navbar .btn-outline-primary {
+    color: #f8efff !important;
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid
+        rgba(255,255,255,0.25) !important;
+
+    border-radius: 12px;
+    padding: 9px 18px;
+}
+
+body.event-theme-body .event-theme-navbar .btn-outline-primary:hover {
+    background: rgba(255,255,255,0.16) !important;
+}
+
+/* NEN TRANG CHINH KHONG CON TRANG */
+
+body.event-theme-body .event-theme-main,
+body.event-theme-body .event-theme-main > .container,
+body.event-theme-body .home-page-pro {
+    background: transparent !important;
+}
+
+body.event-theme-body .event-theme-main {
+    position: relative;
+    z-index: 1;
+}
+
+/* BO VE KHUNG TIM BAO NGOAI CAROUSEL
+   DE VE 3D NAM TRUC TIEP TREN NEN CHUNG */
+
+body.event-theme-body .ve3d-section {
+    background: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+
+    max-width: 100%;
+    margin-top: 0;
+    margin-bottom: 35px;
+
+    padding-left: 0;
+    padding-right: 0;
+}
+
+body.event-theme-body .ve3d-heading h2 {
+    color: #ffffff !important;
+}
+
+body.event-theme-body .ve3d-heading h2 span {
+    color: var(--event-pink) !important;
+}
+
+body.event-theme-body .ve3d-heading p {
+    color: #d8c8e8 !important;
+}
+
+body.event-theme-body .ve3d-eyebrow {
+    color: #ff9fd4 !important;
+}
+
+body.event-theme-body .ve3d-hint {
+    color: #d5c4e7 !important;
+}
+
+/* DONG BO CAC TIEU DE TRANG CHU */
+
+body.event-theme-body .home-section .section-title,
+body.event-theme-body .home-page-pro .section-title {
+    color: #ffffff !important;
+}
+
+body.event-theme-body .home-page-pro .section-label {
+    color: #ff91cf !important;
+}
+
+body.event-theme-body .home-page-pro .section-sub {
+    color: #d6c9e4 !important;
+}
+
+/* CARD SU KIEN - TIM KINH MO */
+
+body.event-theme-body .home-page-pro .event-card {
+    background: linear-gradient(
+        160deg,
+        rgba(91, 56, 119, 0.66),
+        rgba(42, 25, 72, 0.88)
+    ) !important;
+
+    border: 1px solid
+        rgba(221, 188, 255, 0.18) !important;
+
+    box-shadow:
+        0 14px 34px rgba(10, 5, 25, 0.24);
+
+    color: #ffffff !important;
+}
+
+body.event-theme-body .home-page-pro .event-name {
+    color: #ffffff !important;
+}
+
+body.event-theme-body .home-page-pro .event-time,
+body.event-theme-body .home-page-pro .event-location {
+    color: #d9cce8 !important;
+}
+
+body.event-theme-body .home-page-pro .event-price {
+    color: #ffabd9 !important;
+}
+
+body.event-theme-body .home-page-pro .event-view {
+    color: #e7baff !important;
+}
+
+body.event-theme-body .home-page-pro .event-bottom {
+    border-top: 1px solid
+        rgba(255,255,255,0.13);
+}
+
+body.event-theme-body .home-page-pro .event-link:hover .event-card {
+    transform: translateY(-5px);
+    border-color: rgba(255, 160, 220, 0.5) !important;
+    box-shadow:
+        0 20px 45px rgba(12, 5, 35, 0.35);
+}
+
+/* CAC KHOI GIOI THIEU BEN DUOI */
+
+body.event-theme-body .home-page-pro .info-row {
+    background: linear-gradient(
+        145deg,
+        rgba(74, 43, 104, 0.82),
+        rgba(35, 22, 61, 0.93)
+    ) !important;
+
+    border: 1px solid
+        rgba(255,255,255,0.10) !important;
+
+    box-shadow:
+        0 20px 45px rgba(12, 5, 30, 0.22);
+}
+
+body.event-theme-body .home-page-pro .info-content h3,
+body.event-theme-body .home-page-pro .info-heading h2 {
+    color: #ffffff !important;
+}
+
+body.event-theme-body .home-page-pro .info-content p,
+body.event-theme-body .home-page-pro .info-heading p {
+    color: #dfd2ed !important;
+}
+
+body.event-theme-body .home-page-pro .info-tag,
+body.event-theme-body .home-page-pro .info-heading-badge {
+    color: #f5d3ff !important;
+    background: rgba(181, 111, 224, 0.18) !important;
+    border-color: rgba(219, 167, 255, 0.20) !important;
+}
+
+body.event-theme-body .home-page-pro .info-btn {
+    background: linear-gradient(
+        110deg,
+        #8a47bc,
+        #c15ba5
+    ) !important;
+
+    color: white !important;
+}
+
+/* FOOTER HOA VAO NEN CHUNG */
+
+body.event-theme-body .home-footer {
+    background: rgba(27, 16, 45, 0.65) !important;
+    border: 1px solid
+        rgba(255,255,255,0.10) !important;
+    box-shadow: none !important;
+}
+
+body.event-theme-body .home-footer .footer-brand,
+body.event-theme-body .home-footer .footer-title {
+    color: #ffffff !important;
+}
+
+body.event-theme-body .home-footer .footer-text,
+body.event-theme-body .home-footer .footer-info,
+body.event-theme-body .home-footer .footer-link {
+    color: #d5c8e6 !important;
+}
+
+body.event-theme-body .home-footer .footer-link:hover {
+    color: #ff9dce !important;
+}
+
+/* GIU THONG TIN RO RANG TREN CARD */
+
+body.event-theme-body .home-page-pro .date-badge strong {
+    color: #251633 !important;
+}
+
+body.event-theme-body .home-page-pro .event-type {
+    color: #6040b1 !important;
+}
+
+@media (max-width: 768px) {
+    body.event-theme-body .event-theme-navbar {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    body.event-theme-body .ve3d-section {
+        margin-bottom: 26px;
+    }
+
+    body.event-theme-body .home-page-pro .section-title {
+        font-size: 23px;
+    }
+}
+
 }

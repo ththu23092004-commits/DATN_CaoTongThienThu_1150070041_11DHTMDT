@@ -1,0 +1,539 @@
+
+@model List<VeSuKienWeb.Models.BanToChuc.DoanhThuSuKienItemVM>
+
+@{
+    Layout = "_LayoutBanToChuc";
+    ViewData["Title"] = "Doanh thu theo sự kiện";
+
+    decimal tongThanhToan = Model.Sum(x => x.TongThanhToan);
+    decimal tongHoan = Model.Sum(x => x.TongHoan);
+    decimal tongThucNhan = tongThanhToan - tongHoan;
+
+    int tongSuKien = Model.Count;
+    int tongVe = Model.Sum(x => x.SoVeDaBan);
+}
+
+<style>
+    .dt-page {
+        width: 100%;
+        color: #172033;
+        padding-bottom: 32px;
+    }
+
+    .dt-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .dt-title {
+        font-size: 28px;
+        font-weight: 750;
+        margin: 0 0 6px;
+        color: #172033;
+    }
+
+    .dt-subtitle {
+        color: #788397;
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .dt-back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 16px;
+        border: 1px solid #d9e1ef;
+        background: #fff;
+        border-radius: 9px;
+        color: #475569;
+        font-size: 13px;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .dt-back:hover {
+        border-color: #2563eb;
+        color: #2563eb;
+    }
+
+    .dt-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .dt-stat {
+        background: #fff;
+        border: 1px solid #e4eaf2;
+        border-radius: 13px;
+        padding: 22px;
+        box-shadow: 0 3px 12px rgba(20, 40, 80, .035);
+        min-width: 0;
+    }
+
+    .dt-stat-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .dt-stat-label {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .dt-stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        background: #eef4ff;
+        color: #2563eb;
+        border-radius: 10px;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .dt-stat-icon.refund {
+        color: #d97706;
+        background: #fff6e8;
+    }
+
+    .dt-stat-icon.net {
+        color: #059669;
+        background: #e9f9f2;
+    }
+
+    .dt-stat-value {
+        font-size: clamp(19px, 2.1vw, 27px);
+        font-weight: 800;
+        letter-spacing: -.6px;
+        overflow-wrap: anywhere;
+        line-height: 1.3;
+    }
+
+    .dt-stat-note {
+        color: #94a3b8;
+        margin-top: 8px;
+        font-size: 12px;
+    }
+
+    .dt-blue { color: #2563eb; }
+    .dt-orange { color: #d97706; }
+    .dt-green { color: #059669; }
+
+    .dt-overview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .dt-pill {
+        background: #fff;
+        border: 1px solid #e4eaf2;
+        color: #64748b;
+        border-radius: 9px;
+        padding: 11px 15px;
+        font-size: 13px;
+    }
+
+    .dt-pill strong {
+        color: #1e293b;
+        margin-left: 7px;
+    }
+
+    .dt-panel {
+        background: #fff;
+        border: 1px solid #e4eaf2;
+        border-radius: 13px;
+        overflow: hidden;
+        box-shadow: 0 3px 12px rgba(20, 40, 80, .035);
+    }
+
+    .dt-panel-header {
+        padding: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        border-bottom: 1px solid #edf0f5;
+    }
+
+    .dt-panel-title {
+        font-size: 17px;
+        font-weight: 750;
+        margin: 0 0 5px;
+    }
+
+    .dt-panel-desc {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .dt-search {
+        padding: 10px 13px;
+        width: 240px;
+        max-width: 100%;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        outline: none;
+        font-size: 13px;
+        background: #fff;
+    }
+
+    .dt-search:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+    }
+
+    .dt-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .dt-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 830px;
+    }
+
+    .dt-table thead {
+        background: #f8fafc;
+    }
+
+    .dt-table th {
+        text-align: left;
+        padding: 15px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        white-space: nowrap;
+        border-bottom: 1px solid #e8edf5;
+    }
+
+    .dt-table td {
+        padding: 17px 14px;
+        border-bottom: 1px solid #eef2f7;
+        vertical-align: middle;
+        color: #475569;
+    }
+
+    .dt-table tbody tr:hover {
+        background: #fbfcff;
+    }
+
+    .dt-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dt-event-name {
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.55;
+        min-width: 190px;
+    }
+
+    .dt-money {
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .dt-net {
+        color: #059669 !important;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .dt-detail {
+        display: inline-block;
+        text-decoration: none;
+        color: #2563eb;
+        border: 1px solid #bad0ff;
+        border-radius: 7px;
+        padding: 8px 12px;
+        background: #fff;
+        white-space: nowrap;
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .dt-detail:hover {
+        color: #fff;
+        background: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .dt-empty {
+        text-align: center;
+        padding: 46px 20px !important;
+        color: #94a3b8 !important;
+    }
+
+    .dt-footer {
+        padding: 16px 22px;
+        border-top: 1px solid #edf0f5;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    @@media(max-width: 1000px) {
+        .dt-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .dt-stat:last-child {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @@media(max-width: 640px) {
+        .dt-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .dt-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .dt-stat:last-child {
+            grid-column: auto;
+        }
+
+        .dt-panel-header {
+            align-items: stretch;
+        }
+
+        .dt-search {
+            width: 100%;
+        }
+
+        .dt-title {
+            font-size: 23px;
+        }
+    }
+</style>
+
+<div class="dt-page">
+
+    <div class="dt-header">
+        <div>
+            <h1 class="dt-title">Doanh thu theo sự kiện</h1>
+            <p class="dt-subtitle">
+                Theo dõi doanh thu bán vé, khoản hoàn tiền
+                và số tiền thực nhận của từng sự kiện.
+            </p>
+        </div>
+
+        <a asp-controller="BanToChuc"
+           asp-action="ThongKeTongQuan"
+           class="dt-back">
+            ← Thống kê tổng quan
+        </a>
+    </div>
+
+    <div class="dt-stats">
+
+        <div class="dt-stat">
+            <div class="dt-stat-head">
+                <span class="dt-stat-label">Tổng thanh toán</span>
+                <span class="dt-stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </span>
+            </div>
+            <div class="dt-stat-value dt-blue">
+                @tongThanhToan.ToString("N0") đ
+            </div>
+            <div class="dt-stat-note">
+                Tổng giao dịch thanh toán thành công
+            </div>
+        </div>
+
+        <div class="dt-stat">
+            <div class="dt-stat-head">
+                <span class="dt-stat-label">Tổng tiền đã hoàn</span>
+                <span class="dt-stat-icon refund">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </span>
+            </div>
+            <div class="dt-stat-value dt-orange">
+                @tongHoan.ToString("N0") đ
+            </div>
+            <div class="dt-stat-note">
+                Khoản hoàn tiền đã ghi nhận mô phỏng
+            </div>
+        </div>
+
+        <div class="dt-stat">
+            <div class="dt-stat-head">
+                <span class="dt-stat-label">Doanh thu thực nhận</span>
+                <span class="dt-stat-icon net">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </span>
+            </div>
+            <div class="dt-stat-value dt-green">
+                @tongThucNhan.ToString("N0") đ
+            </div>
+            <div class="dt-stat-note">
+                Tổng thanh toán trừ tổng tiền hoàn
+            </div>
+        </div>
+
+    </div>
+
+    <div class="dt-overview">
+        <div class="dt-pill">
+            Tổng sự kiện
+            <strong>@tongSuKien</strong>
+        </div>
+
+        <div class="dt-pill">
+            Vé còn hiệu lực
+            <strong>@tongVe</strong>
+        </div>
+    </div>
+
+    <div class="dt-panel">
+
+        <div class="dt-panel-header">
+            <div>
+                <h2 class="dt-panel-title">
+                    Chi tiết doanh thu từng sự kiện
+                </h2>
+                <p class="dt-panel-desc">
+                    Danh sách sự kiện do bạn tổ chức
+                </p>
+            </div>
+
+            <input class="dt-search"
+                   type="text"
+                   id="dtSearch"
+                   placeholder="Tìm tên sự kiện..."
+                   oninput="dtFilterEvents()" />
+        </div>
+
+        <div class="dt-table-wrap">
+            <table class="dt-table" id="dtRevenueTable">
+                <thead>
+                    <tr>
+                        <th>Sự kiện</th>
+                        <th>Ngày tổ chức</th>
+                        <th>Vé hiệu lực</th>
+                        <th>Đã thanh toán</th>
+                        <th>Đã hoàn</th>
+                        <th>Thực nhận</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr class="dt-event-row">
+                            <td>
+                                <div class="dt-event-name">
+                                    @item.TenSuKien
+                                </div>
+                            </td>
+
+                            <td>
+                                @item.ThoiGianBatDau.ToString("dd/MM/yyyy")
+                            </td>
+
+                            <td>@item.SoVeDaBan</td>
+
+                            <td class="dt-money">
+                                @item.TongThanhToan.ToString("N0") đ
+                            </td>
+
+                            <td class="dt-money dt-orange">
+                                @item.TongHoan.ToString("N0") đ
+                            </td>
+
+                            <td class="dt-net">
+                                @item.DoanhThuThucNhan.ToString("N0") đ
+                            </td>
+
+                            <td>
+                                <a asp-controller="BanToChuc"
+                                   asp-action="ChiTiet"
+                                   asp-route-id="@item.SuKienId"
+                                   class="dt-detail">
+                                    Xem chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    }
+
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="dt-empty">
+                                Chưa có sự kiện nào để thống kê.
+                            </td>
+                        </tr>
+                    }
+
+                    <tr id="dtNoSearchResult" style="display:none">
+                        <td colspan="7" class="dt-empty">
+                            Không tìm thấy sự kiện phù hợp.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dt-footer">
+            Doanh thu thực nhận = Thanh toán thành công − Tiền hoàn.
+            Dữ liệu hoàn tiền hiện tại là mô phỏng.
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    function dtFilterEvents() {
+        const input = document.getElementById("dtSearch");
+        const rows = document.querySelectorAll(".dt-event-row");
+        const empty = document.getElementById("dtNoSearchResult");
+
+        const keyword = (input.value || "")
+            .toLocaleLowerCase("vi-VN")
+            .trim();
+
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const name = row.querySelector(".dt-event-name")
+                .textContent
+                .toLocaleLowerCase("vi-VN");
+
+            const show = name.includes(keyword);
+            row.style.display = show ? "" : "none";
+
+            if (show) visibleCount++;
+        });
+
+        if (empty) {
+            empty.style.display =
+                rows.length > 0 && visibleCount === 0
+                    ? ""
+                    : "none";
+        }
+    }
+</script>

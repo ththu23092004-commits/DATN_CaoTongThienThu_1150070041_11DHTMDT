@@ -1,8 +1,11 @@
 @model VeSuKienWeb.Models.BanToChuc.TaoSuKienYeuCau
+
 @{
     ViewData["Title"] = "Tạo sự kiện mới";
 }
+
 <link rel="stylesheet" href="~/css/so-do-thiet-ke.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/workshop-u-designer.css" asp-append-version="true" />
 <h2 class="mb-3">Tạo sự kiện mới</h2>
 
 <style>
@@ -11,20 +14,95 @@
         font-weight: 700;
         margin-left: 2px;
     }
+
+    .validation-summary-valid {
+        display: none !important;
+    }
+
+    .topic-section {
+        margin: 18px 0 22px;
+    }
+
+    .topic-section > .form-label {
+        display: block;
+        font-weight: 700;
+        color: #493521;
+        margin-bottom: 10px;
+    }
+
+    .topic-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .topic-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 10px 13px;
+        margin: 0;
+        border: 1px solid #e8e0d7;
+        border-radius: 10px;
+        background: #fff;
+        color: #493521;
+        font-size: 14px;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+    .topic-card:hover {
+        border-color: #926024;
+        background: #faf8f5;
+    }
+
+    .topic-card input {
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+        accent-color: #926024;
+    }
+
+    .topic-card span {
+        line-height: 1.4;
+    }
+
+    @@media (max-width: 900px) {
+        .topic-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .topic-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
+
+@if (TempData["ThongBao"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ThongBao"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
 <div class="card shadow-sm">
     <div class="card-body">
         <form asp-action="TaoSuKien" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
 
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<div asp-validation-summary="All"
+     class="alert alert-danger validation-summary"
+     role="alert"></div>
 
             <div class="row">
                 <div class="col-md-6">
-
                     <div class="mb-3">
-                        <label asp-for="TenSuKien" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="TenSuKien" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="TenSuKien" class="form-control" />
                         <span asp-validation-for="TenSuKien" class="text-danger small"></span>
                     </div>
@@ -35,7 +113,6 @@
                         <span asp-validation-for="MoTaChiTiet" class="text-danger small"></span>
                     </div>
 
-                    @* ⭐ ẢNH SỰ KIỆN *@
                     <div class="mb-3">
                         <label class="form-label">Ảnh sự kiện</label>
                         <input type="file" name="AnhSuKienFile" class="form-control" />
@@ -43,17 +120,20 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="LoaiId" class="form-label"></label><span class="required-mark">*</span>
-                        <select asp-for="LoaiId" asp-items="ViewBag.LoaiId" class="form-select" id="LoaiId"></select>
+                        <label asp-for="LoaiId" class="form-label"></label>
+                        <span class="required-mark">*</span>
+                        <select asp-for="LoaiId"
+                                asp-items="ViewBag.LoaiId"
+                                class="form-select"
+                                id="LoaiId"></select>
                         <span asp-validation-for="LoaiId" class="text-danger small"></span>
                     </div>
-
                 </div>
 
                 <div class="col-md-6">
-
                     <div class="mb-3">
-                        <label asp-for="ThoiGianBatDau" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="ThoiGianBatDau" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="ThoiGianBatDau"
                                type="datetime-local"
                                class="form-control"
@@ -62,7 +142,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="ThoiGianKetThuc" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="ThoiGianKetThuc" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="ThoiGianKetThuc"
                                type="datetime-local"
                                class="form-control"
@@ -78,24 +159,47 @@
 
                     <div class="mb-3">
                         <label asp-for="GiaVeMacDinh" class="form-label"></label>
-                        <input asp-for="GiaVeMacDinh" type="number" step="1000" class="form-control" />
+                        <input asp-for="GiaVeMacDinh" type="number" step="1" class="form-control" />
                         <span asp-validation-for="GiaVeMacDinh" class="text-danger small"></span>
                     </div>
-
                 </div>
             </div>
 
-            <!-- ========== KHỐI ĐỊA ĐIỂM & LOẠI VÉ (TRỰC TIẾP) ========== -->
-            <div id="block-truc-tiep" style="display:none;">
-                <hr />
+<div class="topic-section">
+    <label class="form-label">
+        Chủ đề sự kiện <span class="required-mark">*</span>
+    </label>
+
+    <div class="topic-grid">
+        @foreach (var chuDe in (ViewBag.ChuDes as List<VeSuKienWeb.Models.ChuDeSuKien> ?? new List<VeSuKienWeb.Models.ChuDeSuKien>()))
+        {
+            <label class="topic-card">
+                <input type="checkbox"
+                       name="ChuDeIds"
+                       value="@chuDe.ChuDeId"
+                       @(Model?.ChuDeIds?.Contains(chuDe.ChuDeId) == true ? "checked" : null) />
+
+                <span>@chuDe.TenChuDe</span>
+            </label>
+        }
+    </div>
+
+    <span asp-validation-for="ChuDeIds" class="text-danger small"></span>
+</div>
+
+<!-- SỰ KIỆN TRỰC TIẾP -->
+<div id="block-truc-tiep" style="display:none;">
+    <hr />
                 <h5 class="mb-3">Thông tin sự kiện trực tiếp</h5>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label asp-for="TenDiaDiem" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="TenDiaDiem" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="TenDiaDiem" class="form-control" />
                         <span asp-validation-for="TenDiaDiem" class="text-danger small"></span>
                     </div>
+
                     <div class="col-md-6 mb-3">
                         <label asp-for="DiaChi" class="form-label"></label>
                         <input asp-for="DiaChi" class="form-control" />
@@ -105,194 +209,185 @@
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label asp-for="SoChoNgoi" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="SoChoNgoi" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="SoChoNgoi" type="number" class="form-control" readonly />
                         <span asp-validation-for="SoChoNgoi" class="text-danger small"></span>
                     </div>
+
                     <div class="col-md-8 mb-3">
                         <label asp-for="BanDo" class="form-label"></label>
-                        <input asp-for="BanDo" class="form-control" placeholder="Link Google Maps (nếu có)" />
+                        <input asp-for="BanDo" class="form-control"
+                               placeholder="Link Google Maps (nếu có)" />
                         <span asp-validation-for="BanDo" class="text-danger small"></span>
                     </div>
                 </div>
 
-                <!-- HÀNG CẤU HÌNH SƠ ĐỒ GHẾ A1, A2... & KHU VIP/THƯỜNG -->
                 <div class="row" style="display:none;">
                     <div class="col-md-3 mb-3">
-                        <label asp-for="SoHang" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="SoHang" class="form-label"></label>
                         <input asp-for="SoHang" type="number" class="form-control" />
-                        <span asp-validation-for="SoHang" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label asp-for="SoCotMoiHang" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="SoCotMoiHang" class="form-label"></label>
                         <input asp-for="SoCotMoiHang" type="number" class="form-control" />
-                        <span asp-validation-for="SoCotMoiHang" class="text-danger small"></span>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label asp-for="HangVipTu" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="HangVipTu" type="number" class="form-control" placeholder="VD: 1 (hàng A)" />
-                        <span asp-validation-for="HangVipTu" class="text-danger small"></span>
+                        <label asp-for="HangVipTu" class="form-label"></label>
+                        <input asp-for="HangVipTu" type="number" class="form-control" />
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label asp-for="HangVipDen" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="HangVipDen" type="number" class="form-control" placeholder="VD: 2 (hàng B)" />
-                        <span asp-validation-for="HangVipDen" class="text-danger small"></span>
+                        <label asp-for="HangVipDen" class="form-label"></label>
+                        <input asp-for="HangVipDen" type="number" class="form-control" />
                     </div>
                 </div>
 
-<div id="seatDesigner" class="seat-designer">
-    <div class="sd-heading">
-        <h4>Thiết kế sơ đồ chỗ ngồi</h4>
-        <p>Tùy chỉnh vị trí ghế, khu VIP, lối đi, sân khấu và cửa ra vào.</p>
-    </div>
-
-    <div class="sd-body">
-        <aside class="sd-sidebar">
-            <div class="sd-group">
-                <div class="sd-group-title">01. Mẫu bố trí</div>
-                <label for="sdPreset">Chọn kiểu hội trường</label>
-                <select id="sdPreset" class="form-select">
-                    <option value="small">Hội trường nhỏ - 60 ghế</option>
-                    <option value="medium">Hội trường vừa - 240 ghế</option>
-                    <option value="large">Phòng lớn - 1000 ghế</option>
-                    <option value="workshop">Phòng họp - 32 ghế</option>
-                </select>
-            </div>
-
-            <div class="sd-group">
-                <div class="sd-group-title">02. Bố trí ghế</div>
-
-                <div class="sd-two-col">
-                    <div>
-                        <label for="sdRows">Số hàng</label>
-                        <input id="sdRows" class="form-control"
-                        type="number" min="2" max="20" value="6" />
+                <div id="seatDesigner" class="seat-designer">
+                    <div class="sd-heading">
+                        <h4>Thiết kế sơ đồ chỗ ngồi</h4>
+                        <p>Tùy chỉnh vị trí ghế, khu VIP, lối đi, sân khấu và cửa ra vào.</p>
                     </div>
-                    <div>
-                        <label for="sdCols">Ghế mỗi hàng</label>
-                        <input id="sdCols" class="form-control"
-                               type="number" min="2" max="25" value="10" />
+
+                    <div class="sd-body">
+                        <aside class="sd-sidebar">
+                            <div class="sd-group">
+                                <div class="sd-group-title">01. Mẫu bố trí</div>
+                                <label for="sdPreset">Chọn kiểu hội trường</label>
+                                <select id="sdPreset" class="form-select">
+                                    <option value="small">Hội trường nhỏ - 60 ghế</option>
+                                    <option value="medium">Hội trường vừa - 240 ghế</option>
+                                    <option value="large">Phòng lớn - 1000 ghế</option>
+                                    <option value="workshop">Phòng họp - 32 ghế</option>
+                                </select>
+                            </div>
+
+                            <div class="sd-group">
+                                <div class="sd-group-title">02. Bố trí ghế</div>
+                                <div class="sd-two-col">
+                                    <div>
+                                        <label for="sdRows">Số hàng</label>
+                                        <input id="sdRows" class="form-control"
+                                               type="number" min="2" max="20" value="6" />
+                                    </div>
+                                    <div>
+                                        <label for="sdCols">Ghế mỗi hàng</label>
+                                        <input id="sdCols" class="form-control"
+                                               type="number" min="2" max="25" value="10" />
+                                    </div>
+                                </div>
+                                <label for="sdVipRows">Số hàng VIP tính từ sân khấu (0 nếu không có)</label>
+                                <input id="sdVipRows" class="form-control"
+                                       type="number" min="0" max="20" value="2" />
+                            </div>
+
+                            <div class="sd-group">
+                                <div class="sd-group-title">03. Lối đi và cửa</div>
+                                <div class="sd-switch-row">
+                                    <label for="sdVerticalAisle">Lối đi giữa các dãy</label>
+                                    <input id="sdVerticalAisle" type="checkbox" checked />
+                                </div>
+                                <div class="sd-switch-row">
+                                    <label for="sdHorizontalAisle">Lối đi ngang</label>
+                                    <input id="sdHorizontalAisle" type="checkbox" checked />
+                                </div>
+                                <div class="sd-switch-row">
+                                    <label for="sdShowDoors">Hiển thị cửa ra vào</label>
+                                    <input id="sdShowDoors" type="checkbox" checked />
+                                </div>
+                            </div>
+
+                            <div class="sd-group">
+                                <div class="sd-group-title">04. Sân khấu</div>
+                                <label for="sdStagePosition">Vị trí sân khấu</label>
+                                <select id="sdStagePosition" class="form-select">
+                                    <option value="top">Phía trước hội trường</option>
+                                    <option value="bottom">Phía sau hội trường</option>
+                                </select>
+                            </div>
+
+                            <div class="sd-actions">
+                                <button type="button" id="sdRestore"
+                                        class="btn btn-outline-secondary">
+                                    Khôi phục toàn bộ ghế
+                                </button>
+                            </div>
+                        </aside>
+
+                        <section class="sd-preview">
+                            <div class="sd-toolbar">
+                                <div>
+                                    <h5>Bản xem trước sơ đồ</h5>
+                                    <div class="sd-help">
+                                        Bấm vào ghế để loại bỏ hoặc thêm lại ghế.
+                                    </div>
+                                </div>
+
+                                <div class="sd-toolbar-actions">
+                                    <button type="button" id="sdZoomOut"
+                                            class="btn btn-outline-secondary btn-sm">- Thu nhỏ</button>
+                                    <button type="button" id="sdZoomReset"
+                                            class="btn btn-outline-secondary btn-sm">Mặc định</button>
+                                    <button type="button" id="sdZoomIn"
+                                            class="btn btn-outline-secondary btn-sm">+ Phóng to</button>
+                                    <span class="badge bg-light text-dark border">Sơ đồ đang thiết kế</span>
+                                </div>
+                            </div>
+
+                            <div class="sd-canvas">
+                                <div id="sdMap" class="sd-map"></div>
+                            </div>
+
+                            <div class="sd-legend">
+                                <div class="sd-legend-item">
+                                    <span class="sd-dot vip"></span>Ghế VIP
+                                </div>
+                                <div class="sd-legend-item">
+                                    <span class="sd-dot normal"></span>Ghế thường
+                                </div>
+                                <div class="sd-legend-item">
+                                    <span class="sd-dot empty"></span>Vị trí đã bỏ ghế
+                                </div>
+                            </div>
+
+                            <div class="sd-stats">
+                                <div class="sd-stat">
+                                    <strong id="sdTotal">0</strong>
+                                    <span>Tổng ghế</span>
+                                </div>
+                                <div class="sd-stat">
+                                    <strong id="sdVipTotal">0</strong>
+                                    <span>Ghế VIP</span>
+                                </div>
+                                <div class="sd-stat">
+                                    <strong id="sdNormalTotal">0</strong>
+                                    <span>Ghế thường</span>
+                                </div>
+                            </div>
+
+                            <div id="sdWarning" class="sd-alert" hidden>
+                                Sơ đồ chưa có ghế. Vui lòng bổ sung ghế trước khi lưu.
+                            </div>
+                        </section>
                     </div>
                 </div>
 
-                <label for="sdVipRows">Số hàng VIP tính từ sân khấu</label>
-                <input id="sdVipRows" class="form-control"
-                       type="number" min="0" max="20" value="2" />
-            </div>
+                <input type="hidden" id="SoDoJson" name="SoDoJson" />
 
-            <div class="sd-group">
-                <div class="sd-group-title">03. Lối đi và cửa</div>
-
-                <div class="sd-switch-row">
-                    <label for="sdVerticalAisle">Lối đi giữa các dãy</label>
-                    <input id="sdVerticalAisle" type="checkbox" checked />
-                </div>
-
-                <div class="sd-switch-row">
-                    <label for="sdHorizontalAisle">Lối đi ngang</label>
-                    <input id="sdHorizontalAisle" type="checkbox" checked />
-                </div>
-
-                <div class="sd-switch-row">
-                    <label for="sdShowDoors">Hiển thị cửa ra vào</label>
-                    <input id="sdShowDoors" type="checkbox" checked />
-                </div>
-            </div>
-
-            <div class="sd-group">
-                <div class="sd-group-title">04. Sân khấu</div>
-                <label for="sdStagePosition">Vị trí sân khấu</label>
-                <select id="sdStagePosition" class="form-select">
-                    <option value="top">Phía trước hội trường</option>
-                    <option value="bottom">Phía sau hội trường</option>
-                </select>
-            </div>
-
-            <div class="sd-actions">
-                <button type="button" id="sdRestore"
-                        class="btn btn-outline-secondary">
-                    Khôi phục toàn bộ ghế
-                </button>
-            </div>
-        </aside>
-
-        <section class="sd-preview">
-<div class="sd-toolbar">
-    <div>
-        <h5>Bản xem trước sơ đồ</h5>
-        <div class="sd-help">
-            Bấm vào ghế để loại bỏ hoặc thêm lại ghế. Với phòng lớn, hãy dùng phóng to để xem rõ mã ghế.
-        </div>
-    </div>
-
-    <div class="sd-toolbar-actions">
-        <button type="button" id="sdZoomOut" class="btn btn-outline-secondary btn-sm">- Thu nhỏ</button>
-        <button type="button" id="sdZoomReset" class="btn btn-outline-secondary btn-sm">Mặc định</button>
-        <button type="button" id="sdZoomIn" class="btn btn-outline-secondary btn-sm">+ Phóng to</button>
-        <span class="badge bg-light text-dark border">
-            Sơ đồ đang thiết kế
-        </span>
-    </div>
-</div>
-
-            <div class="sd-canvas">
-                <div id="sdMap" class="sd-map"></div>
-            </div>
-
-            <div class="sd-legend">
-                <div class="sd-legend-item">
-                    <span class="sd-dot vip"></span>
-                    Ghế VIP
-                </div>
-                <div class="sd-legend-item">
-                    <span class="sd-dot normal"></span>
-                    Ghế thường
-                </div>
-                <div class="sd-legend-item">
-                    <span class="sd-dot empty"></span>
-                    Vị trí đã bỏ ghế
-                </div>
-            </div>
-
-            <div class="sd-stats">
-                <div class="sd-stat">
-                    <strong id="sdTotal">0</strong>
-                    <span>Tổng ghế</span>
-                </div>
-                <div class="sd-stat">
-                    <strong id="sdVipTotal">0</strong>
-                    <span>Ghế VIP</span>
-                </div>
-                <div class="sd-stat">
-                    <strong id="sdNormalTotal">0</strong>
-                    <span>Ghế thường</span>
-                </div>
-            </div>
-
-            <div id="sdWarning" class="sd-alert" hidden>
-                Sơ đồ chưa có ghế. Vui lòng bổ sung ghế trước khi lưu.
-            </div>
-        </section>
-    </div>
-</div>
-
-<input type="hidden" id="SoDoJson" name="SoDoJson" />
-
-                <h6 class="mb-2 mt-2">Cấu hình loại vé</h6>
+                <h6 class="mb-2 mt-3">Cấu hình loại vé</h6>
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label asp-for="TenLoaiVe1" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="TenLoaiVe1" class="form-label"></label>
                         <input asp-for="TenLoaiVe1" class="form-control" placeholder="VD: VIP" />
                         <span asp-validation-for="TenLoaiVe1" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label asp-for="GiaVe1" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="GiaVe1" type="number" step="1000" class="form-control" />
+                        <label asp-for="GiaVe1" class="form-label"></label>
+                        <input asp-for="GiaVe1" type="number" step="1" class="form-control" />
                         <span asp-validation-for="GiaVe1" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label asp-for="SoLuongVe1" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="SoLuongVe1" class="form-label"></label>
                         <input asp-for="SoLuongVe1" type="number" class="form-control" readonly />
                         <span asp-validation-for="SoLuongVe1" class="text-danger small"></span>
                     </div>
@@ -306,7 +401,7 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label asp-for="GiaVe2" class="form-label"></label>
-                        <input asp-for="GiaVe2" type="number" step="1000" class="form-control" />
+                        <input asp-for="GiaVe2" type="number" step="1" class="form-control" />
                         <span asp-validation-for="GiaVe2" class="text-danger small"></span>
                     </div>
                     <div class="col-md-4 mb-3">
@@ -317,18 +412,285 @@
                 </div>
             </div>
 
-            <!-- ========== KHỐI RIÊNG CHO WORKSHOP ========== -->
+            <!-- WORKSHOP -->
             <div id="block-workshop" style="display:none;">
-                <hr />
-                <h5 class="mb-1">Thông tin workshop</h5>
-                <div class="small text-muted mb-3">Workshop chỉ cần nhập tổng số ghế, hệ thống sẽ tự tạo sơ đồ ghế phù hợp.</div>
+                <style>
+                    .ws-designer {
+                        margin: 12px 0;
+                        border: 1px solid #e8e0d7;
+                        border-radius: 15px;
+                        background: #fff;
+                        overflow: hidden;
+                    }
+
+                    .ws-heading {
+                        padding: 12px 16px;
+                        border-bottom: 1px solid #eee7df;
+                        background: #faf8f5;
+                    }
+
+                    .ws-heading h5 {
+                        margin: 0;
+                        color: #493521;
+                        font-size: 16px;
+                        font-weight: 700;
+                    }
+
+                    .ws-layout {
+                        display: grid;
+                        grid-template-columns: 215px minmax(0, 1fr);
+                        align-items: stretch;
+                    }
+
+                    .ws-sidebar {
+                        padding: 16px;
+                        background: #fbfaf8;
+                        border-right: 1px solid #eee7df;
+                    }
+
+                    .ws-sidebar-inner {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 22px;
+                    }
+
+                    .ws-control-group {
+                        margin: 0;
+                    }
+
+                    .ws-control-title {
+                        font-size: 12px;
+                        font-weight: 800;
+                        color: #926024;
+                        margin-bottom: 10px;
+                    }
+
+                    .ws-sidebar label {
+                        display: block;
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: #65513e;
+                        margin-bottom: 7px;
+                    }
+
+                    .ws-sidebar .form-select {
+                        min-height: 42px;
+                        border-radius: 9px;
+                        border-color: #e5d9cb;
+                        font-size: 13px;
+                    }
+
+                    .ws-preview {
+                        min-width: 0;
+                        padding: 12px 16px;
+                    }
+
+                    .ws-preview-heading {
+                        margin-bottom: 10px;
+                    }
+
+                    .ws-preview-heading strong {
+                        color: #493521;
+                        font-size: 15px;
+                    }
+
+                    .ws-map-wrap {
+                        width: 100%;
+                        padding: 8px;
+                        background: #faf8f5;
+                        border: 1px solid #e8e0d7;
+                        border-radius: 13px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }
+
+                    .ws-map {
+                        position: relative;
+                        width: 100%;
+                        max-width: 850px;
+                        margin: 0 auto;
+                        aspect-ratio: 10 / 7;
+                        background: #fff;
+                        border: 1px solid #e8e0d7;
+                        border-radius: 10px;
+                        overflow: hidden;
+                    }
+
+                    .ws-stage {
+                        position: absolute;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: #926024;
+                        color: #fff;
+                        border-radius: 9px;
+                        font-size: 13px;
+                        font-weight: 700;
+                        letter-spacing: .03em;
+                        text-align: center;
+                        z-index: 1;
+                    }
+
+                    .ws-table {
+                        position: absolute;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border: 2px solid #bd9058;
+                        border-radius: 50%;
+                        background: #f8ead6;
+                        color: #78501d;
+                        font-size: 13px;
+                        font-weight: 700;
+                        z-index: 2;
+                    }
+
+                    .ws-seat {
+                        position: absolute;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                        border: 2px solid #4383c5;
+                        border-radius: 50%;
+                        background: #e0edfc;
+                        color: #244b75;
+                        font-size: 11px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        z-index: 3;
+                        transition: background .15s, border-color .15s;
+                    }
+
+                    .ws-seat:hover {
+                        background: #c8def8;
+                        border-color: #245f9e;
+                    }
+
+                    .ws-seat.removed {
+                        background: #f3f0ed;
+                        border: 1px dashed #aaa;
+                        color: #9a9188;
+                    }
+
+                    .ws-legend {
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        flex-wrap: wrap;
+                        margin-top: 12px;
+                        color: #776b60;
+                        font-size: 12px;
+                    }
+
+                    .ws-legend-item {
+                        display: flex;
+                        align-items: center;
+                        gap: 7px;
+                    }
+
+                    .ws-legend-dot {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 50%;
+                        background: #e0edfc;
+                        border: 1px solid #4383c5;
+                    }
+
+                    .ws-legend-dot.removed {
+                        background: #f3f0ed;
+                        border: 1px dashed #aaa;
+                    }
+
+                    .ws-summary {
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 10px;
+                        margin-top: 12px;
+                    }
+
+                    .ws-summary-card {
+                        padding: 10px;
+                        border: 1px solid #eee7df;
+                        border-radius: 10px;
+                        background: #faf8f5;
+                        text-align: center;
+                    }
+
+                    .ws-summary-card strong {
+                        display: block;
+                        color: #926024;
+                        font-size: 22px;
+                    }
+
+                    .ws-summary-card span {
+                        color: #817569;
+                        font-size: 11px;
+                    }
+
+                    .ws-actions {
+                        display: flex;
+                        gap: 8px;
+                        margin-top: 12px;
+                    }
+
+                    .ws-actions button {
+                        border-radius: 8px;
+                        font-size: 12px;
+                    }
+
+                    .ws-ticket-heading {
+                        margin: 20px 0 13px;
+                        padding-top: 15px;
+                        border-top: 1px solid #eee7df;
+                        color: #493521;
+                        font-size: 15px;
+                        font-weight: 700;
+                    }
+
+                    @@media (max-width: 900px) {
+                        .ws-layout {
+                            grid-template-columns: 1fr;
+                        }
+
+                        .ws-sidebar {
+                            border-right: 0;
+                            border-bottom: 1px solid #eee7df;
+                        }
+
+                        .ws-sidebar-inner {
+                            display: grid;
+                            grid-template-columns: repeat(2, minmax(0, 1fr));
+                            gap: 15px;
+                        }
+                    }
+
+                    @@media (max-width: 576px) {
+                        .ws-sidebar-inner {
+                            grid-template-columns: 1fr;
+                        }
+
+                        .ws-preview {
+                            padding: 10px;
+                        }
+
+                        .ws-map-wrap {
+                            padding: 5px;
+                        }
+                    }
+                </style>
+
+                <h5 class="mb-3">Thông tin Workshop</h5>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label asp-for="TenDiaDiem" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="TenDiaDiem" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="TenDiaDiem" class="form-control" />
                         <span asp-validation-for="TenDiaDiem" class="text-danger small"></span>
                     </div>
+
                     <div class="col-md-6 mb-3">
                         <label asp-for="DiaChi" class="form-label"></label>
                         <input asp-for="DiaChi" class="form-control" />
@@ -336,64 +698,192 @@
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="SoChoNgoi" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="SoChoNgoi" type="number" class="form-control" />
-                        <span asp-validation-for="SoChoNgoi" class="text-danger small"></span>
+                <div id="workshopDesigner" class="ws-designer">
+                    <div class="ws-heading">
+                        <h5>Thiết kế sơ đồ bàn tròn</h5>
+                    </div>
+
+                    <div class="ws-layout">
+                        <aside class="ws-sidebar">
+                            <div class="ws-sidebar-inner">
+                                <div class="ws-control-group">
+    <div class="ws-control-title">KIỂU BỐ TRÍ WORKSHOP</div>
+    <select id="wsLayoutType" class="form-select">
+        <option value="round" selected>Bàn tròn</option>
+        <option value="u">Bàn chữ U</option>
+    </select>
+</div>
+
+<div id="wsUControls" style="display:none;">
+    <div class="ws-control-group">
+        <div class="ws-control-title">BỐ TRÍ GHẾ BÀN CHỮ U</div>
+
+        <label for="wsULeftCount">Số ghế cạnh trái</label>
+        <select id="wsULeftCount" class="form-select">
+            <option value="1">1 ghế</option>
+            <option value="2">2 ghế</option>
+            <option value="3" selected>3 ghế</option>
+            <option value="4">4 ghế</option>
+            <option value="5">5 ghế</option>
+        </select>
+
+        <label for="wsURightCount" class="mt-3">Số ghế cạnh phải</label>
+        <select id="wsURightCount" class="form-select">
+            <option value="1">1 ghế</option>
+            <option value="2">2 ghế</option>
+            <option value="3" selected>3 ghế</option>
+            <option value="4">4 ghế</option>
+            <option value="5">5 ghế</option>
+        </select>
+
+        <label for="wsUBackCount" class="mt-3">Số ghế cạnh dưới</label>
+        <select id="wsUBackCount" class="form-select">
+            <option value="1">1 ghế</option>
+            <option value="2">2 ghế</option>
+            <option value="3" selected>3 ghế</option>
+            <option value="4">4 ghế</option>
+        </select>
+
+        <div class="form-text mt-2">
+            Bàn chữ U là một cụm liền khối. Ghế nằm ở 3 cạnh ngoài như sơ đồ mẫu.
+        </div>
+    </div>
+
+    <div class="ws-control-group">
+        <div class="ws-control-title">CỬA RA VÀO</div>
+        <label class="d-flex align-items-center gap-2">
+            <input type="checkbox" id="wsUShowDoor" checked />
+            Hiển thị cửa ra vào
+        </label>
+    </div>
+
+    <div class="ws-control-group">
+        <div class="ws-control-title">BÀN CHỦ TỌA</div>
+        <label class="d-flex align-items-center gap-2">
+            <input type="checkbox" id="wsUShowHeadTable" checked />
+            Hiển thị bàn chủ tọa
+        </label>
+    </div>
+</div>
+                                <div class="ws-control-group">
+                                    <div class="ws-control-title">01. SỐ LƯỢNG BÀN</div>
+                                    <label for="wsTableCount">Chọn số bàn</label>
+                                    <select id="wsTableCount" class="form-select">
+                                        <option value="1">1 bàn</option>
+                                        <option value="2">2 bàn</option>
+                                        <option value="3" selected>3 bàn</option>
+                                        <option value="4">4 bàn</option>
+                                        <option value="5">5 bàn</option>
+                                        <option value="6">6 bàn</option>
+                                    </select>
+                                </div>
+
+                                <div class="ws-control-group">
+                                    <div class="ws-control-title">02. SỐ GHẾ</div>
+                                    <label for="wsSeatsPerTable">Ghế mỗi bàn</label>
+                                    <select id="wsSeatsPerTable" class="form-select">
+                                        <option value="2">2 ghế</option>
+                                        <option value="4">4 ghế</option>
+                                        <option value="6" selected>6 ghế</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <section class="ws-preview">
+                            <div class="ws-preview-heading">
+                                <strong>Bản xem trước sơ đồ</strong>
+                            </div>
+
+                            <div class="ws-map-wrap">
+                                <div id="wsMap" class="ws-map"></div>
+                            </div>
+
+                            <div class="ws-legend">
+                                <span class="ws-legend-item">
+                                    <span class="ws-legend-dot"></span>
+                                    Ghế thường
+                                </span>
+                                <span class="ws-legend-item">
+                                    <span class="ws-legend-dot removed"></span>
+                                    Ghế đã bỏ
+                                </span>
+                            </div>
+
+                            <div class="ws-summary">
+                                <div class="ws-summary-card">
+                                    <strong id="wsTotal">0</strong>
+                                    <span>Tổng số ghế</span>
+                                </div>
+                                <div class="ws-summary-card">
+                                    <strong id="wsNormalTotal">0</strong>
+                                    <span>Ghế thường</span>
+                                </div>
+                            </div>
+
+                            <div id="wsWarning" class="alert alert-warning mt-3" hidden>
+                                Workshop phải có ít nhất một ghế.
+                            </div>
+
+                            <div class="ws-actions">
+                                <button type="button" id="wsRestore"
+                                        class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    Khôi phục ghế
+                                </button>
+                            </div>
+                        </section>
                     </div>
                 </div>
 
-                <h6 class="mb-2 mt-2">Cấu hình loại vé workshop</h6>
+                <input asp-for="SoChoNgoi" id="SoChoNgoiWorkshop" type="hidden" />
+                <input type="hidden" id="SoDoJsonWorkshop" name="SoDoJson" />
+
+                <input type="hidden" name="TenLoaiVe1" value="" />
+                <input type="hidden" name="GiaVe1" value="" />
+                <input type="hidden" name="SoLuongVe1" value="0" />
+
+                <h6 class="ws-ticket-heading">Cấu hình vé Workshop</h6>
+
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label asp-for="TenLoaiVe1" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="TenLoaiVe1" class="form-control" placeholder="VD: VIP" />
-                        <span asp-validation-for="TenLoaiVe1" class="text-danger small"></span>
+                        <label class="form-label">Tên loại vé</label>
+                        <input name="TenLoaiVe2" id="wsTicketName"
+                               class="form-control" value="Thường" readonly />
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="GiaVe1" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="GiaVe1" type="number" step="1000" class="form-control" />
-                        <span asp-validation-for="GiaVe1" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="SoLuongVe1" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="SoLuongVe1" type="number" class="form-control" />
-                        <span asp-validation-for="SoLuongVe1" class="text-danger small"></span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="TenLoaiVe2" class="form-label"></label>
-                        <input asp-for="TenLoaiVe2" class="form-control" placeholder="VD: Thường" />
-                        <span asp-validation-for="TenLoaiVe2" class="text-danger small"></span>
-                    </div>
+
                     <div class="col-md-4 mb-3">
                         <label asp-for="GiaVe2" class="form-label"></label>
-                        <input asp-for="GiaVe2" type="number" step="1000" class="form-control" />
+                        <input asp-for="GiaVe2" type="number" min="1"
+                               step="1" class="form-control" />
                         <span asp-validation-for="GiaVe2" class="text-danger small"></span>
                     </div>
+
                     <div class="col-md-4 mb-3">
-                        <label asp-for="SoLuongVe2" class="form-label"></label>
-                        <input asp-for="SoLuongVe2" type="number" class="form-control" />
-                        <span asp-validation-for="SoLuongVe2" class="text-danger small"></span>
+                        <label class="form-label">Số lượng vé</label>
+                        <input name="SoLuongVe2" id="wsTicketQuantity"
+                               type="number" class="form-control" readonly />
                     </div>
                 </div>
             </div>
 
-            <!-- ========== KHỐI TRỰC TUYẾN ========== -->
+            <!-- SỰ KIỆN TRỰC TUYẾN -->
             <div id="block-truc-tuyen" style="display:none;">
                 <hr />
                 <h5 class="mb-3">Thông tin sự kiện trực tuyến</h5>
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label asp-for="NenTang" class="form-label"></label><span class="required-mark">*</span>
-                        <input asp-for="NenTang" class="form-control" placeholder="Zoom, Google Meet, YouTube..." />
+                        <label asp-for="NenTang" class="form-label"></label>
+                        <span class="required-mark">*</span>
+                        <input asp-for="NenTang" class="form-control"
+                               placeholder="Zoom, Google Meet, YouTube..." />
                         <span asp-validation-for="NenTang" class="text-danger small"></span>
                     </div>
+
                     <div class="col-md-8 mb-3">
-                        <label asp-for="LinkXem" class="form-label"></label><span class="required-mark">*</span>
+                        <label asp-for="LinkXem" class="form-label"></label>
+                        <span class="required-mark">*</span>
                         <input asp-for="LinkXem" class="form-control" />
                         <span asp-validation-for="LinkXem" class="text-danger small"></span>
                     </div>
@@ -405,6 +895,7 @@
                         <input asp-for="MatKhauPhong" class="form-control" />
                         <span asp-validation-for="MatKhauPhong" class="text-danger small"></span>
                     </div>
+
                     <div class="col-md-8 mb-3">
                         <label asp-for="HuongDan" class="form-label"></label>
                         <textarea asp-for="HuongDan" class="form-control" rows="3"></textarea>
@@ -412,21 +903,21 @@
                     </div>
                 </div>
 
-                @* ⭐ CẤU HÌNH LOẠI VÉ TRỰC TUYẾN – CHỈ NHẬP TÊN HIỂN THỊ *@
                 <h6 class="mb-2 mt-2">Cấu hình loại vé trực tuyến</h6>
 
                 <div class="row">
                     <div class="col-md-12 mb-2">
-                        <label class="form-label">Tên loại vé trực tuyến</label><span class="required-mark">*</span>
-                        <input type="text"
-                               id="TenLoaiVeOnline"
-                               class="form-control"
-                               placeholder="VD: Vé Online" />
-                               <input type="hidden" name="TenLoaiVe1" id="TenLoaiVe1OnlineHidden" />
-<input type="hidden" name="GiaVe1" id="GiaVe1OnlineHidden" />
-<input type="hidden" name="SoLuongVe1" id="SoLuongVe1OnlineHidden" />
+                        <label class="form-label">Tên loại vé trực tuyến</label>
+                        <span class="required-mark">*</span>
+                        <input type="text" id="TenLoaiVeOnline"
+                               class="form-control" placeholder="VD: Vé Online" />
+
+                        <input type="hidden" name="TenLoaiVe1" id="TenLoaiVe1OnlineHidden" />
+                        <input type="hidden" name="GiaVe1" id="GiaVe1OnlineHidden" />
+                        <input type="hidden" name="SoLuongVe1" id="SoLuongVe1OnlineHidden" />
+
                         <div class="form-text">
-                            Giá vé và số lượng sẽ dùng từ <strong>Giá vé mặc định</strong> và <strong>Số lượng tối đa</strong> ở trên.
+                            Giá vé và số lượng lấy từ Giá vé mặc định và Số lượng tối đa ở trên.
                         </div>
                     </div>
                 </div>
@@ -435,6 +926,7 @@
             <button type="submit" class="btn btn-success">
                 Gửi Admin duyệt
             </button>
+
             <a asp-action="Index" class="btn btn-outline-secondary ms-2">
                 Hủy
             </a>
@@ -444,17 +936,18 @@
 
 @section Scripts {
     <script src="~/js/so-do-thiet-ke.js" asp-append-version="true"></script>
+    <script src="~/js/workshop-seat-designer.js" asp-append-version="true"></script>
+<script src="~/js/workshop-u-designer.js" asp-append-version="true"></script>
     <script>
-        // Bỏ dấu tiếng Việt để so sánh
         function removeVietnameseTone(str) {
             if (!str) return "";
+
             return str
                 .normalize("NFD")
                 .replace(/[\u0300-\u036f]/g, "")
                 .toLowerCase();
         }
 
-        // Đồng bộ TenLoaiVe1 / GiaVe1 / SoLuongVe1 cho sự kiện TRỰC TUYẾN
         function syncOnlineLoaiVeFields() {
             var select = document.getElementById("LoaiId");
             if (!select) return;
@@ -463,23 +956,23 @@
             var textRaw = selectedOption ? selectedOption.text : "";
             var text = removeVietnameseTone(textRaw);
 
-            var isOnline = text.includes("truc tuyen");
-
-            if (!isOnline) return;
+            if (!text.includes("truc tuyen")) return;
 
             var tenOnlineInput = document.getElementById("TenLoaiVeOnline");
             var tenHidden = document.getElementById("TenLoaiVe1OnlineHidden");
-
             var giaMacDinh = document.getElementById("GiaVeMacDinh");
             var giaHidden = document.getElementById("GiaVe1OnlineHidden");
             var soLuongToiDa = document.getElementById("SoLuongToiDa");
             var soLuongHidden = document.getElementById("SoLuongVe1OnlineHidden");
+
             if (tenOnlineInput && tenHidden) {
                 tenHidden.value = tenOnlineInput.value || "Vé Online";
             }
+
             if (giaMacDinh && giaHidden) {
                 giaHidden.value = giaMacDinh.value;
             }
+
             if (soLuongToiDa && soLuongHidden) {
                 soLuongHidden.value = soLuongToiDa.value;
             }
@@ -499,14 +992,16 @@
 
             function setBlockEnabled(block, enabled) {
                 if (!block) return;
-                var fields = block.querySelectorAll("input, select, textarea");
-                fields.forEach(function (f) { f.disabled = !enabled; });
-            }
 
+                block.querySelectorAll("input, select, textarea").forEach(function (field) {
+                    field.disabled = !enabled;
+                });
+            }
 
             blockTrucTiep.style.display = "none";
             blockWorkshop.style.display = "none";
             blockTrucTuyen.style.display = "none";
+
             setBlockEnabled(blockTrucTiep, false);
             setBlockEnabled(blockWorkshop, false);
             setBlockEnabled(blockTrucTuyen, false);
@@ -522,13 +1017,13 @@
             } else if (text.includes("truc tuyen")) {
                 blockTrucTuyen.style.display = "block";
                 setBlockEnabled(blockTrucTuyen, true);
-                // khi là trực tuyến thì đồng bộ dữ liệu loại vé
                 syncOnlineLoaiVeFields();
             }
         }
 
         document.addEventListener("DOMContentLoaded", function () {
             var selectLoai = document.getElementById("LoaiId");
+
             if (selectLoai) {
                 selectLoai.addEventListener("change", function () {
                     capNhatBlockTheoLoai();
@@ -551,7 +1046,6 @@
                 soLuongToiDa.addEventListener("input", syncOnlineLoaiVeFields);
             }
 
-            // Khởi tạo lần đầu
             capNhatBlockTheoLoai();
             syncOnlineLoaiVeFields();
         });

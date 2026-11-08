@@ -1,0 +1,587 @@
+
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap");
+
+/* ============================================
+   VE 3D - PHIEN BAN POSTER DAY DU
+   Giữ nguyên kiểu vé răng cưa và tone lavender
+   ============================================ */
+
+.ve3d-section,
+.ve3d-section * {
+    box-sizing: border-box;
+}
+
+.ve3d-section {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    margin: 0 0 44px;
+    color: #fff;
+
+    font-family:
+        "Be Vietnam Pro",
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background:
+        radial-gradient(
+            ellipse at 50% 43%,
+            #65468a 0%,
+            transparent 55%
+        ),
+        radial-gradient(
+            ellipse at 10% 20%,
+            #42235c 0%,
+            transparent 45%
+        ),
+        linear-gradient(
+            125deg,
+            #12142f,
+            #281747 70%,
+            #171c3a
+        );
+}
+
+/* ============================================
+   HEADING
+   ============================================ */
+
+.ve3d-heading {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    padding: 32px 14px 8px;
+}
+
+.ve3d-eyebrow {
+    color: #ffacdf;
+    letter-spacing: 2px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.ve3d-heading h2 {
+    font-family: inherit;
+    font-size: clamp(25px, 4.2vw, 39px);
+    margin: 10px 0;
+    font-weight: 900;
+    letter-spacing: -0.7px;
+    line-height: 1.3;
+    color: #fff;
+}
+
+.ve3d-heading h2 span {
+    color: #ff9bda;
+}
+
+.ve3d-heading p {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: #e8d9f4;
+    margin: 0;
+}
+
+.ve3d-defs {
+    position: absolute;
+    pointer-events: none;
+}
+
+/* ============================================
+   SAN KHAU - MO RONG THEO CHIEU NGANG
+   ============================================ */
+
+.ve3d-stage {
+    position: relative;
+
+    width: 100%;
+    max-width: 1160px;
+
+    height: 500px;
+    margin: 15px auto 0;
+
+    perspective: 1250px;
+    perspective-origin: 50% 42%;
+
+    touch-action: pan-y;
+    user-select: none;
+    cursor: grab;
+
+    isolation: isolate;
+}
+
+.ve3d-stage:active {
+    cursor: grabbing;
+}
+
+.ve3d-glow {
+    position: absolute;
+    width: 72%;
+    height: 38px;
+    border-radius: 50%;
+
+    background: rgba(240, 128, 221, 0.3);
+    filter: blur(30px);
+
+    left: 14%;
+    bottom: 8px;
+
+    pointer-events: none;
+}
+
+/* ============================================
+   THAN VE 3D
+   Giữ kích thước 250x444 để không lệch SVG
+   ============================================ */
+
+
+
+.ve3d-ticket {
+    position: absolute;
+
+    left: 50%;
+    top: 14px;
+margin-left: -135px;
+
+width: 270px;
+    height: 444px;
+
+    background: linear-gradient(
+        140deg,
+        #f3e8fb,
+        #d9c6ee
+    );
+
+    color: #352144;
+    overflow: hidden;
+    cursor: pointer;
+
+    clip-path: url(#ve3d-ticket-clip);
+
+    filter: drop-shadow(
+        0 15px 15px rgba(0, 0, 0, .5)
+    );
+
+    transition:
+        transform .5s cubic-bezier(.2, .8, .2, 1),
+        opacity .4s,
+        filter .4s;
+
+    will-change: transform;
+    transform-origin: center center;
+    backface-visibility: hidden;
+}
+
+
+
+
+.ve3d-ticket.active {
+    filter:
+        drop-shadow(0 20px 24px #000b)
+        drop-shadow(0 0 9px #eaa4fb);
+}
+
+.ve3d-surface {
+    position: absolute;
+    inset: 4px;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* ============================================
+   POSTER - KHONG CAT MAT NOI DUNG ANH
+   ============================================ */
+
+.ve3d-poster {
+    display: block;
+
+    width: calc(100% - 14px);
+    aspect-ratio: 1 / 1;
+    height: auto;
+    flex-shrink: 0;
+
+    margin: 8px 7px 0;
+
+    object-fit: cover;
+    object-position: center center;
+
+    border: 2px solid rgba(255, 255, 255, .72);
+    border-radius: 6px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #422953,
+            #211532
+        );
+}
+
+/* ============================================
+   NHAN CHU DE
+   ============================================ */
+
+.ve3d-category {
+    position: absolute;
+    z-index: 3;
+
+    top: 17px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    max-width: 86%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    background: rgba(252, 230, 248, .96);
+    color: #68367e;
+
+    padding: 7px 12px;
+    border-radius: 30px;
+
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .5px;
+
+    box-shadow: 0 4px 12px rgba(36, 13, 56, .12);
+}
+
+/* ============================================
+   NOI DUNG VE
+   ============================================ */
+
+.ve3d-info {
+    padding: 10px 13px 0;
+    text-align: left;
+    min-height: 0;
+    min-width: 0;
+}
+
+.ve3d-eventname {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+
+    min-height: 0;
+    max-height: 37px;
+
+    margin: 0 0 6px;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.34;
+
+    color: #2e173d;
+
+    white-space: normal;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+}
+
+.ve3d-meta {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+
+    margin: 5px 0;
+
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.4;
+
+    text-align: left;
+    color: #42304f;
+
+    min-width: 0;
+}
+
+.ve3d-meta i {
+    flex-shrink: 0;
+    width: 13px;
+    font-size: 10px;
+    color: #704a8a;
+}
+
+.ve3d-meta span {
+    min-width: 0;
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    color: #42304f;
+}
+
+/* ============================================
+   GIA VE VA NUT CHI TIET
+   ============================================ */
+
+.ve3d-pricearea {
+    position: absolute;
+
+    left: 14px;
+    right: 14px;
+    bottom: 40px;
+
+    border-top: 1.5px dashed #9063aa;
+    padding-top: 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.ve3d-pricearea > div {
+    min-width: 0;
+}
+
+.ve3d-pricelabel {
+    display: block;
+
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 600;
+
+    color: #60416d;
+    text-align: left;
+}
+
+.ve3d-price {
+    display: block;
+
+    margin-top: 3px;
+
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.3;
+
+    color: #8b2676;
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.ve3d-view {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    background: #873d9e;
+    color: #fff;
+
+    text-decoration: none;
+
+    border: none;
+    border-radius: 9px;
+
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.4;
+
+    padding: 9px 11px;
+
+    white-space: nowrap;
+
+    transition: background .2s ease;
+}
+
+.ve3d-view:hover,
+.ve3d-view:focus-visible {
+    background: #b34d9c;
+    color: #fff;
+}
+
+/* ============================================
+   DIEU HUONG
+   ============================================ */
+
+.ve3d-nav {
+    position: absolute;
+    z-index: 80;
+    top: 44%;
+
+    height: 42px;
+    width: 42px;
+
+    border-radius: 50%;
+
+    border: 1px solid #eccbf5;
+    background: rgba(103, 69, 128, .91);
+    color: white;
+
+    display: grid;
+    place-items: center;
+
+    cursor: pointer;
+    font-size: 24px;
+
+    box-shadow: 0 6px 18px #0007;
+
+    transition:
+        background .2s,
+        transform .2s;
+}
+
+.ve3d-nav:hover {
+    background: #cd54ac;
+    transform: scale(1.06);
+}
+
+.ve3d-prev {
+    left: 10px;
+}
+
+.ve3d-next {
+    right: 10px;
+}
+
+/* ============================================
+   DOTS
+   ============================================ */
+
+.ve3d-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+
+    margin-bottom: 15px;
+}
+
+.ve3d-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 20px;
+    border: 0;
+
+    background: #bca9cd;
+
+    padding: 0;
+    cursor: pointer;
+
+    transition:
+        width .2s,
+        background .2s;
+}
+
+.ve3d-dot.on {
+    width: 27px;
+    background: #ff91d9;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+.ve3d-footer {
+    text-align: center;
+    padding: 0 12px 25px;
+}
+
+.ve3d-hint {
+    font-family: inherit;
+    font-size: 11px;
+    color: #e6d2f0;
+}
+
+.ve3d-empty {
+    padding: 40px 16px;
+    text-align: center;
+
+    font-family: inherit;
+    font-size: 14px;
+    color: #e6d2f0;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 767px) {
+    .ve3d-heading {
+        padding-top: 25px;
+    }
+
+    .ve3d-heading h2 {
+        font-size: clamp(23px, 6vw, 30px);
+    }
+
+    .ve3d-stage {
+        height: 490px;
+    }
+
+    .ve3d-nav {
+        width: 36px;
+        height: 36px;
+        font-size: 21px;
+    }
+
+    .ve3d-prev {
+        left: 4px;
+    }
+
+    .ve3d-next {
+        right: 4px;
+    }
+}
+
+@media (max-width: 510px) {
+    .ve3d-stage {
+        height: 475px;
+        margin-top: 12px;
+    }
+
+    .ve3d-ticket {
+        top: 12px;
+    }
+
+    .ve3d-nav {
+        width: 32px;
+        height: 32px;
+        font-size: 19px;
+    }
+
+    .ve3d-heading p {
+        font-size: 11px;
+    }
+}
+
+
+/* Zoom nhẹ khi rê chuột - không đổi vị trí vé */
+
+@media (hover: hover) and (pointer: fine) {
+    .ve3d-ticket {
+        transition:
+            transform .35s cubic-bezier(.2, .8, .2, 1),
+            filter .25s ease,
+            opacity .4s;
+    }
+
+    .ve3d-ticket:hover .ve3d-poster {
+        filter: brightness(1.06);
+    }
+
+    .ve3d-ticket:hover .ve3d-view {
+        background: #a14bb3;
+    }
+}

@@ -1,179 +1,247 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
-    <title>@ViewData["Title"] - Hệ thống đặt vé sự kiện</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="~/css/site.css" />
-    <link rel="stylesheet"
-href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>@ViewData["Title"] - Hệ thống sự kiện</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet" />
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet" />
+
+    <link href="~/css/site.css"
+          asp-append-version="true"
+          rel="stylesheet" />
+
+    <link href="~/css/event-redesign.css"
+          asp-append-version="true"
+          rel="stylesheet" />
 </head>
-<body class="d-flex flex-column min-vh-100 bg-light">
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm border-bottom">
-        <div class="container">
+@{
+    var controller =
+        ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
 
-            @* Logo *@
-            @if (User?.IsInRole("KhachHang") ?? false)
-            {
-                <a class="navbar-brand fw-bold text-primary" asp-controller="KhachHang" asp-action="Index">
-                    Đặt Vé Sự Kiện
+    bool laAdmin = User?.IsInRole("Admin") ?? false;
+    bool laBTC = (User?.IsInRole("ToChuc") ?? false) ||
+                 (User?.IsInRole("BanToChuc") ?? false);
+
+    bool laTrangQuanLy =
+        controller == "Admin" ||
+        controller == "BanToChuc" ||
+        controller == "KiemThuGoiY" ||
+        controller == "KhamPhaSuKien";
+
+    bool giaoDienMoi =
+        !laAdmin &&
+        !laBTC &&
+        !laTrangQuanLy;
+
+    bool hienWidget =
+        giaoDienMoi &&
+        (controller == "Home" ||
+         controller == "SuKien" ||
+         controller == "KhachHang");
+}
+
+<body class="d-flex flex-column min-vh-100 @(giaoDienMoi ? "event-redesign" : "bg-light")">
+
+    <header class="event-header">
+        <nav class="navbar navbar-expand-lg @(giaoDienMoi ? "navbar-dark event-main-nav" : "navbar-light bg-white shadow-sm")">
+
+            <div class="container">
+
+                <a class="navbar-brand event-brand"
+                   asp-controller="Home"
+                   asp-action="Index">
+
+                    <span class="event-brand-symbol">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </span>
+
+                    <span class="event-brand-text">
+                      
+                    </span>
                 </a>
-            }
-            else
-            {
-                <a class="navbar-brand fw-bold text-primary" asp-controller="Home" asp-action="Index">
-                    Đặt Vé Sự Kiện
-                </a>
-            }
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#mainNav"
+                        aria-controls="mainNav"
+                        aria-expanded="false"
+                        aria-label="Mở menu">
 
-            <div class="collapse navbar-collapse" id="mainNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <div class="collapse navbar-collapse"
+                     id="mainNav">
 
-                    @* 🔵 Trang chủ *@
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a>
-                    </li>
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                    @* 🟢 Sự kiện theo vai trò *@
-                    <li class="nav-item">
+                        <li class="nav-item">
+                            <a class="nav-link"
+                               asp-controller="Home"
+                               asp-action="Index">
+
+                                <i class="bi bi-house-door me-1"></i>
+                                Trang chủ
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            @if (User?.IsInRole("KhachHang") ?? false)
+                            {
+                                <a class="nav-link"
+                                   asp-controller="KhachHang"
+                                   asp-action="Index">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    Sự kiện
+                                </a>
+                            }
+                            else
+                            {
+                                <a class="nav-link"
+                                   asp-controller="SuKien"
+                                   asp-action="DanhSach">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    Sự kiện
+                                </a>
+                            }
+                        </li>
+
                         @if (User?.IsInRole("KhachHang") ?? false)
                         {
-                            <a class="nav-link" asp-controller="KhachHang" asp-action="Index">Sự kiện</a>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="KhachHang"
+                                   asp-action="VeCuaToi">
+                                    <i class="bi bi-ticket-perforated me-1"></i>
+                                    Vé của tôi
+                                </a>
+                            </li>
+                        }
+
+                        @if (User?.IsInRole("ToChuc") ?? false)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="BanToChuc"
+                                   asp-action="Index">
+                                    Quản lý sự kiện
+                                </a>
+                            </li>
+                        }
+
+                        @if (User?.IsInRole("Admin") ?? false)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Admin"
+                                   asp-action="Index">
+                                    Quản lý hệ thống
+                                </a>
+                            </li>
+                        }
+                    </ul>
+
+                    <ul class="navbar-nav ms-auto align-items-lg-center">
+
+                        @if (User?.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item">
+                                <span class="navbar-text me-lg-3">
+                                    Xin chào,
+                                    @(User?.Identity?.Name ?? "Người dùng")
+                                </span>
+                            </li>
+
+                            <li class="nav-item">
+                                <form asp-controller="TaiKhoan"
+                                      asp-action="DangXuat"
+                                      method="post">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="btn event-auth-button">
+                                        <i class="bi bi-box-arrow-right me-1"></i>
+                                        Đăng xuất
+                                    </button>
+                                </form>
+                            </li>
                         }
                         else
                         {
-                            <a class="nav-link" asp-controller="SuKien" asp-action="DanhSach">Sự kiện</a>
+                            <li class="nav-item">
+                                <a class="btn event-auth-button"
+                                   asp-controller="TaiKhoan"
+                                   asp-action="DangNhap">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    Đăng nhập
+                                </a>
+                            </li>
                         }
-                    </li>
+                    </ul>
 
-                    @* 🟡 ⭐ Vé của tôi (Chỉ khách hàng) *@
-                    @if (User?.IsInRole("KhachHang") ?? false)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="KhachHang" asp-action="VeCuaToi">Vé của tôi</a>
-                        </li>
-                    }
-
-                    @* 🟠 Quản lý sự kiện - Ban tổ chức *@
-                    @if (User?.IsInRole("ToChuc") ?? false)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="BanToChuc" asp-action="Index">Quản lý sự kiện</a>
-                        </li>
-                    }
-
-@* 🔴 Khu vực Admin *@
-@if (User?.IsInRole("Admin") ?? false)
-{
-  
-
-    <li class="nav-item">
-        <a class="nav-link" asp-controller="Admin" asp-action="Index">
-            Quản lý hệ thống
-        </a>
-    </li>
-}
-
-                </ul>
-
-                <ul class="navbar-nav ms-auto">
-                    @if (User?.Identity?.IsAuthenticated ?? false)
-                    {
-                        <li class="nav-item">
-                            <span class="navbar-text me-3 fw-semibold text-dark">
-                                Xin chào, @(User?.Identity?.Name ?? "Người dùng")
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <form asp-controller="TaiKhoan" asp-action="DangXuat" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-outline-primary btn-sm">
-                                    Đăng xuất
-                                </button>
-                            </form>
-                        </li>
-                    }
-                    else
-                    {
-                        <li class="nav-item me-2">
-                            <a class="btn btn-primary btn-sm" asp-controller="TaiKhoan" asp-action="DangNhap">
-                                Đăng nhập
-                            </a>
-                        </li>
-                      
-                    }
-                </ul>
-
+                </div>
             </div>
+        </nav>
+    </header>
 
+    <main class="flex-fill event-main">
+        <div class="@(laTrangQuanLy ? "container-fluid px-2 px-lg-3" : "container")">
+            @RenderBody()
         </div>
-    </nav>
-
-
-
-@{
-    bool laTrangAdmin =
-        ViewContext.RouteData.Values["controller"]?.ToString()
-        == "Admin";
-}
-
-<main class="py-4 flex-fill">
-    <div class="@(laTrangAdmin ? "container-fluid px-2 px-lg-3" : "container")">
-        @RenderBody()
-    </div>
-</main>
-
-
- 
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     @RenderSection("Scripts", required: false)
 
-<script>
-    // Hero slider: đổi background-image của .hero-banner.hero-slider
-    document.addEventListener('DOMContentLoaded', function () {
-        var hero = document.querySelector('.hero-banner.hero-slider');
-        if (!hero) return;
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const hero = document.querySelector(
+                '.hero-banner.hero-slider'
+            );
 
-        // 3 tấm hình bạn đã lưu trong wwwroot/images
-        var images = [
-            '/images/hero-event-1.jpg',
-            '/images/hero-event-2.jpg',
-            '/images/hero-event-3.jpg'
-        ];
+            if (!hero) return;
 
-        var index = 0;
+            const images = [
+                '/images/hero-event-1.jpg',
+                '/images/hero-event-2.jpg',
+                '/images/hero-event-3.jpg'
+            ];
 
-        function showSlide(i) {
-            index = i;
-            hero.classList.remove('hero-zoom');
-            // restart animation
-            void hero.offsetWidth;
-            hero.style.backgroundImage = "url('" + images[index] + "')";
-            hero.classList.add('hero-zoom');
-        }
+            let index = 0;
 
-        // Hiển thị ảnh đầu tiên
-        showSlide(0);
+            function showSlide() {
+                hero.classList.remove('hero-zoom');
+                void hero.offsetWidth;
 
-        // Đổi ảnh mỗi 7 giây
-        setInterval(function () {
-            var next = (index + 1) % images.length;
-            showSlide(next);
-        }, 7000);
-    });
-</script>
+                hero.style.backgroundImage =
+                    "url('" + images[index] + "')";
+
+                hero.classList.add('hero-zoom');
+
+                index = (index + 1) % images.length;
+            }
+
+            showSlide();
+            setInterval(showSlide, 7000);
+        });
+    </script>
+
+    @if (hienWidget)
+    {
+        <partial name="_KhamPhaWidget" />
+    }
 
 </body>
 </html>

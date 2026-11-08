@@ -12,20 +12,31 @@ using VeSuKienWeb.Models;
 using VeSuKienWeb.Models.KhachHang;
 using System.Text.Json;
 using System.Data;
+using System.Globalization;
+using System.Text;
+using VeSuKienWeb.Services;
+
 
 
 namespace VeSuKienWeb.Controllers
 {
     public class KhachHangController : Controller
     {
-        private readonly NguCanhSuKien _db;
-        private readonly ILogger<KhachHangController> _logger;
 
-        public KhachHangController(NguCanhSuKien db, ILogger<KhachHangController> logger)
-        {
-            _db = db;
-            _logger = logger;
-        }
+private readonly NguCanhSuKien _db;
+private readonly ILogger<KhachHangController> _logger;
+private readonly GoiYSuKienService _goiYService;
+
+public KhachHangController(
+    NguCanhSuKien db,
+    ILogger<KhachHangController> logger,
+    GoiYSuKienService goiYService)
+{
+    _db = db;
+    _logger = logger;
+    _goiYService = goiYService;
+}
+
 
         private int GetCurrentUserId()
         {
@@ -41,51 +52,92 @@ namespace VeSuKienWeb.Controllers
         // ========== DANH SÁCH SỰ KIỆN (KHÁCH) =======================
         // ============================================================
 
-        [AllowAnonymous]
-        public async Task<IActionResult> Index(string? search)
+ 
+
+[AllowAnonymous]
+public async Task<IActionResult> Index(string? search)
+{
+    var now = DateTime.Now;
+
+    var query = _db.SuKien
+        .Include(s => s.LoaiSuKien)
+        .Where(s => s.TrangThaiDuyet == "DaDuyet");
+
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        search = search.Trim();
+
+        query = query.Where(s =>
+            s.TenSuKien.Contains(search) ||
+            (s.MoTaChiTiet ?? "").Contains(search));
+    }
+
+    var list = await query
+        .OrderBy(s => s.ThoiGianBatDau)
+        .Select(s => new SuKienListItemKhVM
         {
-            var now = DateTime.Now;
+            SuKienId = s.SuKienId,
+            TenSuKien = s.TenSuKien,
+            TenLoai = s.LoaiSuKien != null
+                ? s.LoaiSuKien.TenLoai : null,
+            ThoiGianBatDau = s.ThoiGianBatDau,
+            ThoiGianKetThuc = s.ThoiGianKetThuc,
 
-            var query = _db.SuKien
-                .Include(s => s.LoaiSuKien)
-                .Where(s => s.TrangThaiDuyet == "DaDuyet");
+            DiaDiem = _db.DiaDiem
+                .Where(d => d.SuKienId == s.SuKienId)
+                .Select(d => d.TenDiaDiem)
+                .FirstOrDefault(),
 
-            if (!string.IsNullOrWhiteSpace(search))
+            GiaTu = _db.LoaiVe
+                .Where(l => l.SuKienId == s.SuKienId)
+                .Select(l => (decimal?)l.GiaVe)
+                .Min() ?? s.GiaVeMacDinh,
+
+            DaKetThuc = s.ThoiGianKetThuc < now,
+            AnhSuKien = s.AnhSuKien
+        })
+        .ToListAsync();
+
+
+var goiYSuKien = new List<SuKienListItemKhVM>();
+
+if (User.Identity?.IsAuthenticated == true &&
+    User.IsInRole("KhachHang") &&
+    string.IsNullOrWhiteSpace(search))
+{
+    var idStr = User.FindFirstValue(
+        ClaimTypes.NameIdentifier);
+
+    if (int.TryParse(idStr, out int userId))
+    {
+        var idsGoiY = await _goiYService.LayGoiYAsync(
+            userId,
+            topN: 6
+        );
+
+        var thuTu = idsGoiY
+            .Select((id, index) => new
             {
-                search = search.Trim();
-                query = query.Where(s =>
-                    s.TenSuKien.Contains(search) ||
-                    (s.MoTaChiTiet ?? "").Contains(search));
-            }
+                Id = id,
+                ThuTu = index
+            })
+            .ToDictionary(x => x.Id, x => x.ThuTu);
 
-            var list = await query
-                .OrderBy(s => s.ThoiGianBatDau)
-                .Select(s => new SuKienListItemKhVM
-                {
-                    SuKienId = s.SuKienId,
-                    TenSuKien = s.TenSuKien,
-                    TenLoai = s.LoaiSuKien != null ? s.LoaiSuKien.TenLoai : null,
-                    ThoiGianBatDau = s.ThoiGianBatDau,
-                    ThoiGianKetThuc = s.ThoiGianKetThuc,
+        goiYSuKien = list
+            .Where(s => thuTu.ContainsKey(s.SuKienId))
+            .OrderBy(s => thuTu[s.SuKienId])
+            .ToList();
+    }
+}
 
-                    DiaDiem = _db.DiaDiem
-                        .Where(d => d.SuKienId == s.SuKienId)
-                        .Select(d => d.TenDiaDiem)
-                        .FirstOrDefault(),
 
-                    GiaTu = _db.LoaiVe
-                        .Where(l => l.SuKienId == s.SuKienId)
-                        .Select(l => (decimal?)l.GiaVe)
-                        .Min() ?? s.GiaVeMacDinh,
+    ViewBag.GoiYSuKien = goiYSuKien;
+    ViewBag.Search = search;
 
-                    DaKetThuc = s.ThoiGianKetThuc < now,
-                    AnhSuKien = s.AnhSuKien
-                })
-                .ToListAsync();
+    return View(list);
+}
 
-            ViewBag.Search = search;
-            return View(list);
-        }
+
 
         // ============================================================
         // ========== CHI TIẾT SỰ KIỆN (KHÁCH) ========================
@@ -103,6 +155,46 @@ public async Task<IActionResult> ChiTiet(int id)
 
     if (sk == null)
         return NotFound();
+
+Console.WriteLine("===== KIEM TRA LICH SU XEM =====");
+Console.WriteLine($"Da dang nhap: {User.Identity?.IsAuthenticated}");
+Console.WriteLine($"User ID: {User.FindFirstValue(ClaimTypes.NameIdentifier)}");
+Console.WriteLine($"Vai tro: {User.FindFirstValue(ClaimTypes.Role)}");
+Console.WriteLine($"Su kien ID: {id}");
+Console.WriteLine("================================");
+
+if (User.Identity?.IsAuthenticated == true &&
+    User.IsInRole("KhachHang") &&
+    int.TryParse(
+        User.FindFirstValue(ClaimTypes.NameIdentifier),
+        out int nguoiDungId))
+{
+    var thoiGianHienTai = DateTime.Now;
+
+    var lichSu = await _db.LichSuXemSuKien
+        .Where(x =>
+            x.NguoiDungId == nguoiDungId &&
+            x.SuKienId == id &&
+            x.ThoiGianXem >= thoiGianHienTai.AddMinutes(-30))
+        .OrderByDescending(x => x.ThoiGianXem)
+        .FirstOrDefaultAsync();
+
+    if (lichSu != null)
+    {
+        lichSu.ThoiGianXem = thoiGianHienTai;
+    }
+    else
+    {
+        _db.LichSuXemSuKien.Add(new LichSuXemSuKien
+        {
+            NguoiDungId = nguoiDungId,
+            SuKienId = id,
+            ThoiGianXem = thoiGianHienTai
+        });
+    }
+
+    await _db.SaveChangesAsync();
+}
 
     var now = DateTime.Now;
     bool coTheDatVe = sk.ThoiGianKetThuc > now;
@@ -207,6 +299,8 @@ public async Task<IActionResult> ChiTiet(int id)
 
     return View(vm);
 }
+
+
 
         // ============================================================
         // ========== ĐẶT VÉ (OFFLINE + ONLINE) =======================
@@ -866,6 +960,19 @@ public async Task<IActionResult> VeCuaToi()
 
             return new VeCuaToiItemVM
             {
+               DangChoHoanVe = g.Any(v =>
+    _db.YeuCauHoanHuyVe.Any(y =>
+        y.VeId == v.VeId &&
+        y.TrangThai == "ChoDuyet")),
+
+DuocXemQr =
+    g.All(v => v.TrangThai == "DaThanhToan") &&
+    first.SuKien.ThoiGianKetThuc > now &&
+    !g.Any(v =>
+        _db.YeuCauHoanHuyVe.Any(y =>
+            y.VeId == v.VeId &&
+            y.TrangThai == "ChoDuyet")),
+
                 VeId = first.VeId,
                 SuKienId = first.SuKienId,
                 MaVe = first.MaVe,
@@ -924,10 +1031,15 @@ public async Task<IActionResult> VeCuaToi()
 
                 SuKienDaKetThuc = first.SuKien.ThoiGianKetThuc < now,
 
-                CoTheHuy = g.All(x => x.TrangThai == "DaThanhToan")
-                           && first.SuKien.ThoiGianBatDau > now
-                           && !g.Any(x => _db.YeuCauHoanHuyVe
-                               .Any(yc => yc.VeId == x.VeId && yc.TrangThai == "ChoDuyet"))
+
+CoTheHuy =
+    g.All(v => v.TrangThai == "DaThanhToan") &&
+    first.SuKien.ThoiGianBatDau >= now.AddHours(24) &&
+    !g.Any(v =>
+        _db.YeuCauHoanHuyVe.Any(y =>
+            y.VeId == v.VeId &&
+            y.TrangThai == "ChoDuyet")),
+
             };
         })
         .OrderByDescending(x => x.NgayDat)
@@ -978,6 +1090,19 @@ public async Task<IActionResult> ChiTietVe(int veId)
 
     var ve = new VeCuaToiItemVM
     {
+DangChoHoanVe = veRaw.Any(v =>
+    _db.YeuCauHoanHuyVe.Any(y =>
+        y.VeId == v.VeId &&
+        y.TrangThai == "ChoDuyet")),
+
+DuocXemQr =
+    veRaw.All(v => v.TrangThai == "DaThanhToan") &&
+    first.SuKien.ThoiGianKetThuc > now &&
+    !veRaw.Any(v =>
+        _db.YeuCauHoanHuyVe.Any(y =>
+            y.VeId == v.VeId &&
+            y.TrangThai == "ChoDuyet")),
+
         VeId = first.VeId,
         SuKienId = first.SuKienId,
         MaVe = first.MaVe,
@@ -1036,16 +1161,22 @@ public async Task<IActionResult> ChiTietVe(int veId)
 
         SuKienDaKetThuc = first.SuKien.ThoiGianKetThuc < now,
 
-        CoTheHuy = veRaw.All(x => x.TrangThai == "DaThanhToan")
-                   && first.SuKien.ThoiGianBatDau > now
-                   && !veRaw.Any(x => _db.YeuCauHoanHuyVe
-                       .Any(yc => yc.VeId == x.VeId && yc.TrangThai == "ChoDuyet"))
+     
+CoTheHuy =
+    veRaw.All(v => v.TrangThai == "DaThanhToan") &&
+    first.SuKien.ThoiGianBatDau >= now.AddHours(24) &&
+    !veRaw.Any(v =>
+        _db.YeuCauHoanHuyVe.Any(y =>
+            y.VeId == v.VeId &&
+            y.TrangThai == "ChoDuyet")),
+
     };
 
     return View(ve);
 }
 
    // ✅ XEM MÃ QR
+
 [Authorize(Roles = "KhachHang")]
 [HttpGet]
 public async Task<IActionResult> XemMaQr(int veId)
@@ -1054,41 +1185,74 @@ public async Task<IActionResult> XemMaQr(int veId)
     var now = DateTime.Now;
 
     var ve = await _db.Ve
+        .AsNoTracking()
         .Include(v => v.SuKien)
-        .FirstOrDefaultAsync(v => v.VeId == veId && v.NguoiDungId == userId);
+        .FirstOrDefaultAsync(v =>
+            v.VeId == veId &&
+            v.NguoiDungId == userId);
 
     if (ve == null)
-    {
         return NotFound();
+
+    // Chỉ vé đã thanh toán mới được xem QR.
+    if (ve.TrangThai != "DaThanhToan")
+    {
+        TempData["QrError"] =
+            "Vé chưa thanh toán, đã sử dụng hoặc không còn hiệu lực.";
+
+        return RedirectToAction("VeCuaToi");
     }
 
-if (ve.SuKien.ThoiGianKetThuc < now)
-{
-    TempData["QrError"] = "Sự kiện đã kết thúc nên không thể xem mã QR.";
-    TempData["QrMaVe"] = ve.MaVe;
-    return RedirectToAction("VeCuaToi");
-}
+    // Sự kiện đã kết thúc: không hiển thị QR.
+    if (ve.SuKien.ThoiGianKetThuc <= now)
+    {
+        TempData["QrError"] =
+            "Sự kiện đã kết thúc. Mã QR không còn hiệu lực.";
 
+        return RedirectToAction("VeCuaToi");
+    }
+
+    // Chờ duyệt hoàn vé: tạm khóa QR.
+
+bool dangChoHoan = await (
+    from yc in _db.YeuCauHoanHuyVe
+    join veYeuCau in _db.Ve
+        on yc.VeId equals veYeuCau.VeId
+    where yc.TrangThai == "ChoDuyet"
+        && yc.HinhThuc == "HuyVe"
+        && (
+            ve.DonHangId.HasValue
+                ? veYeuCau.DonHangId == ve.DonHangId
+                : veYeuCau.VeId == ve.VeId
+        )
+    select yc.YeuCauId
+).AnyAsync();
+
+
+    // Giữ nguyên định dạng QR hiện có.
     string qrText = $"CHECKIN|{ve.VeId}|{ve.MaVe}";
 
     using var qrGenerator = new QRCodeGenerator();
-    QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrText, QRCodeGenerator.ECCLevel.Q);
+
+    QRCodeData qrCodeData =
+        qrGenerator.CreateQrCode(
+            qrText,
+            QRCodeGenerator.ECCLevel.Q);
 
     var pngQr = new PngByteQRCode(qrCodeData);
     byte[] qrBytes = pngQr.GetGraphic(20);
-
-    string base64 = Convert.ToBase64String(qrBytes);
 
     var vm = new MaQrVM
     {
         VeId = ve.VeId,
         MaVe = ve.MaVe,
-        QrCodeBase64 = base64,
+        QrCodeBase64 = Convert.ToBase64String(qrBytes),
         HetHieuLuc = false
     };
 
     return View(vm);
 }
+
   // ============================================================
 // ========== YÊU CẦU HỦY / HOÀN VÉ (KHÁCH HÀNG) ==============
 // ============================================================
@@ -1121,9 +1285,9 @@ public async Task<IActionResult> YeuCauHoanHuy(int veId)
 
     if (!nhomVe.Any()) return NotFound();
 
-    if (nhomVe.Any(v => v.TrangThai != "DaThanhToan") || veGoc.SuKien.ThoiGianBatDau <= DateTime.Now)
+    if (nhomVe.Any(v => v.TrangThai != "DaThanhToan") || veGoc.SuKien.ThoiGianBatDau < DateTime.Now.AddHours(24))
     {
-        TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy/hoàn.";
+        TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy.";
         return RedirectToAction("VeCuaToi");
     }
 
@@ -1133,7 +1297,7 @@ public async Task<IActionResult> YeuCauHoanHuy(int veId)
 
     if (daCoYeuCauChoDuyet)
     {
-        TempData["ThongBao"] = "Bạn đã gửi yêu cầu hủy/hoàn cho vé này và đang chờ xử lý.";
+        TempData["ThongBao"] = "Bạn đã gửi yêu cầu hủy cho vé này và đang chờ xử lý.";
         return RedirectToAction("VeCuaToi");
     }
 
@@ -1205,9 +1369,9 @@ public async Task<IActionResult> YeuCauHoanHuy(YeuCauHoanHuyVM model)
         return View(model);
     }
 
-    if (nhomVe.Any(v => v.TrangThai != "DaThanhToan") || veGoc.SuKien.ThoiGianBatDau <= DateTime.Now)
+    if (nhomVe.Any(v => v.TrangThai != "DaThanhToan") || veGoc.SuKien.ThoiGianBatDau < DateTime.Now.AddHours(24))
     {
-        TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy/hoàn.";
+        TempData["ThongBao"] = "Vé này không đủ điều kiện để yêu cầu hủy.";
         return RedirectToAction("VeCuaToi");
     }
 
@@ -1217,27 +1381,31 @@ public async Task<IActionResult> YeuCauHoanHuy(YeuCauHoanHuyVM model)
 
     if (daCoYeuCauChoDuyet)
     {
-        TempData["ThongBao"] = "Bạn đã có yêu cầu hủy/hoàn đang chờ xử lý cho vé này.";
+        TempData["ThongBao"] = "Bạn đã có yêu cầu hủy đang chờ xử lý cho vé này.";
         return RedirectToAction("VeCuaToi");
     }
 
     foreach (var ve in nhomVe)
     {
-        var yeuCau = new YeuCauHoanHuyVe
-        {
-            VeId = ve.VeId,
-            LyDo = model.LyDo,
-            NgayYeuCau = DateTime.Now,
-            TrangThai = "ChoDuyet",
-            HinhThuc = "HoanTien"
-        };
 
-        _db.YeuCauHoanHuyVe.Add(yeuCau);
+var veDaiDien = nhomVe.OrderBy(v => v.VeId).First();
+
+var yeuCau = new YeuCauHoanHuyVe
+{
+    VeId = veDaiDien.VeId,
+    LyDo = model.LyDo,
+    NgayYeuCau = DateTime.Now,
+    TrangThai = "ChoDuyet",
+    HinhThuc = "HuyVe"
+};
+
+_db.YeuCauHoanHuyVe.Add(yeuCau);
+
     }
 
     await _db.SaveChangesAsync();
 
-    TempData["ThongBao"] = "Gửi yêu cầu hủy/hoàn vé thành công. Vui lòng chờ hệ thống xử lý.";
+    TempData["ThongBao"] = "Gửi yêu cầu hủy vé thành công. Vui lòng chờ hệ thống xử lý.";
     return RedirectToAction("VeCuaToi");
 }
 

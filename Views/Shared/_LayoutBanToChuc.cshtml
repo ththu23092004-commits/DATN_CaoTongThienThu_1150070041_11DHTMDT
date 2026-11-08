@@ -9,19 +9,60 @@
 }
 
 <style>
-    .btc-shell {
-        background: #f5f7fb;
-        min-height: calc(100vh - 56px);
-        padding: 20px 18px 30px 8px;
-    }
+    
+/* =========================================
+   MỞ RỘNG GIAO DIỆN BAN TỔ CHỨC
+   ========================================= */
 
-    .btc-layout {
-        display: grid;
-        grid-template-columns: 250px minmax(0, 1fr);
-        gap: 18px;
-        align-items: start;
-        width: 100%;
-    }
+/* Bỏ giới hạn chiều rộng container của layout cha,
+   chỉ áp dụng khi trang chứa giao diện BTC. */
+body:has(.btc-shell) > .container,
+body:has(.btc-shell) > .container-fluid,
+body:has(.btc-shell) main > .container,
+body:has(.btc-shell) main > .container-fluid {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+/* Mở rộng phần nội dung BTC */
+.btc-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.btc-layout {
+    width: 100%;
+    max-width: none;
+}
+
+.btc-content {
+    min-width: 0;
+    width: 100%;
+}
+
+
+.btc-shell {
+    background: #f5f7fb;
+    min-height: calc(100vh - 56px);
+    width: 100%;
+    max-width: none;
+    padding: 20px 8px 30px;
+}
+
+
+
+.btc-layout {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    width: 100%;
+    max-width: none;
+}
+
 
     .btc-sidebar {
         position: sticky;
@@ -173,12 +214,16 @@
                     <span>Tạo sự kiện mới</span>
                 </a>
 
-                <a asp-controller="BanToChuc"
-                   asp-action="YeuCauHoanHuy"
-                   class="btc-nav-link @(currentAction == "YeuCauHoanHuy" ? "active" : "")">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <span>Yêu cầu hoàn/hủy vé</span>
-                </a>
+
+
+<a asp-controller="BanToChuc"
+   asp-action="YeuCauHuyVe"
+   class="btc-nav-link @(currentAction == "YeuCauHuyVe" ? "active" : "")">
+    <i class="bi bi-arrow-repeat"></i>
+    <span>Yêu cầu hoàn/hủy vé</span>
+</a>
+
+
 
                 <a asp-controller="BanToChuc"
                    asp-action="ThongKeTongQuan"
@@ -186,6 +231,16 @@
                     <i class="bi bi-bar-chart"></i>
                     <span>Thống kê tổng quan</span>
                 </a>
+
+
+<a asp-controller="BanToChuc"
+   asp-action="DoanhThuTheoSuKien"
+   class="btc-nav-link @(currentAction == "DoanhThuTheoSuKien" ? "active" : "")">
+    <i class="bi bi-bar-chart-line"></i>
+    <span>Doanh thu theo sự kiện</span>
+</a>
+
+
             </nav>
 
             <div class="btc-footer">

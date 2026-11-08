@@ -87,6 +87,7 @@ namespace VeSuKienWeb.Models.BanToChuc
         public int? HangVipDen { get; set; }
         
         public string? SoDoJson { get; set; }
+        public List<int> ChuDeIds { get; set; } = new();
 
 
     }

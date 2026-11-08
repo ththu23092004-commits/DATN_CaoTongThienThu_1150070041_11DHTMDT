@@ -1,0 +1,1092 @@
+
+/* ==============================================
+   EVENT SPACE — MIDNIGHT PURPLE REDESIGN
+   Giao diện mới cho khách truy cập/khách hàng
+   Không áp dụng cho Admin và Ban tổ chức
+   ============================================== */
+
+body.event-redesign {
+    --ev-bg: #1b102d;
+    --ev-bg-deep: #120b23;
+    --ev-panel: #302044;
+    --ev-panel-light: #402858;
+    --ev-border: rgba(235, 198, 255, .18);
+    --ev-pink: #ff92ce;
+    --ev-purple: #b97aff;
+    --ev-text: #fff8ff;
+    --ev-muted: #cbbbdc;
+
+    margin: 0;
+    color: var(--ev-text);
+    background:
+        radial-gradient(
+            ellipse at 12% 10%,
+            rgba(145, 75, 181, .25),
+            transparent 37%
+        ),
+        radial-gradient(
+            ellipse at 88% 35%,
+            rgba(104, 56, 170, .19),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 42% 82%,
+            rgba(163, 64, 127, .13),
+            transparent 36%
+        ),
+        linear-gradient(
+            160deg,
+            #251437 0%,
+            #1b102e 48%,
+            #150c25 100%
+        ) !important;
+    background-attachment: fixed !important;
+    min-height: 100vh;
+}
+
+/* Không dùng lớp nền trắng mặc định */
+body.event-redesign .event-main,
+body.event-redesign .event-main > .container,
+body.event-redesign .home-page-pro {
+    background: transparent !important;
+}
+
+body.event-redesign .event-main {
+    position: relative;
+    padding: 25px 0 60px;
+}
+
+/* ==============================================
+   HEADER MỚI
+   ============================================== */
+
+body.event-redesign .event-header {
+    position: relative;
+    z-index: 20;
+    background: transparent !important;
+}
+
+body.event-redesign .event-main-nav {
+    background: rgba(26, 14, 43, .83) !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,.09) !important;
+    box-shadow: 0 10px 35px rgba(7,3,18,.16);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    padding: 13px 0;
+}
+
+body.event-redesign .event-main-nav .container {
+    gap: 20px;
+}
+
+body.event-redesign .event-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    text-decoration: none;
+    margin-right: 35px;
+}
+
+body.event-redesign .event-brand-symbol {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    color: #fff;
+    font-size: 20px;
+    background: linear-gradient(135deg, #8b4bbb, #de71ad);
+    box-shadow: 0 6px 18px rgba(195,93,183,.22);
+}
+
+body.event-redesign .event-brand-text {
+    color: #fff !important;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 1.6px;
+}
+
+body.event-redesign .event-main-nav .nav-link {
+    color: #dfcfe9 !important;
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: .2s ease;
+}
+
+body.event-redesign .event-main-nav .nav-link:hover,
+body.event-redesign .event-main-nav .nav-link:focus {
+    color: #fff !important;
+    background: rgba(255,255,255,.09);
+}
+
+body.event-redesign .event-main-nav .navbar-text {
+    color: #e5d7ee !important;
+    font-size: 13px;
+}
+
+body.event-redesign .event-auth-button {
+    color: #fff !important;
+    background: linear-gradient(120deg, #8b4ebc, #cf65b3) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    border-radius: 12px;
+    padding: 10px 17px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+body.event-redesign .event-auth-button:hover {
+    background: linear-gradient(120deg, #a35cce, #e077c3) !important;
+    transform: translateY(-1px);
+}
+
+/* ==============================================
+   KHỐI VÉ 3D — HÒA VÀO NỀN CHỦ ĐẠO
+   ============================================== */
+
+body.event-redesign .ve3d-section {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    outline: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 auto 65px !important;
+    max-width: 100% !important;
+    padding-top: 30px !important;
+    padding-bottom: 25px !important;
+}
+
+/* Giữ chuyển động và bố cục vé 3D hiện có */
+body.event-redesign .ve3d-stage {
+    background: transparent !important;
+}
+
+body.event-redesign .ve3d-heading h2 {
+    color: #fff !important;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 900;
+    letter-spacing: -.8px;
+}
+
+body.event-redesign .ve3d-heading h2 span {
+    color: var(--ev-pink) !important;
+}
+
+body.event-redesign .ve3d-heading p,
+body.event-redesign .ve3d-hint {
+    color: #d5c4e5 !important;
+}
+
+body.event-redesign .ve3d-eyebrow {
+    color: #ff9dd4 !important;
+    letter-spacing: 2px;
+}
+
+/* ==============================================
+   TIÊU ĐỀ VÀ SECTION TRANG CHỦ
+   ============================================== */
+
+body.event-redesign .home-page-pro .home-section {
+    margin-bottom: 75px;
+}
+
+body.event-redesign .home-page-pro .section-head {
+    margin-bottom: 25px;
+}
+
+body.event-redesign .home-page-pro .section-label {
+    color: #ff91d0 !important;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+body.event-redesign .home-page-pro .section-title {
+    color: #fff !important;
+    font-size: clamp(25px, 3vw, 34px);
+    font-weight: 900;
+    letter-spacing: -.5px;
+}
+
+body.event-redesign .home-page-pro .section-sub {
+    color: #cab9d9 !important;
+    font-size: 14px;
+}
+
+/* ==============================================
+   CARD SỰ KIỆN — THIẾT KẾ MỚI
+   ============================================== */
+
+body.event-redesign .home-page-pro .event-card {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    border: 1px solid var(--ev-border) !important;
+    border-radius: 21px !important;
+    background: linear-gradient(
+        155deg,
+        rgba(82, 48, 111, .78),
+        rgba(35, 22, 59, .95)
+    ) !important;
+    color: #fff !important;
+    box-shadow: 0 16px 40px rgba(6,3,20,.22) !important;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+
+body.event-redesign .home-page-pro .event-link {
+    color: #fff !important;
+    text-decoration: none;
+}
+
+body.event-redesign .home-page-pro .event-link:hover .event-card {
+    transform: translateY(-7px);
+    border-color: rgba(255,155,218,.58) !important;
+    box-shadow: 0 24px 52px rgba(6,3,20,.38) !important;
+}
+
+body.event-redesign .home-page-pro .event-image {
+    background: #261835;
+    height: 205px;
+}
+
+body.event-redesign .home-page-pro .event-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+body.event-redesign .home-page-pro .event-body {
+    padding: 18px;
+}
+
+body.event-redesign .home-page-pro .event-type {
+    color: #f1c5ff !important;
+    background: rgba(184,106,225,.22) !important;
+    border: 1px solid rgba(223,170,255,.15);
+    border-radius: 9px;
+}
+
+body.event-redesign .home-page-pro .event-name {
+    color: #fff !important;
+    font-size: 16px;
+    line-height: 1.45;
+    font-weight: 800;
+}
+
+body.event-redesign .home-page-pro .event-time,
+body.event-redesign .home-page-pro .event-location {
+    color: #cdbbdc !important;
+    font-size: 12px;
+}
+
+body.event-redesign .home-page-pro .event-time i,
+body.event-redesign .home-page-pro .event-location i {
+    color: #d29bee;
+}
+
+body.event-redesign .home-page-pro .event-bottom {
+    border-top: 1px solid rgba(255,255,255,.13) !important;
+    padding-top: 14px;
+}
+
+body.event-redesign .home-page-pro .event-price {
+    color: #ff9bce !important;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+body.event-redesign .home-page-pro .event-view {
+    color: #e8bcff !important;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* Badge ngày vẫn sáng để dễ đọc */
+body.event-redesign .home-page-pro .date-badge {
+    background: #fff4ff !important;
+    border-radius: 13px;
+}
+
+body.event-redesign .home-page-pro .date-badge strong {
+    color: #281437 !important;
+}
+
+body.event-redesign .home-page-pro .date-badge span {
+    color: #745984 !important;
+}
+
+body.event-redesign .home-page-pro .event-status {
+    background: rgba(57, 188, 128, .92) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,.18);
+}
+
+/* ==============================================
+   KHU GIỚI THIỆU — ĐỔI THIẾT KẾ TRẮNG CŨ
+   ============================================== */
+
+body.event-redesign .home-page-pro .info-heading {
+    margin: 75px auto 45px;
+}
+
+body.event-redesign .home-page-pro .info-heading-badge {
+    color: #ffc0e6 !important;
+    background: rgba(197,106,199,.15) !important;
+    border: 1px solid rgba(250,175,236,.20) !important;
+}
+
+body.event-redesign .home-page-pro .info-heading h2 {
+    color: #fff !important;
+    font-size: clamp(28px, 4vw, 43px);
+    letter-spacing: -.9px;
+}
+
+body.event-redesign .home-page-pro .info-heading p {
+    color: var(--ev-muted) !important;
+}
+
+body.event-redesign .home-page-pro .info-row {
+    border-radius: 27px !important;
+    background: linear-gradient(
+        135deg,
+        rgba(76, 44, 102, .92),
+        rgba(37, 23, 62, .98)
+    ) !important;
+    border: 1px solid rgba(239,198,255,.14) !important;
+    box-shadow: 0 20px 50px rgba(5,2,18,.2) !important;
+    margin-bottom: 30px;
+}
+
+body.event-redesign .home-page-pro .info-image {
+    background: #261733;
+}
+
+body.event-redesign .home-page-pro .info-content {
+    padding: 40px;
+}
+
+body.event-redesign .home-page-pro .info-tag {
+    color: #f6ceff !important;
+    background: rgba(190,112,220,.22) !important;
+}
+
+body.event-redesign .home-page-pro .info-content h3 {
+    color: #fff !important;
+    font-size: clamp(25px, 3vw, 34px);
+}
+
+body.event-redesign .home-page-pro .info-content p {
+    color: #d5c6df !important;
+    line-height: 1.8;
+}
+
+body.event-redesign .home-page-pro .info-btn {
+    color: #fff !important;
+    background: linear-gradient(115deg, #8d4cba, #d164ac) !important;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    padding: 12px 21px;
+    box-shadow: 0 10px 20px rgba(35,7,64,.18);
+}
+
+/* ==============================================
+   FOOTER ĐỒNG NHẤT
+   ============================================== */
+
+body.event-redesign .home-footer {
+    margin-top: 80px;
+    border-radius: 24px !important;
+    background: rgba(25, 14, 42, .68) !important;
+    border: 1px solid rgba(235,192,255,.12) !important;
+    box-shadow: none !important;
+}
+
+body.event-redesign .home-footer .footer-brand,
+body.event-redesign .home-footer .footer-title {
+    color: #fff !important;
+}
+
+body.event-redesign .home-footer .footer-text,
+body.event-redesign .home-footer .footer-info,
+body.event-redesign .home-footer .footer-link {
+    color: #cbbbdc !important;
+}
+
+body.event-redesign .home-footer .footer-link:hover {
+    color: #ff9bd3 !important;
+}
+
+/* ==============================================
+   CÁC KHU KHÁCH HÀNG KHÁC
+   Không ép mọi form thành màu tối nếu chưa
+   có CSS kiểm soát độ tương phản riêng.
+   ============================================== */
+
+body.event-redesign .event-main .section-title,
+body.event-redesign .event-main .section-heading {
+    color: #fff;
+}
+
+body.event-redesign .event-main .text-primary {
+    color: #e29efa !important;
+}
+
+body.event-redesign .event-main .btn-primary {
+    background: linear-gradient(115deg, #8b4fbc, #cf64b4);
+    border-color: transparent;
+    color: #fff;
+}
+
+body.event-redesign .event-main .btn-primary:hover {
+    background: linear-gradient(115deg, #a563d4, #dd77c6);
+}
+
+body.event-redesign .event-main .btn-outline-primary {
+    color: #f3c9ff;
+    border-color: #ad78d0;
+}
+
+body.event-redesign .event-main .btn-outline-primary:hover {
+    color: #fff;
+    background: #8b4fbc;
+}
+
+/* ==============================================
+   RESPONSIVE
+   ============================================== */
+
+@media (max-width: 991px) {
+    body.event-redesign .event-main-nav .navbar-collapse {
+        margin-top: 14px;
+        padding: 15px;
+        border-radius: 17px;
+        background: rgba(44,24,69,.95);
+        border: 1px solid rgba(255,255,255,.1);
+    }
+
+    body.event-redesign .event-main-nav .navbar-text {
+        display: block;
+        padding: 12px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    body.event-redesign .event-main {
+        padding-top: 15px;
+    }
+
+    body.event-redesign .ve3d-section {
+        margin-bottom: 35px !important;
+    }
+
+    body.event-redesign .home-page-pro .home-section {
+        margin-bottom: 48px;
+    }
+
+    body.event-redesign .home-page-pro .event-image {
+        height: 190px;
+    }
+
+    body.event-redesign .home-page-pro .info-content {
+        padding: 26px;
+    }
+
+    body.event-redesign .home-page-pro .info-row,
+    body.event-redesign .home-page-pro .info-row.reverse {
+        grid-template-columns: 1fr;
+    }
+
+    body.event-redesign .home-footer {
+        margin-top: 50px;
+        padding: 24px;
+    }
+    
+/* ==========================================
+   MIDNIGHT PURPLE - AMBIENT BACKGROUND
+   Anh sang tim/hong va sao nho
+   ========================================== */
+
+/* Nen chinh co nhieu lop anh sang */
+body.event-redesign {
+    background:
+        radial-gradient(
+            ellipse 620px 490px at 12% 12%,
+            rgba(141, 76, 190, .30),
+            transparent 75%
+        ),
+        radial-gradient(
+            ellipse 650px 580px at 85% 28%,
+            rgba(201, 80, 163, .18),
+            transparent 73%
+        ),
+        radial-gradient(
+            ellipse 850px 550px at 50% 58%,
+            rgba(90, 48, 168, .22),
+            transparent 76%
+        ),
+        radial-gradient(
+            ellipse 620px 450px at 15% 90%,
+            rgba(142, 67, 192, .17),
+            transparent 75%
+        ),
+        linear-gradient(
+            165deg,
+            #2e1745 0%,
+            #1c0f30 40%,
+            #150b27 75%,
+            #211135 100%
+        ) !important;
+
+    background-attachment: fixed !important;
+    position: relative;
+    isolation: isolate;
+}
+
+/* Hieu ung hat sao nho */
+body.event-redesign::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+    z-index: 0;
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(255, 220, 255, .7) 1px,
+            transparent 1.6px
+        ),
+        radial-gradient(
+            circle,
+            rgba(219, 177, 255, .55) .8px,
+            transparent 1.5px
+        );
+
+    background-size:
+        157px 163px,
+        233px 211px;
+
+    background-position:
+        24px 36px,
+        91px 108px;
+
+    opacity: .38;
+}
+
+/* Cum sang mo tao chieu sau */
+body.event-redesign::after {
+    content: "";
+    position: fixed;
+
+    width: 62vw;
+    height: 55vh;
+
+    top: 3%;
+    left: 18%;
+
+    pointer-events: none;
+    z-index: 0;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(205, 104, 218, .13),
+            rgba(120, 73, 199, .07) 45%,
+            transparent 72%
+        );
+
+    filter: blur(65px);
+}
+
+/* Noi dung nam tren cac lop anh sang */
+body.event-redesign .event-header,
+body.event-redesign .event-main {
+    position: relative;
+    z-index: 1;
+}
+
+/* Tieu de sang hon, co do noi nhe */
+body.event-redesign .ve3d-heading h2 {
+    text-shadow: 0 5px 24px rgba(255, 118, 217, .18);
+}
+
+body.event-redesign .ve3d-heading h2 span {
+    text-shadow: 0 0 28px rgba(255, 126, 216, .34);
+}
+
+/* Khi di chuot, anh sang the su kien ro hon */
+body.event-redesign .home-page-pro .event-link:hover .event-card {
+    box-shadow:
+        0 20px 48px rgba(7, 3, 24, .4),
+        0 0 30px rgba(201, 116, 225, .13) !important;
+}
+
+/* =========================================
+   SUA POSTER VE 3D - PHU KIN KHUNG
+   ========================================= */
+
+body.event-redesign .ve3d-ticket .ve3d-surface {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+body.event-redesign .ve3d-ticket .ve3d-poster {
+    display: block !important;
+
+    width: calc(100% - 14px) !important;
+    height: 260px !important;
+
+    min-height: 260px !important;
+    max-height: 260px !important;
+
+    flex: 0 0 260px !important;
+
+    object-fit: cover !important;
+    object-position: center center !important;
+
+    margin: 8px 7px 0 !important;
+    padding: 0 !important;
+    border-radius: 5px !important;
+}
+
+/* POSTER VE 3D - ANH PHU KIN KHUNG */
+
+
+/* ANH POSTER VE 3D - PHU KIN KHUNG */
+
+body.event-redesign .ve3d-ticket img.ve3d-poster {
+    display: block !important;
+    width: calc(100% - 14px) !important;
+
+    height: 260px !important;
+    min-height: 260px !important;
+    max-height: 260px !important;
+
+    flex: 0 0 260px !important;
+
+    object-fit: cover !important;
+    object-position: center !important;
+
+    margin: 8px 7px 0 !important;
+    padding: 0 !important;
+
+    border: 2px solid rgba(255,255,255,.6) !important;
+    border-radius: 5px !important;
+    background: #281735 !important;
+}
+/* CHU VA THONG TIN TREN VE RO NET */
+
+body.event-redesign .ve3d-ticket {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+body.event-redesign .ve3d-eventname {
+    color: #24102f !important;
+    font-weight: 900 !important;
+}
+
+body.event-redesign .ve3d-meta,
+body.event-redesign .ve3d-meta span {
+    color: #382246 !important;
+    font-weight: 800 !important;
+}
+
+body.event-redesign .ve3d-pricelabel {
+    color: #563568 !important;
+}
+
+body.event-redesign .ve3d-price {
+    color: #8b176e !important;
+    font-weight: 900 !important;
+}
+
+/* KHONG LAM MO CAC VE BEN CANH */
+
+body.event-redesign .ve3d-ticket {
+    opacity: 1 !important;
+}
+
+/* NEN SANG LAVENDER - GIU NGUYEN GIAO DIEN */
+
+}
+
+/* ==========================================
+   NEN CHINH LAVENDER SANG - TOAN BO WEBSITE
+   ========================================== */
+
+body.event-redesign {
+    background:
+        radial-gradient(
+            ellipse at 15% 15%,
+            rgba(232, 196, 255, 0.55),
+            transparent 42%
+        ),
+        radial-gradient(
+            ellipse at 85% 35%,
+            rgba(255, 205, 234, 0.45),
+            transparent 40%
+        ),
+        linear-gradient(
+            160deg,
+            #fcf9ff 0%,
+            #f5edff 50%,
+            #fff7fc 100%
+        ) !important;
+
+    background-attachment: fixed !important;
+}
+
+/* Tieu de Ve xinh tren nen sang */
+
+body.event-redesign .ve3d-heading h2 {
+    color: #281638 !important;
+}
+
+body.event-redesign .ve3d-heading h2 span {
+    color: #bd438e !important;
+}
+
+body.event-redesign .ve3d-heading p {
+    color: #655473 !important;
+}
+
+body.event-redesign .ve3d-eyebrow {
+    color: #a53c84 !important;
+}
+
+body.event-redesign .ve3d-hint {
+    color: #655473 !important;
+}
+
+/* Chi sua chu tieu de nam ngoai cac card */
+
+body.event-redesign .home-page-pro .section-title,
+body.event-redesign .home-page-pro .info-heading h2 {
+    color: #281638 !important;
+}
+
+body.event-redesign .home-page-pro .section-sub,
+body.event-redesign .home-page-pro .info-heading p {
+    color: #655473 !important;
+}
+
+/* HEADER LAVENDER SANG - DONG BO NEN MOI */
+
+body.event-redesign .event-main-nav {
+    background: rgba(247, 235, 255, 0.94) !important;
+    border-bottom: 1px solid #e6d1f1 !important;
+    box-shadow: 0 5px 22px rgba(95, 55, 130, 0.08) !important;
+    backdrop-filter: blur(18px);
+}
+
+/* Ten thuong hieu */
+body.event-redesign .event-brand-text {
+    color: #45265f !important;
+}
+
+/* Menu */
+body.event-redesign .event-main-nav .nav-link {
+    color: #624477 !important;
+}
+
+body.event-redesign .event-main-nav .nav-link:hover,
+body.event-redesign .event-main-nav .nav-link:focus {
+    color: #a73e91 !important;
+    background: rgba(189, 121, 209, 0.13);
+}
+
+/* Nut logo - giu gradient hong tim */
+body.event-redesign .event-brand-symbol {
+    background: linear-gradient(135deg, #a868d3, #e27bb7);
+    color: #fff;
+}
+
+/* Ten nguoi dung neu da dang nhap */
+body.event-redesign .event-main-nav .navbar-text {
+    color: #624477 !important;
+}
+
+/* Nut dang nhap / dang xuat */
+body.event-redesign .event-auth-button {
+    background: linear-gradient(120deg, #a45fc9, #d772b8) !important;
+    color: #fff !important;
+    border: 1px solid rgba(170, 100, 195, 0.2) !important;
+}
+
+body.event-redesign .event-auth-button:hover {
+    background: linear-gradient(120deg, #9550bd, #cb5fa9) !important;
+}
+
+/* Bieu tuong menu tren dien thoai */
+body.event-redesign .event-main-nav .navbar-toggler {
+    border-color: rgba(115, 69, 143, 0.3);
+}
+
+body.event-redesign .event-main-nav .navbar-toggler-icon {
+    filter: invert(1) brightness(0.35);
+}
+
+/* VUNG NEN TIM MAN MO SAU CUM VE 3D */
+
+
+/* ==========================================
+   ANH SANG SAN KHAU SAU CUM VE 3D
+   Toa tu nhien, khong tao khung
+   ========================================== */
+
+body.event-redesign .ve3d-stage {
+    position: relative;
+    isolation: isolate;
+    background: transparent !important;
+}
+
+/* Lop anh sang nam sau cac tam ve */
+
+body.event-redesign .ve3d-stage::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+
+    left: 50%;
+    top: 45%;
+
+    width: min(1250px, 115vw);
+    height: 590px;
+
+    transform: translate(-50%, -50%);
+
+    background:
+        radial-gradient(
+            ellipse 43% 47% at 50% 48%,
+            rgba(100, 39, 135, 0.43) 0%,
+            rgba(132, 63, 165, 0.30) 38%,
+            rgba(181, 107, 198, 0.17) 70%,
+            transparent 100%
+        );
+
+    filter: blur(42px);
+    border-radius: 50%;
+}
+
+/* Lop hao quang hong tim nhe o trung tam */
+
+
+/* ==========================================
+   ANH SANG TIM MAN DAM SAU CUM VE 3D
+   Phu rong va tan dan vao nen lavender
+   ========================================== */
+
+body.event-redesign .ve3d-stage {
+    position: relative;
+    isolation: isolate;
+    background: transparent !important;
+}
+
+/* Vung tim dam bao phu ca cum ve */
+
+body.event-redesign .ve3d-stage::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+
+    left: 50%;
+    top: 45%;
+
+    width: 125%;
+    height: 650px;
+
+    transform: translate(-50%, -50%);
+
+    background: radial-gradient(
+        ellipse at center,
+        rgba(79, 27, 112, 0.78) 0%,
+        rgba(96, 38, 139, 0.72) 30%,
+        rgba(126, 65, 160, 0.52) 55%,
+        rgba(172, 103, 191, 0.25) 75%,
+        transparent 100%
+    );
+
+    filter: blur(42px);
+    border-radius: 50%;
+}
+
+/* Vung anh sang trung tam, tao chieu sau */
+
+body.event-redesign .ve3d-stage::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+
+    left: 50%;
+    top: 43%;
+
+    width: 83%;
+    height: 460px;
+
+    transform: translate(-50%, -50%);
+
+    background: radial-gradient(
+        ellipse at center,
+        rgba(84, 28, 126, 0.58) 0%,
+        rgba(140, 61, 171, 0.35) 48%,
+        transparent 82%
+    );
+
+    filter: blur(55px);
+    border-radius: 50%;
+}
+
+@media (max-width: 767px) {
+    body.event-redesign .ve3d-stage::before {
+        width: 145%;
+        height: 500px;
+        filter: blur(38px);
+    }
+
+    body.event-redesign .ve3d-stage::after {
+        width: 100%;
+        height: 350px;
+        filter: blur(40px);
+    }
+}
+
+/* ==========================================
+
+
+
+@media (max-width: 767px) {
+    body.event-redesign .ve3d-stage::before {
+        width: 115vw;
+        height: 460px;
+        filter: blur(35px);
+    }
+
+    body.event-redesign .ve3d-stage::after {
+        width: 85vw;
+        height: 290px;
+        filter: blur(40px);
+    }
+}
+
+/* MO RONG CUM VE 3D SANG HAI BEN MAN HINH */
+/* KHONG THAY DOI KICH THUOC HAY THIET KE THE VE */
+
+@media (min-width: 992px) {
+    body.event-redesign .ve3d-section {
+        position: relative;
+        left: 50%;
+
+        width: calc(100vw - 32px) !important;
+        max-width: 1500px !important;
+
+        transform: translateX(-50%);
+    }
+
+    body.event-redesign .ve3d-stage {
+        width: 100% !important;
+        max-width: 1500px !important;
+    }
+}
+
+/* ==========================================
+   DEN SPOTLIGHT SAU CUM VE 3D
+   Hai luong sang chieu cheo
+   ========================================== */
+
+body.event-redesign .ve3d-section {
+    position: relative;
+    isolation: isolate;
+}
+
+/* Cho anh sang hien phia sau ve, khong bi an */
+
+body.event-redesign .ve3d-section > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Den tu goc tren ben trai */
+
+body.event-redesign .ve3d-section::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+
+    top: 30px;
+    left: 10%;
+
+    width: 58%;
+    height: 570px;
+
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.70) 0%,
+        rgba(251, 204, 255, 0.46) 24%,
+        rgba(224, 152, 255, 0.27) 58%,
+        transparent 100%
+    );
+
+    clip-path: polygon(
+        0% 0%,
+        17% 0%,
+        100% 100%,
+        31% 100%
+    );
+
+    filter: blur(12px);
+    opacity: 0.95;
+}
+
+/* Den tu goc tren ben phai */
+
+body.event-redesign .ve3d-section::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+
+    top: 30px;
+    right: 10%;
+
+    width: 58%;
+    height: 570px;
+
+    background: linear-gradient(
+        215deg,
+        rgba(255, 255, 255, 0.65) 0%,
+        rgba(255, 193, 237, 0.43) 25%,
+        rgba(205, 140, 249, 0.29) 60%,
+        transparent 100%
+    );
+
+    clip-path: polygon(
+        83% 0%,
+        100% 0%,
+        69% 100%,
+        0% 100%
+    );
+
+    filter: blur(12px);
+    opacity: 0.95;
+}
+
+@media (max-width: 767px) {
+    body.event-redesign .ve3d-section::before,
+    body.event-redesign .ve3d-section::after {
+        height: 450px;
+        opacity: 0.65;
+    }
+}

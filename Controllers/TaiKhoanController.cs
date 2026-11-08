@@ -1,3 +1,4 @@
+
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -19,7 +20,7 @@ namespace VeSuKienWeb.Controllers
             _db = db;
         }
 
-        // ========== ĐĂNG KÝ ==========
+        // ================= ĐĂNG KÝ =================
 
         [HttpGet]
         public IActionResult DangKy()
@@ -34,33 +35,41 @@ namespace VeSuKienWeb.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Kiểm tra trùng email
-            var tonTai = await _db.NguoiDung.AnyAsync(x => x.Email == model.Email);
+            var email = model.Email.Trim();
+
+            var tonTai = await _db.NguoiDung
+                .AnyAsync(x => x.Email == email);
+
             if (tonTai)
             {
-                ModelState.AddModelError(string.Empty, "Email đã được sử dụng.");
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Email đã được sử dụng.");
+
                 return View(model);
             }
 
-            // Tạo user mới
             var nguoiDung = new NguoiDung
             {
-                HoTen = model.HoTen,
-                Email = model.Email,
+                HoTen = model.HoTen.Trim(),
+                Email = email,
                 DienThoai = model.DienThoai,
                 MatKhau = MatKhauHelper.BamMatKhau(model.MatKhau),
                 VaiTro = "KhachHang",
-                NgayTao = DateTime.Now
+                NgayTao = DateTime.Now,
+                TrangThai = "HoatDong"
             };
 
             _db.NguoiDung.Add(nguoiDung);
             await _db.SaveChangesAsync();
 
-            TempData["ThongBao"] = "Đăng ký thành công, hãy đăng nhập.";
+            TempData["ThongBao"] =
+                "Đăng ký thành công, hãy đăng nhập để thiết lập sở thích sự kiện.";
+
             return RedirectToAction("DangNhap");
         }
 
-        // ========== ĐĂNG NHẬP ==========
+        // ================= ĐĂNG NHẬP =================
 
         [HttpGet]
         public IActionResult DangNhap()
@@ -75,32 +84,51 @@ namespace VeSuKienWeb.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var matKhauBam = MatKhauHelper.BamMatKhau(model.MatKhau);
+            var email = model.Email.Trim();
+            var matKhauBam =
+                MatKhauHelper.BamMatKhau(model.MatKhau);
 
             var user = await _db.NguoiDung
-                .FirstOrDefaultAsync(x => x.Email == model.Email && x.MatKhau == matKhauBam);
+                .FirstOrDefaultAsync(x =>
+                    x.Email == email &&
+                    x.MatKhau == matKhauBam);
 
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Sai email hoặc mật khẩu.");
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Sai email hoặc mật khẩu.");
+
                 return View(model);
             }
-if (user.TrangThai == "BiKhoa")
-{
-    ModelState.AddModelError(string.Empty, "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.");
-    return View(model);
-}
-            // Tạo claims chứa thông tin user + VaiTro
+
+            if (user.TrangThai == "BiKhoa")
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.");
+
+                return View(model);
+            }
+
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.NguoiDungId.ToString()),
+                new Claim(
+                    ClaimTypes.NameIdentifier,
+                    user.NguoiDungId.ToString()),
+
                 new Claim(ClaimTypes.Name, user.HoTen),
+
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.VaiTro ?? "KhachHang")
+
+                new Claim(
+                    ClaimTypes.Role,
+                    user.VaiTro ?? "KhachHang")
             };
 
             var identity = new ClaimsIdentity(
-                claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                claims,
+                CookieAuthenticationDefaults.AuthenticationScheme);
 
             var principal = new ClaimsPrincipal(identity);
 
@@ -108,7 +136,6 @@ if (user.TrangThai == "BiKhoa")
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 principal);
 
-            // Điều hướng theo vai trò
             var role = user.VaiTro ?? "KhachHang";
 
             if (role == "Admin")
@@ -117,25 +144,44 @@ if (user.TrangThai == "BiKhoa")
             if (role == "ToChuc")
                 return RedirectToAction("Index", "BanToChuc");
 
-            // Mặc định: Khách hàng → xem danh sách sự kiện
-            // 🔧 CHỈ SỬA DUY NHẤT DÒNG NÀY
-            return RedirectToAction("Index", "KhachHang");
+            if (role == "KhachHang")
+            {
+                bool daHoanThanhKhaoSat =
+                    await _db.HoSoSoThich.AnyAsync(x =>
+                        x.NguoiDungId == user.NguoiDungId &&
+                        x.DaHoanThanhKhaoSat);
+
+                if (!daHoanThanhKhaoSat)
+                {
+                    return RedirectToAction(
+                        "Index",
+                        "KhaoSatSoThich");
+                }
+
+                return RedirectToAction(
+                    "Index",
+                    "KhachHang");
+            }
+
+            return RedirectToAction("Index", "Home");
         }
 
-        // ========== KHÔNG ĐỦ QUYỀN ==========
+        // ================= KHÔNG ĐỦ QUYỀN =================
 
         public IActionResult KhongDuQuyen()
         {
             return Content("Bạn không có quyền truy cập trang này.");
         }
 
-        // ========== ĐĂNG XUẤT ==========
+        // ================= ĐĂNG XUẤT =================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DangXuat()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme);
+
             return RedirectToAction("Index", "Home");
         }
     }

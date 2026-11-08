@@ -1,0 +1,617 @@
+@functions{
+    string HinhThucText(string value)
+    {
+        return value switch
+        {
+            "HuyVe" => "Hủy vé",
+            _ => value
+        };
+    }
+}
+@model List<VeSuKienWeb.Models.BanToChuc.YeuCauHoanHuyItemBtcVM>
+
+@{
+    Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
+    ViewData["Title"] = "Yêu cầu hủy vé";
+
+    string? trangThai = ViewBag.TrangThai as string;
+
+    string TrangThaiText(string status) => status switch
+    {
+        "ChoDuyet" => "Chờ duyệt",
+        "DaHuy" => "Đã hủy",
+        "TuChoi" => "Từ chối",
+        _ => status
+    };
+
+    string TrangThaiClass(string status) => status switch
+    {
+        "ChoDuyet" => "badge-wait",
+        "DaHuy" => "badge-ok",
+        "TuChoi" => "badge-no",
+        _ => "badge-default"
+    };
+}
+
+<style>
+    .refund-page {
+        background: #f6f8fb;
+        min-height: calc(100vh - 70px);
+        padding: 18px 0 34px;
+    }
+
+    .page-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .page-head h2 {
+        color: #0f172a;
+        font-size: 28px;
+        font-weight: 850;
+        margin: 0;
+    }
+
+    .page-head p {
+        color: #64748b;
+        font-size: 14px;
+        margin: 3px 0 0;
+    }
+
+    .btn-back {
+        border-radius: 999px;
+        font-weight: 700;
+        padding: 8px 15px;
+        white-space: nowrap;
+    }
+
+    .filter-card {
+        background: #fff;
+        border: 1px solid #dbe4f0;
+        border-radius: 18px;
+        padding: 14px 16px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+        margin-bottom: 14px;
+    }
+
+    .filter-label {
+        color: #475569;
+        font-size: 13px;
+        font-weight: 750;
+        margin-bottom: 6px;
+    }
+
+    .filter-card .form-select {
+        border-radius: 12px;
+        font-size: 14px;
+    }
+
+    .filter-actions .btn {
+        border-radius: 999px;
+        font-size: 13.5px;
+        font-weight: 750;
+        padding: 7px 15px;
+    }
+
+    .refund-table-card {
+        background: #fff;
+        border: 1px solid #dbe4f0;
+        border-radius: 20px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
+        overflow: hidden;
+    }
+
+    .table-top {
+        padding: 15px 18px;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 850;
+        margin: 0;
+    }
+
+    .table-count {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-size: 12.5px;
+        font-weight: 800;
+    }
+
+    .refund-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .refund-table th {
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 850;
+        padding: 14px 16px;
+        border-bottom: 1px solid #dbe4f0;
+        white-space: nowrap;
+    }
+
+    .refund-table td {
+        color: #334155;
+        font-size: 13.5px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+    }
+
+    .refund-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .refund-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+/* Chia cột theo đúng 9 cột của bảng */
+.col-ticket   { width: 11%; }
+.col-event    { width: 19%; }
+.col-customer { width: 10%; }
+.col-seat     { width: 14%; }
+.col-type     { width: 8%; }
+.col-reason   { width: 12%; }
+.col-date     { width: 11%; }
+.col-status   { width: 8%; }
+.col-action   { width: 7%; }
+
+
+.ticket-code {
+    color: #475569;
+    font-weight: 500;
+    word-break: break-word;
+    font-size: 13px;
+}
+
+    .event-name {
+        color: #0f172a;
+        font-weight: 850;
+        line-height: 1.35;
+    }
+
+    .customer-name {
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .reason-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.4;
+        color: #475569;
+    }
+
+    .date-text {
+        line-height: 1.35;
+        color: #475569;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 6px 11px;
+        font-size: 12.5px;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .badge-wait {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-ok {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-no {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-default {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .action-wrap {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .action-wrap .btn {
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 800;
+        padding: 6px 11px;
+    }
+
+    .processed {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .empty-box {
+        padding: 34px 18px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .empty-box h5 {
+        color: #0f172a;
+        font-weight: 850;
+        margin-bottom: 5px;
+    }
+
+    .alert-custom {
+        border-radius: 15px;
+        border: 1px solid #bbf7d0;
+        background: #f0fdf4;
+        color: #166534;
+        font-weight: 700;
+        padding: 11px 15px;
+        margin-bottom: 14px;
+    }
+
+    @@media (max-width: 992px) {
+        .page-head {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .refund-table thead {
+            display: none;
+        }
+
+        .refund-table,
+        .refund-table tbody,
+        .refund-table tr,
+        .refund-table td {
+            display: block;
+            width: 100%;
+        }
+
+        .refund-table tr {
+            padding: 14px 16px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .refund-table td {
+            border-bottom: none;
+            padding: 5px 0;
+        }
+
+        .refund-table td::before {
+            content: attr(data-label);
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 750;
+            margin-bottom: 2px;
+        }
+
+        .reason-text {
+            -webkit-line-clamp: unset;
+        }
+
+        .action-wrap {
+            margin-top: 6px;
+        }
+        
+.col-seat {
+    min-width: 155px;
+    width: 18%;
+}
+
+.yc-seat-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.yc-seat-badge {
+    display: inline-flex;
+    padding: 5px 9px;
+    background: #edf4ff;
+    border: 1px solid #cfe0ff;
+    color: #2563eb;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.yc-muted {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+
+/* ===== SỬA BẢNG YÊU CẦU HỦY VÉ ===== */
+
+.refund-page {
+    width: 100%;
+    min-width: 0;
+}
+
+.refund-table-card {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.refund-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.refund-table {
+    width: 100%;
+    min-width: 1160px;
+    table-layout: auto;
+    border-collapse: collapse;
+}
+
+.refund-table th,
+.refund-table td {
+    padding: 15px 12px;
+    vertical-align: middle;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+.refund-table th {
+    white-space: nowrap;
+}
+
+.refund-table .col-event,
+.refund-table .event-name {
+    min-width: 190px;
+}
+
+.refund-table .col-seat,
+.refund-table .yc-seat-list {
+    min-width: 130px;
+}
+
+.refund-table .col-action {
+    min-width: 115px;
+}
+
+.yc-seat-list {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+}
+
+.yc-seat-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px solid #cfe0ff;
+    background: #edf4ff;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.refund-table td[data-label="Yêu cầu"] {
+    white-space: nowrap;
+}
+
+.ticket-code {
+    white-space: normal;
+    overflow-wrap: normal;
+}
+
+@@media (max-width: 992px) {
+    .refund-table {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .refund-table td {
+        overflow-wrap: anywhere;
+    }
+
+    .refund-table .col-seat,
+    .refund-table .yc-seat-list {
+        min-width: 0;
+    }
+
+
+    }
+</style>
+
+<div class="refund-page">
+    <div class="page-head">
+        <div>
+            <h2>Yêu cầu hủy vé</h2>
+            <p>Xem, lọc và xử lý các yêu cầu hủy vé từ khách hàng.</p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary btn-back">
+            Quay lại sự kiện của tôi
+        </a>
+    </div>
+
+    @if (TempData["ThongBao"] != null)
+    {
+        <div class="alert-custom">
+            @TempData["ThongBao"]
+        </div>
+    }
+
+    <div class="filter-card">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="filter-label">Trạng thái yêu cầu</label>
+                <select name="trangThai" class="form-select">
+                    <option value="">Tất cả yêu cầu</option>
+                    <option value="ChoDuyet" selected="@(trangThai == "ChoDuyet")">Chờ duyệt</option>
+                    <option value="DaHuy" selected="@(trangThai == "DaHuy")">Đã hủy</option>
+                    <option value="TuChoi" selected="@(trangThai == "TuChoi")">Từ chối</option>
+                </select>
+            </div>
+
+            <div class="col-md-5 filter-actions d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    Lọc
+                </button>
+
+                <a asp-action="YeuCauHuyVe" class="btn btn-outline-secondary">
+                    Xóa lọc
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="refund-table-card">
+        <div class="table-top">
+            <h5 class="table-title">Danh sách yêu cầu</h5>
+            <span class="table-count">@(Model?.Count ?? 0) yêu cầu</span>
+        </div>
+
+        @if (Model != null && Model.Any())
+        {
+            <div class="refund-table-scroll">
+            <table class="refund-table">
+                <thead>
+                    <tr>
+        <th class="col-ticket">Mã đơn</th>
+        <th class="col-event">Sự kiện</th>
+        <th class="col-customer">Khách hàng</th>
+        <th class="col-seat">Ghế đã đặt</th>
+        <th class="col-type">Yêu cầu</th>
+        <th class="col-reason">Lý do</th>
+        <th class="col-date">Ngày yêu cầu</th>
+        <th class="col-status">Trạng thái</th>
+        <th class="col-action">Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td data-label="Mã vé">
+                                <span class="ticket-code">@item.MaVe</span>
+                            </td>
+
+                            <td data-label="Sự kiện">
+                                <div class="event-name">@item.TenSuKien</div>
+                            </td>
+
+                            <td data-label="Khách hàng">
+                                <div class="customer-name">@item.HoTenKhach</div>
+                            </td>
+
+<td data-label="Ghế đã đặt" class="col-seat">
+    @if (item.DanhSachGhe != null &&
+         item.DanhSachGhe.Any())
+    {
+        <div class="yc-seat-list">
+            @foreach (var ghe in item.DanhSachGhe)
+            {
+                <span class="yc-seat-badge">@ghe</span>
+            }
+        </div>
+    }
+    else
+    {
+        <span class="yc-muted">Không có ghế</span>
+    }
+</td>
+
+<td data-label="Yêu cầu">
+    @HinhThucText(item.HinhThuc)
+</td>
+
+                            <td data-label="Lý do">
+                                <div class="reason-text">@item.LyDo</div>
+                            </td>
+
+                            <td data-label="Ngày yêu cầu">
+                                <div class="date-text">
+                                    @item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </td>
+
+                            <td data-label="Trạng thái">
+                                <span class="status-badge @TrangThaiClass(item.TrangThai)">
+                                    @TrangThaiText(item.TrangThai)
+                                </span>
+                            </td>
+
+                            <td data-label="Thao tác">
+                                @if (item.TrangThai == "ChoDuyet")
+                                {
+                                    <div class="action-wrap">
+                                        <form asp-action="ChapNhanYeuCauHuyVe" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.YeuCauId" />
+                                            <button type="submit" class="btn btn-success">
+                                                Chấp nhận hủy
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="TuChoiYeuCauHuyVe" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.YeuCauId" />
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                Từ chối
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="processed">Đã xử lý</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-box">
+                <h5>Chưa có yêu cầu nào</h5>
+                <div>Hiện chưa có yêu cầu hủy vé phù hợp với bộ lọc.</div>
+            </div>
+        }
+    </div>
+</div>

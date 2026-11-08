@@ -69,6 +69,9 @@ namespace VeSuKienWeb.Models.BanToChuc
         public string HinhThuc { get; set; } = string.Empty;
         public string LyDo { get; set; } = string.Empty;
         public DateTime NgayYeuCau { get; set; }
+        
+public List<string> DanhSachGhe { get; set; } = new();
+
     }
 
     public class GuiThongBaoBtcVM

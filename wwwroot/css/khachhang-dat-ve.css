@@ -742,3 +742,75 @@
 .ticket-card .booking-note {
     line-height: 1.6;
 }
+
+/* =========================================
+   ĐỒNG NHẤT SƠ ĐỒ ĐẶT VÉ VỚI TRANG CHI TIẾT
+   ========================================= */
+
+/* Khung sơ đồ */
+.booking-canvas {
+    display: block;
+    overflow: auto;
+    min-height: 0;
+}
+
+/* Giữ nguyên tỷ lệ gốc của sơ đồ */
+.booking-map {
+    position: relative;
+    max-width: none;
+    transform: none !important;
+    box-sizing: border-box;
+}
+
+/* Ghế mặc định */
+.customer-seat {
+    box-sizing: border-box;
+    font-size: clamp(7px, .72vw, 11px);
+    white-space: nowrap;
+}
+
+/* Ghế Workshop: hình tròn */
+.customer-seat.workshop-seat {
+    border-radius: 50%;
+    font-size: clamp(8px, .85vw, 12px);
+}
+
+/* Bàn tròn Workshop */
+.customer-round-table {
+    border-radius: 50%;
+    background: #f7e9d4;
+    border: 2px solid #a98552;
+    color: #76512c;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* Bàn chữ U */
+.customer-u-part {
+    background: #f7e9d4;
+    border: 2px solid #3d3024;
+    color: #76512c;
+}
+
+/* Bàn chủ tọa */
+.customer-chair-table {
+    background: #f7e9d4;
+    border: 2px solid #3d3024;
+    color: #76512c;
+}
+
+/* Sân khấu / màn hình */
+.customer-stage {
+    background: #e1eaf6;
+    border: 1px solid #9cb4d3;
+    color: #344e71;
+    border-radius: 10px;
+}
+
+/* Ghế đang được giữ */
+.customer-seat.holding {
+    background: #f6dca5;
+    border: 1.5px solid #c98a28;
+    color: #85521b;
+    cursor: not-allowed;
+}

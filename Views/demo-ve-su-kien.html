@@ -1,0 +1,820 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo vé sự kiện – Phiên bản 5</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #eeeaf2;
+            font-family: Inter, Arial, sans-serif;
+        }
+
+        .ticket-demo {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            overflow: hidden;
+            position: relative;
+            border-radius: 16px;
+            color: white;
+
+            background:
+                radial-gradient(
+                    ellipse at 50% 43%,
+                    #65468a 0%,
+                    transparent 55%
+                ),
+                radial-gradient(
+                    ellipse at 10% 20%,
+                    #42235c 0%,
+                    transparent 45%
+                ),
+                linear-gradient(
+                    125deg,
+                    #12142f,
+                    #281747 70%,
+                    #171c3a
+                );
+        }
+
+        .ticket-heading {
+            text-align: center;
+            padding: 32px 12px 5px;
+        }
+
+        .ticket-eyebrow {
+            color: #ffacdf;
+            letter-spacing: 2.2px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .ticket-heading h2 {
+            font-size: clamp(24px, 4.4vw, 37px);
+            margin: 10px 0;
+            font-weight: 850;
+            letter-spacing: -.7px;
+            line-height: 1.25;
+            color: #fff;
+        }
+
+        .ticket-heading h2 span {
+            color: #ff9bda;
+        }
+
+        .ticket-description {
+            font-size: 12px;
+            color: #e8d9f4;
+            margin: 0;
+        }
+
+        .ticket-stage {
+            position: relative;
+            height: 491px;
+            margin: 10px auto 0;
+            max-width: 900px;
+            touch-action: pan-y;
+            user-select: none;
+            cursor: grab;
+            perspective: 1100px;
+        }
+
+        .ticket-stage:active {
+            cursor: grabbing;
+        }
+
+        .ticket-glow {
+            position: absolute;
+            width: 65%;
+            height: 32px;
+            border-radius: 50%;
+            background: #f080dd55;
+            filter: blur(25px);
+            left: 17.5%;
+            bottom: 10px;
+        }
+
+        .ticket-card {
+            position: absolute;
+            left: 50%;
+            top: 14px;
+            margin-left: -125px;
+
+            width: 250px;
+            height: 444px;
+
+            color: #352144;
+            cursor: pointer;
+
+            filter: drop-shadow(
+                0 15px 15px #0008
+            );
+
+            transition:
+                transform .5s cubic-bezier(.2, .8, .2, 1),
+                opacity .4s,
+                filter .4s;
+
+            will-change: transform;
+        }
+
+        .ticket-shape {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+
+            background: linear-gradient(
+                140deg,
+                #f3e8fb,
+                #d9c6ee
+            );
+
+            clip-path: url(#ticket-soft-clip);
+        }
+
+        .ticket-surface {
+            position: absolute;
+            inset: 4px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ticket-poster {
+            height: 244px;
+            flex-shrink: 0;
+            display: block;
+            width: calc(100% - 14px);
+
+            object-fit: cover;
+            object-position: center;
+
+            border-radius: 5px;
+            margin: 8px 7px 0;
+            border: 2px solid #fff9;
+
+            background: #a995bc;
+        }
+
+        .ticket-category {
+            position: absolute;
+            z-index: 3;
+            top: 17px;
+            left: 50%;
+            transform: translateX(-50%);
+
+            white-space: nowrap;
+            max-width: 85%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            background: #fce6f8e8;
+            color: #68367e;
+
+            padding: 6px 12px;
+            border-radius: 30px;
+
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .ticket-info {
+            padding: 12px 15px 0;
+            text-align: left;
+            min-height: 0;
+        }
+
+        .ticket-name {
+            margin: 0 0 9px;
+            font-size: 17px;
+            font-weight: 850;
+            line-height: 1.2;
+            color: #2e173d;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ticket-meta {
+            font-size: 11px;
+            font-weight: 750;
+            color: #42304f;
+            line-height: 1.4;
+            margin: 7px 0;
+            text-align: left;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ticket-pricearea {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 15px;
+
+            border-top: 1.5px dashed #9063aa;
+            padding-top: 11px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .ticket-pricelabel {
+            font-size: 9px;
+            color: #60416d;
+            font-weight: 750;
+            display: block;
+            text-align: left;
+        }
+
+        .ticket-price {
+            font-size: 16px;
+            font-weight: 900;
+            color: #8b2676;
+            display: block;
+            text-align: left;
+            margin-top: 3px;
+        }
+
+        .ticket-view {
+            background: #873d9e;
+            color: white;
+            border: none;
+            border-radius: 9px;
+
+            font-size: 10px;
+            font-weight: 800;
+            padding: 9px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .ticket-view:hover {
+            background: #b34d9c;
+        }
+
+        .ticket-nav {
+            position: absolute;
+            z-index: 80;
+            top: 44%;
+
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+
+            border: 1px solid #eccbf5;
+            background: #674580e0;
+            color: white;
+
+            display: grid;
+            place-items: center;
+
+            cursor: pointer;
+            font-size: 24px;
+
+            box-shadow: 0 6px 18px #0007;
+        }
+
+        .ticket-nav:hover {
+            background: #cd54ac;
+        }
+
+        .ticket-prev {
+            left: 8px;
+        }
+
+        .ticket-next {
+            right: 8px;
+        }
+
+        .ticket-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 15px;
+        }
+
+        .ticket-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 20px;
+            border: 0;
+            background: #bca9cd;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .ticket-dot.active {
+            width: 27px;
+            background: #ff91d9;
+        }
+
+        .ticket-footer {
+            text-align: center;
+            padding: 0 12px 25px;
+        }
+
+        .ticket-hint {
+            font-size: 11px;
+            color: #e6d2f0;
+        }
+
+        .ticket-detail {
+            display: none;
+            max-width: 420px;
+
+            border: 1px solid #ffffff55;
+            background: #ffffff1a;
+            border-radius: 12px;
+
+            padding: 14px;
+            margin: 12px auto 0;
+
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .ticket-empty {
+            padding: 40px 16px;
+            text-align: center;
+        }
+
+        @media (max-width: 510px) {
+            body {
+                padding: 8px;
+            }
+
+            .ticket-stage {
+                height: 470px;
+            }
+
+            .ticket-card {
+                top: 12px;
+            }
+
+            .ticket-nav {
+                width: 32px;
+                height: 32px;
+                font-size: 19px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .ticket-card {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="ticket-demo" id="ticket-demo">
+
+        <svg
+            width="0"
+            height="0"
+            style="position:absolute"
+            aria-hidden="true">
+
+            <defs>
+                <clipPath
+                    id="ticket-soft-clip"
+                    clipPathUnits="userSpaceOnUse">
+
+                    <path id="ticket-soft-shape"></path>
+                </clipPath>
+            </defs>
+        </svg>
+
+        <div class="ticket-heading">
+            <div class="ticket-eyebrow">
+                ✦ NHỮNG SỰ KIỆN ĐÁNG MONG CHỜ ✦
+            </div>
+
+            <h2>
+                Vé xinh,
+                <span>trải nghiệm chất.</span>
+            </h2>
+
+            <p class="ticket-description">
+                Tìm sự kiện bạn yêu thích và lưu giữ những kỷ niệm đẹp.
+            </p>
+        </div>
+
+        <div class="ticket-stage" id="ticket-stage">
+            <div class="ticket-glow"></div>
+
+            <div id="ticket-cards"></div>
+
+            <button
+                class="ticket-nav ticket-prev"
+                id="ticket-prev"
+                type="button"
+                aria-label="Vé trước">
+                ‹
+            </button>
+
+            <button
+                class="ticket-nav ticket-next"
+                id="ticket-next"
+                type="button"
+                aria-label="Vé tiếp theo">
+                ›
+            </button>
+        </div>
+
+        <div class="ticket-dots" id="ticket-dots"></div>
+
+        <div class="ticket-footer">
+            <div class="ticket-hint">
+                ↔ Kéo ngang, lăn chuột hoặc dùng mũi tên để chuyển vé
+            </div>
+
+            <div class="ticket-detail" id="ticket-detail"></div>
+        </div>
+    </section>
+
+    <script>
+        (function () {
+            const root = document.getElementById("ticket-demo");
+
+            const stage = document.getElementById("ticket-stage");
+            const cards = document.getElementById("ticket-cards");
+            const dots = document.getElementById("ticket-dots");
+            const detail = document.getElementById("ticket-detail");
+            const path = document.getElementById("ticket-soft-shape");
+
+            // GIỮ NGUYÊN FORM VÉ RĂNG CƯA MỀM
+            let d = "M 18 0 ";
+
+            for (let x = 18; x < 226; x += 26) {
+                d +=
+                    `L ${x + 5} 0 ` +
+                    `Q ${x + 13} 11 ${x + 21} 0 `;
+            }
+
+            d +=
+                "L 232 0 " +
+                "Q 250 0 250 18 " +
+                "L 250 316 " +
+                "Q 237 318 237 331 " +
+                "Q 237 344 250 346 " +
+                "L 250 426 " +
+                "Q 250 444 232 444 ";
+
+            for (let x = 232; x > 18; x -= 26) {
+                d +=
+                    `L ${x - 5} 444 ` +
+                    `Q ${x - 13} 433 ${x - 21} 444 `;
+            }
+
+            d +=
+                "L 18 444 " +
+                "Q 0 444 0 426 " +
+                "L 0 346 " +
+                "Q 13 344 13 331 " +
+                "Q 13 318 0 316 " +
+                "L 0 18 " +
+                "Q 0 0 18 0 Z";
+
+            path.setAttribute("d", d);
+
+            // DỮ LIỆU MINH HỌA
+            const data = [
+                {
+                    name: "Hành Tinh Nâu",
+                    category: "ÂM NHẠC",
+                    date: "28/02/2027",
+                    time: "19:30",
+                    place: "TP. Hồ Chí Minh",
+                    price: "290.000đ",
+                    img: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=90"
+                },
+                {
+                    name: "Cậu Đồng – Vở kịch",
+                    category: "SÂN KHẤU",
+                    date: "07/03/2027",
+                    time: "19:00",
+                    place: "Sân khấu TP. Hồ Chí Minh",
+                    price: "250.000đ",
+                    img: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=90"
+                },
+                {
+                    name: "Ngày hội công nghệ",
+                    category: "CÔNG NGHỆ",
+                    date: "15/04/2027",
+                    time: "08:30",
+                    place: "Trung tâm Hội nghị",
+                    price: "199.000đ",
+                    img: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=90"
+                },
+                {
+                    name: "Đêm nhạc Ánh Sao",
+                    category: "ÂM NHẠC",
+                    date: "20/03/2027",
+                    time: "20:00",
+                    place: "Nhà hát Hòa Bình",
+                    price: "350.000đ",
+                    img: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=90"
+                },
+                {
+                    name: "Lễ hội Mùa Hè",
+                    category: "LỄ HỘI",
+                    date: "21/05/2027",
+                    time: "18:30",
+                    place: "Công viên Âm nhạc",
+                    price: "450.000đ",
+                    img: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=90"
+                }
+            ];
+
+            function escapeHTML(value) {
+                return String(value)
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;")
+                    .replaceAll("'", "&#39;");
+            }
+
+            let current = 0;
+            let drag = null;
+            let lastWheel = 0;
+
+            cards.innerHTML = data.map((event, i) => {
+                return `
+                    <div
+                        class="ticket-card"
+                        data-index="${i}"
+                        tabindex="0"
+                        role="button"
+                        aria-label="Chọn sự kiện ${escapeHTML(event.name)}">
+
+                        <div class="ticket-shape">
+                            <div class="ticket-surface">
+
+                                <img
+                                    class="ticket-poster"
+                                    src="${event.img}"
+                                    alt="${escapeHTML(event.name)}"
+                                    draggable="false">
+
+                                <span class="ticket-category">
+                                    ${escapeHTML(event.category)}
+                                </span>
+
+                                <div class="ticket-info">
+
+                                    <h3 class="ticket-name">
+                                        ${escapeHTML(event.name)}
+                                    </h3>
+
+                                    <div class="ticket-meta">
+                                        ✦ Ngày ${event.date}
+                                    </div>
+
+                                    <div class="ticket-meta">
+                                        ◷ Bắt đầu lúc ${event.time}
+                                    </div>
+
+                                    <div class="ticket-meta">
+                                        ⌖ ${escapeHTML(event.place)}
+                                    </div>
+
+                                </div>
+
+                                <div class="ticket-pricearea">
+                                    <div>
+                                        <span class="ticket-pricelabel">
+                                            Giá vé từ
+                                        </span>
+
+                                        <span class="ticket-price">
+                                            ${event.price}
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        class="ticket-view"
+                                        type="button"
+                                        data-view="${i}">
+                                        Xem chi tiết
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+            function render() {
+                const step =
+                    stage.clientWidth < 530 ? 110 : 174;
+
+                Array.from(cards.children).forEach((el, i) => {
+                    let dist = i - current;
+
+                    if (dist > data.length / 2) {
+                        dist -= data.length;
+                    }
+
+                    if (dist < -data.length / 2) {
+                        dist += data.length;
+                    }
+
+                    const a = Math.abs(dist);
+
+                    el.style.transform =
+                        `translateX(${dist * step}px) ` +
+                        `translateY(${a * 12}px) ` +
+                        `scale(${1 - a * .12}) ` +
+                        `rotateY(${-dist * 12}deg) ` +
+                        `rotateZ(${dist * 2.4}deg)`;
+
+                    el.style.zIndex = String(30 - a);
+                    el.style.opacity = a > 2 ? ".4" : "1";
+
+                    el.style.filter =
+                        i === current
+                            ? "drop-shadow(0 20px 24px #000b) drop-shadow(0 0 9px #eaa4fb)"
+                            : "drop-shadow(0 15px 15px #0008) brightness(.92)";
+
+                    el.classList.toggle(
+                        "active",
+                        i === current
+                    );
+
+                    el.onclick = function (e) {
+                        if (e.target.closest(".ticket-view")) {
+                            return;
+                        }
+
+                        if (i !== current) {
+                            current = i;
+                            detail.style.display = "none";
+                            render();
+                        } else {
+                            showInfo();
+                        }
+                    };
+
+                    el.onkeydown = function (e) {
+                        if (
+                            e.key === "Enter" &&
+                            e.target === el
+                        ) {
+                            el.click();
+                        }
+                    };
+                });
+
+                dots.innerHTML = data.map((_, i) => {
+                    return `
+                        <button
+                            class="ticket-dot ${i === current ? "active" : ""}"
+                            type="button"
+                            data-i="${i}"
+                            aria-label="Chọn vé ${i + 1}">
+                        </button>
+                    `;
+                }).join("");
+
+                dots.querySelectorAll("button").forEach(button => {
+                    button.onclick = function () {
+                        current = Number(button.dataset.i);
+                        detail.style.display = "none";
+                        render();
+                    };
+                });
+            }
+
+            function move(n) {
+                current =
+                    (current + n + data.length) %
+                    data.length;
+
+                detail.style.display = "none";
+                render();
+            }
+
+            function showInfo() {
+                const event = data[current];
+
+                detail.innerHTML = `
+                    <strong style="color:#ffb1e6">
+                        ${escapeHTML(event.name)}
+                    </strong>
+
+                    <div>Ngày tổ chức: ${event.date}</div>
+                    <div>Giờ bắt đầu: ${event.time}</div>
+                    <div>Địa điểm: ${escapeHTML(event.place)}</div>
+                    <div>Giá vé minh họa: từ ${event.price}</div>
+
+                    <small style="color:#d8c8e6">
+                        Bản xem trước, chưa kết nối website.
+                    </small>
+                `;
+
+                detail.style.display =
+                    detail.style.display === "block"
+                        ? "none"
+                        : "block";
+            }
+
+            cards.querySelectorAll(".ticket-view").forEach(button => {
+                button.onclick = function (e) {
+                    e.stopPropagation();
+
+                    current = Number(button.dataset.view);
+                    render();
+                    showInfo();
+                };
+            });
+
+            document.getElementById("ticket-prev").onclick =
+                () => move(-1);
+
+            document.getElementById("ticket-next").onclick =
+                () => move(1);
+
+            stage.addEventListener("wheel", function (e) {
+                if (data.length <= 1) {
+                    return;
+                }
+
+                e.preventDefault();
+
+                const now = Date.now();
+
+                if (now - lastWheel < 400) {
+                    return;
+                }
+
+                lastWheel = now;
+
+                move(e.deltaY + e.deltaX > 0 ? 1 : -1);
+            }, { passive: false });
+
+            stage.addEventListener("pointerdown", function (e) {
+                if (e.target.closest("button")) {
+                    return;
+                }
+
+                drag = {
+                    x: e.clientX,
+                    y: e.clientY
+                };
+            });
+
+            stage.addEventListener("pointerup", function (e) {
+                if (!drag) {
+                    return;
+                }
+
+                const dx = e.clientX - drag.x;
+                const dy = e.clientY - drag.y;
+
+                drag = null;
+
+                if (
+                    Math.abs(dx) > 35 &&
+                    Math.abs(dx) > Math.abs(dy)
+                ) {
+                    move(dx < 0 ? 1 : -1);
+                }
+            });
+
+            stage.addEventListener("pointercancel", function () {
+                drag = null;
+            });
+
+            if (typeof ResizeObserver !== "undefined") {
+                const observer = new ResizeObserver(render);
+                observer.observe(stage);
+            } else {
+                window.addEventListener("resize", render);
+            }
+
+            render();
+        })();
+    </script>
+</body>
+</html>
+

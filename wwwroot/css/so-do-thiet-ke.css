@@ -139,27 +139,31 @@
     background-color: #f7f9fc;
     background-image: radial-gradient(#dfe6ee 1px, transparent 1px);
     background-size: 18px 18px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
     padding: 16px;
-    min-height: 520px;
+    min-height: auto;
+    height: auto;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: flex-start;
 }
 
 .sd-map {
     position: relative;
     width: 100%;
-    min-width: 900px;
+    min-width: 0;
     max-width: 1400px;
+    height: auto;
     aspect-ratio: 1000 / 700;
+    flex: 0 0 100%;
     background: #fff;
     border: 1px solid #dfe6ed;
     border-radius: 14px;
     box-shadow: 0 8px 25px rgba(30, 53, 79, .07);
     overflow: hidden;
-    transform-origin: top left;
-    transition: transform .18s ease;
+    transform-origin: top center;
+    transition: none;
 }
 
 .sd-stage {
