@@ -1,11 +1,18 @@
-@model List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>
 
+@model List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>
 
 @{
     ViewData["Title"] = "Sự kiện";
 
-    string? search = ViewBag.Search as string;
-    string loai = Context.Request.Query["loai"].ToString();
+string? search = ViewBag.Search as string;
+
+string routeController =
+    ViewBag.RouteController as string ?? "KhachHang";
+
+string routeAction =
+    ViewBag.RouteAction as string ?? "Index";
+
+string loai = Context.Request.Query["loai"].ToString();
 
     var data = Model ?? new List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>();
 
@@ -13,17 +20,21 @@
         List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>
         ?? new List<VeSuKienWeb.Models.KhachHang.SuKienListItemKhVM>();
 
-bool hienThiGoiY = goiYSuKien.Any()
-    && string.IsNullOrWhiteSpace(search);
+    bool hienThiGoiY = goiYSuKien.Any()
+        && string.IsNullOrWhiteSpace(search);
 
+    // Giữ nguyên bộ lọc loại sự kiện.
     if (!string.IsNullOrWhiteSpace(loai))
     {
         data = data
             .Where(x => !string.IsNullOrWhiteSpace(x.TenLoai)
-                && x.TenLoai.Contains(loai, StringComparison.CurrentCultureIgnoreCase))
+                && x.TenLoai.Contains(
+                    loai,
+                    StringComparison.CurrentCultureIgnoreCase))
             .ToList();
     }
 
+    // Danh sách ID gợi ý theo thứ tự thuật toán.
     var idsGoiY = hienThiGoiY
         ? goiYSuKien
             .Where(x => !x.DaKetThuc)
@@ -36,10 +47,12 @@ bool hienThiGoiY = goiYSuKien.Any()
         .Select((id, index) => new { id, index })
         .ToDictionary(x => x.id, x => x.index);
 
+    // Chỉ hiển thị sự kiện chưa kết thúc.
     var suKienDangMo = data
         .Where(x => !x.DaKetThuc)
         .ToList();
 
+    // Ưu tiên gợi ý trước, các sự kiện còn lại xếp theo thời gian.
     if (hienThiGoiY)
     {
         suKienDangMo = suKienDangMo
@@ -56,66 +69,179 @@ bool hienThiGoiY = goiYSuKien.Any()
             .ToList();
     }
 
-    var suKienDaDienRa = data
-        .Where(x => x.DaKetThuc)
-        .OrderByDescending(x => x.ThoiGianKetThuc)
+    // Phân trang: 15 sự kiện mỗi trang.
+    const int pageSize = 15;
+
+    int currentPage = 1;
+
+    if (int.TryParse(
+        Context.Request.Query["page"],
+        out int pageFromQuery))
+    {
+        currentPage = Math.Max(1, pageFromQuery);
+    }
+
+    int totalItems = suKienDangMo.Count;
+    int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+    if (totalPages > 0)
+    {
+        currentPage = Math.Min(currentPage, totalPages);
+    }
+    else
+    {
+        currentPage = 1;
+    }
+
+    var suKienHienThi = suKienDangMo
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize)
         .ToList();
 }
 
-
 <style>
     .event-list-page {
-        color: #0f172a;
+        color: #281638;
     }
 
     .event-list-hero {
         margin-bottom: 32px;
     }
+/* THANH TIÊU ĐỀ VÀ TÌM KIẾM */
+.event-list-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 22px;
+}
 
+.event-list-heading {
+    flex: 1;
+    min-width: 0;
+}
+
+.event-list-desc {
+    margin-bottom: 0;
+}
+
+/* Khung tìm kiếm */
+.event-search-form {
+    width: 420px;
+    max-width: 45%;
+    flex-shrink: 0;
+}
+
+.event-search-box {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    height: 49px;
+    padding: 5px 6px 5px 17px;
+
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(193,151,218,.55);
+    border-radius: 16px;
+
+    box-shadow: 0 7px 22px rgba(91,48,120,.09);
+    backdrop-filter: blur(12px);
+
+    transition: .25s ease;
+}
+
+.event-search-box:focus-within {
+    background: #fff;
+    border-color: #bd78d5;
+    box-shadow: 0 0 0 4px rgba(181,111,207,.12);
+}
+
+.event-search-box > i {
+    color: #a45fc9;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.event-search-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+
+    border: none;
+    outline: none;
+    background: transparent;
+
+    color: #352044;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.event-search-input::placeholder {
+    color: #a28daF;
+    font-weight: 500;
+}
+
+.event-search-button {
+    height: 37px;
+    padding: 0 17px;
+
+    border: none;
+    border-radius: 11px;
+
+    background: linear-gradient(120deg,#a45fc9,#d772b8);
+    color: white;
+
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.event-search-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 13px rgba(164,95,201,.25);
+}
+
+.event-search-clear {
+    color: #a58aaf;
+    font-size: 15px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.event-search-clear:hover {
+    color: #d34b91;
+}
+
+/* Responsive */
+@@media (max-width: 767px) {
+    .event-list-topbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .event-search-form {
+        width: 100%;
+        max-width: 100%;
+    }
+}
     .event-list-title {
-        font-size: 40px;
+        font-size: 36px;
         font-weight: 900;
         letter-spacing: -1px;
         margin-bottom: 8px;
+        color: #281638;
     }
 
     .event-list-desc {
-        color: #64748b;
-        font-size: 15px;
-        margin-bottom: 18px;
+        color: #725b83;
+        font-size: 14px;
+        margin-bottom: 20px;
     }
 
-    .top-search {
-        max-width: 620px;
-        margin-bottom: 18px;
-    }
-
-    .top-search .input-group {
-        border-radius: 999px;
-        overflow: hidden;
-        border: 1px solid #dbeafe;
-        background: #fff;
-        box-shadow: 0 10px 28px rgba(15,23,42,.04);
-    }
-
-    .top-search .input-group-text,
-    .top-search .form-control {
-        border: none;
-        background: #fff;
-    }
-
-    .top-search .form-control {
-        min-height: 48px;
-        box-shadow: none;
-    }
-
-    .top-search .btn {
-        border-radius: 999px;
-        margin: 5px;
-        font-weight: 800;
-        padding: 0 20px;
-    }
-
+    /* Bộ lọc */
     .filter-tabs {
         display: flex;
         flex-wrap: wrap;
@@ -124,410 +250,592 @@ bool hienThiGoiY = goiYSuKien.Any()
 
     .filter-tab {
         text-decoration: none;
-        padding: 10px 18px;
+        padding: 9px 17px;
         border-radius: 999px;
-        background: #f8fafc;
-        color: #475569;
-        border: 1px solid #e2e8f0;
-        font-size: 14px;
+        background: rgba(255,255,255,.85);
+        color: #624477;
+        border: 1px solid #ead9f3;
+        font-size: 13px;
         font-weight: 800;
-        transition: .25s;
+        transition: .2s ease;
     }
 
     .filter-tab:hover {
-        background: #eff6ff;
-        color: #2563eb;
-        border-color: #bfdbfe;
+        background: #f4e5fb;
+        color: #a044a9;
+        border-color: #d9b6eb;
     }
 
     .filter-tab.active {
-        background: #2563eb;
-        color: white;
-        border-color: #2563eb;
+        background: linear-gradient(120deg,#a45fc9,#d772b8);
+        color: #fff;
+        border-color: transparent;
     }
 
+    /* Tiêu đề khu vực */
     .section-head-pro {
-        margin: 34px 0 18px;
+        margin: 35px 0 20px;
     }
 
     .section-title-pro {
-        font-size: 26px;
+        font-size: 25px;
         font-weight: 900;
+        color: #281638;
         margin: 0;
     }
 
     .section-sub-pro {
-        color: #64748b;
-        font-size: 14px;
-        margin-top: 5px;
+        color: #725b83;
+        font-size: 13px;
+        margin-top: 6px;
     }
 
-    .event-card-link {
+    /* Lưới 5 sự kiện mỗi hàng */
+    .event-list-page .event-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 22px;
+        align-items: stretch;
+    }
+
+    /* Thẻ sự kiện đồng bộ trang chủ */
+    .event-list-page .home-page-pro .event-link {
         display: block;
         height: 100%;
         color: inherit;
         text-decoration: none;
     }
 
-    .event-card-pro {
-        height: 100%;
-        background: #fff;
-        border-radius: 26px;
-        overflow: hidden;
-        border: 1px solid #e6eef8;
-        box-shadow: 0 12px 30px rgba(15,23,42,.055);
-        transition: .25s ease;
-    }
-
-    .event-card-link:hover .event-card-pro {
-        transform: translateY(-6px);
-        border-color: #bfdbfe;
-        box-shadow: 0 22px 52px rgba(37,99,235,.13);
-    }
-
-    .event-img-pro {
-        height: 230px;
+    .event-list-page .home-page-pro .event-card {
         position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
         overflow: hidden;
-        background: #e2e8f0;
+        border-radius: 21px;
+        background: linear-gradient(
+            145deg,
+            #fffaff 0%,
+            #f9efff 55%,
+            #f1e4fc 100%
+        ) !important;
+        border: 1px solid rgba(220,195,235,.7);
+        box-shadow: 0 12px 28px rgba(80,45,110,.12);
+        transition: .25s ease;
+        color: #352044;
     }
 
-    .event-img-pro img {
+    .event-list-page .home-page-pro .event-link:hover .event-card {
+        transform: translateY(-5px);
+        border-color: #d7a9e9;
+        box-shadow: 0 18px 38px rgba(120,65,150,.18);
+    }
+
+    /* Ảnh */
+    .event-list-page .home-page-pro .event-image {
+        position: relative;
+        height: 165px;
+        flex-shrink: 0;
+        overflow: hidden;
+        background: #e9ddf1;
+    }
+
+    .event-list-page .home-page-pro .event-image img {
+        display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: .32s ease;
+        transition: .3s ease;
     }
 
-    .event-card-link:hover .event-img-pro img {
+    .event-list-page .home-page-pro .event-link:hover .event-image img {
         transform: scale(1.05);
     }
 
-    .date-badge-pro {
+    /* Ngày sự kiện */
+    .event-list-page .home-page-pro .date-badge {
         position: absolute;
-        top: 14px;
-        left: 14px;
-        width: 58px;
-        padding: 8px 0;
-        border-radius: 16px;
-        background: rgba(255,255,255,.95);
+        top: 11px;
+        left: 11px;
+        width: 49px;
+        padding: 7px 0;
         text-align: center;
-        box-shadow: 0 10px 22px rgba(15,23,42,.15);
+        border-radius: 13px;
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 5px 15px rgba(30,15,45,.15);
+        z-index: 2;
     }
 
-    .date-badge-pro strong {
+    .event-list-page .home-page-pro .date-badge strong {
         display: block;
-        color: #0f172a;
-        font-size: 20px;
+        color: #281638;
+        font-size: 18px;
         line-height: 1;
     }
 
-    .date-badge-pro span {
-        color: #64748b;
-        font-size: 11px;
-        font-weight: 900;
+    .event-list-page .home-page-pro .date-badge span {
+        color: #745984;
+        font-size: 9px;
+        font-weight: 800;
     }
 
-    .status-pill {
+    /* Trạng thái */
+    .event-list-page .home-page-pro .event-status {
         position: absolute;
-        top: 14px;
-        right: 14px;
-        padding: 7px 11px;
+        top: 11px;
+        right: 10px;
+        padding: 5px 9px;
         border-radius: 999px;
-        background: #dcfce7;
-        color: #15803d;
-        font-size: 11px;
+        background: rgba(57,188,128,.95);
+        color: #fff;
+        font-size: 9px;
         font-weight: 900;
+        z-index: 2;
     }
 
-    .status-pill.ended {
-        background: #f1f5f9;
-        color: #64748b;
+    .event-list-page .home-page-pro .event-status.recommended {
+        background: linear-gradient(120deg,#a45fc9,#d772b8);
     }
 
-.status-pill.recommended {
-    background: #dbeafe;
-    color: #1d4ed8;
+    /* Nội dung */
+    .event-list-page .home-page-pro .event-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        padding: 14px 14px 13px;
+        position: relative;
+    }
+
+ .event-list-page .home-page-pro .event-image .event-type {
+    position: absolute;
+    right: 11px;
+    bottom: 10px;
+    left: auto;
+    top: auto;
+    z-index: 5;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 13px;
+    min-height: 27px;
+    max-width: calc(100% - 24px);
+
+    margin: 0;
+    border-radius: 999px;
+
+    background: rgba(247, 230, 255, .97);
+    color: #813e9c;
+    border: 1px solid #e3c1f2;
+
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.2;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    box-shadow: 0 3px 10px rgba(50, 20, 70, .15);
+    pointer-events: none;
 }
-    .event-body-pro {
-        padding: 16px 17px 17px;
-    }
 
-    .event-type-pro {
-        display: inline-block;
-        max-width: 100%;
-        padding: 5px 10px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #2563eb;
-        font-size: 11px;
+    .event-list-page .home-page-pro .event-name {
+        color: #382044;
+        font-size: 13px;
         font-weight: 900;
-        margin-bottom: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .event-name-pro {
-        font-size: 17px;
-        font-weight: 900;
-        line-height: 1.35;
-        color: #0f172a;
-        min-height: 46px;
-        margin-bottom: 10px;
+        line-height: 1.4;
+        min-height: 37px;
+        margin: 0 0 9px;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    .event-meta-pro {
-        color: #64748b;
-        font-size: 13px;
-        line-height: 1.6;
-        margin-bottom: 12px;
-    }
-
-    .event-meta-pro div {
+    .event-list-page .home-page-pro .event-time,
+    .event-list-page .home-page-pro .event-location {
+        color: #725b83;
+        font-size: 10px;
+        line-height: 1.5;
+        margin-bottom: 5px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 4px;
     }
 
-    .event-bottom-pro {
-        padding-top: 13px;
-        border-top: 1px solid #eef2f7;
+    .event-list-page .home-page-pro .event-time i,
+    .event-list-page .home-page-pro .event-location i {
+        color: #a65bc5;
+        margin-right: 4px;
+    }
+
+    /* Giá và chi tiết luôn nằm dưới cùng */
+    .event-list-page .home-page-pro .event-bottom {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 11px;
+        border-top: 1px solid rgba(112,70,135,.18);
     }
 
-    .event-price-pro {
-        color: #0f172a;
-        font-size: 14px;
+    .event-list-page .home-page-pro .event-price {
+        color: #bd438e;
+        font-size: 12px;
         font-weight: 900;
     }
 
-    .event-view-pro {
-        color: #2563eb;
-        font-size: 13px;
+    .event-list-page .home-page-pro .event-view {
+        color: #9850b4;
+        font-size: 11px;
         font-weight: 900;
         white-space: nowrap;
     }
 
+    /* Không có sự kiện */
     .empty-pro {
-        padding: 26px;
-        border-radius: 24px;
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        color: #64748b;
+        padding: 28px;
+        border-radius: 20px;
+        background: rgba(255,255,255,.8);
+        border: 1px solid #ead9f3;
+        color: #725b83;
+        text-align: center;
     }
 
-    @@media(max-width: 768px) {
+    /* Phân trang */
+    .event-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 35px 0 15px;
+    }
+
+    .event-page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 38px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,.85);
+        border: 1px solid #e5d1ef;
+        color: #70458a;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+        transition: .2s ease;
+    }
+
+    .event-page-link:hover {
+        background: #f3e4fa;
+        color: #a044a9;
+    }
+
+    .event-page-link.active {
+        background: linear-gradient(120deg,#a45fc9,#d772b8);
+        color: #fff;
+        border-color: transparent;
+    }
+
+    .event-page-link.disabled {
+        opacity: .4;
+        pointer-events: none;
+    }
+
+    .event-page-info {
+        text-align: center;
+        color: #806b8e;
+        font-size: 12px;
+        margin-top: 12px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1199px) {
+        .event-list-page .event-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 991px) {
+        .event-list-page .event-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+    }
+
+    @@media (max-width: 767px) {
         .event-list-title {
-            font-size: 28px;
+            font-size: 29px;
         }
 
-        .event-img-pro {
-            height: 200px;
+        .event-list-page .event-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
         }
 
-        .top-search {
-            max-width: 100%;
+        .event-list-page .home-page-pro .event-image {
+            height: 145px;
         }
     }
+
+    @@media (max-width: 420px) {
+        .event-list-page .event-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .event-list-page .home-page-pro .event-image {
+            height: 190px;
+        }
+    }
+    .event-list-page .home-page-pro .event-image .event-type {
+    left: auto !important;
+    right: 11px !important;
+    bottom: 10px !important;
+}
 </style>
 
 <div class="event-list-page">
 
-    <div class="event-list-hero">
-        <h2 class="event-list-title">Danh sách sự kiện</h2>
-        <p class="event-list-desc">
-            Khám phá các sự kiện đang mở đặt vé và theo dõi những chương trình đã diễn ra.
-        </p>
+  <div class="event-list-hero">
 
-      
+    <div class="event-list-topbar">
 
-        <div class="filter-tabs">
-            <a class="filter-tab @(string.IsNullOrWhiteSpace(loai) ? "active" : "")"
-               href="/KhachHang/Index">
-                Tất cả
-            </a>
+        <div class="event-list-heading">
 
-            <a class="filter-tab @(loai.Contains("trực tiếp", StringComparison.CurrentCultureIgnoreCase) ? "active" : "")"
-               href="/KhachHang/Index?loai=trực tiếp">
-                Sự kiện trực tiếp
-            </a>
+            <h2 class="event-list-title">
+                Danh sách sự kiện
+            </h2>
 
-            <a class="filter-tab @(loai.Contains("trực tuyến", StringComparison.CurrentCultureIgnoreCase) || loai.Contains("online", StringComparison.CurrentCultureIgnoreCase) ? "active" : "")"
-               href="/KhachHang/Index?loai=trực tuyến">
-                Sự kiện trực tuyến
-            </a>
+            <p class="event-list-desc">
+                Khám phá những chương trình phù hợp và lựa chọn trải nghiệm dành cho bạn.
+            </p>
+
         </div>
-    </div>
 
+<form asp-controller="@routeController"
+      asp-action="@routeAction"
+      method="get"
+      class="event-search-form">
 
-
-<section>
-    <div class="section-head-pro">
-        <h3 class="section-title-pro">
-            Sự kiện đang mở đặt vé
-        </h3>
-
-        <div class="section-sub-pro">
-            Khám phá các sự kiện phù hợp với sở thích và những chương trình đang mở đăng ký.
-        </div>
-    </div>
-
-    @if (suKienDangMo.Any())
-    {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-            @foreach (var sk in suKienDangMo)
+            @if (!string.IsNullOrWhiteSpace(loai))
             {
-                var laGoiY = hienThiGoiY && idsGoiY.Contains(sk.SuKienId);
-                var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
-                    ? "~/images/default-event.jpg"
-                    : sk.AnhSuKien);
-
-                <div class="col">
-                    <a asp-controller="KhachHang"
-                       asp-action="ChiTiet"
-                       asp-route-id="@sk.SuKienId"
-                       class="event-card-link">
-
-                        <div class="event-card-pro">
-                            <div class="event-img-pro">
-                                <img src="@img" alt="@sk.TenSuKien" />
-
-                                <div class="date-badge-pro">
-                                    <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
-                                    <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
-                                </div>
-
-                                <div class="status-pill @(laGoiY ? "recommended" : "")">
-    @(laGoiY ? "Phù hợp với bạn" : "Đang mở")
-</div>
-                            </div>
-
-                            <div class="event-body-pro">
-                                <span class="event-type-pro">
-                                    @(string.IsNullOrWhiteSpace(sk.TenLoai)
-                                        ? "Sự kiện" : sk.TenLoai)
-                                </span>
-
-                                <div class="event-name-pro">@sk.TenSuKien</div>
-
-                                <div class="event-meta-pro">
-                                    <div>
-                                        <i class="bi bi-clock"></i>
-                                        @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-                                    </div>
-
-                                    @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
-                                    {
-                                        <div>
-                                            <i class="bi bi-geo-alt"></i>
-                                            @sk.DiaDiem
-                                        </div>
-                                    }
-                                </div>
-
-                                <div class="event-bottom-pro">
-                                    <div class="event-price-pro">
-                                        @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
-                                            ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
-                                            : "Miễn phí")
-                                    </div>
-
-                                    <div class="event-view-pro">Chi tiết</div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+                <input type="hidden" name="loai" value="@loai" />
             }
-        </div>
-    }
-    else
-    {
-        <div class="empty-pro">
- Hiện chưa có sự kiện nào đang mở đặt vé.
-        </div>
-    }
-</section>
 
+            <div class="event-search-box">
+
+                <i class="bi bi-search"></i>
+
+                <input type="search"
+                       name="search"
+                       value="@search"
+                       class="event-search-input"
+                       placeholder="Tìm tên sự kiện bạn yêu thích..."
+                       autocomplete="off" />
+
+                @if (!string.IsNullOrWhiteSpace(search))
+                {
+<a asp-controller="@routeController"
+   asp-action="@routeAction"
+                       asp-route-loai="@loai"
+                       class="event-search-clear"
+                       title="Xóa tìm kiếm">
+
+                        <i class="bi bi-x-circle"></i>
+
+                    </a>
+                }
+
+                <button type="submit" class="event-search-button">
+                    Tìm kiếm
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <div class="filter-tabs">
+
+        <a class="filter-tab @(string.IsNullOrWhiteSpace(loai) ? "active" : "")"
+asp-controller="@routeController"
+asp-action="@routeAction"
+           asp-route-search="@search">
+
+            Tất cả
+
+        </a>
+
+        <a class="filter-tab @(loai.Contains("trực tiếp", StringComparison.CurrentCultureIgnoreCase) ? "active" : "")"
+asp-controller="@routeController"
+asp-action="@routeAction"
+           asp-route-loai="trực tiếp"
+           asp-route-search="@search">
+
+            Sự kiện trực tiếp
+
+        </a>
+
+        <a class="filter-tab @(loai.Contains("trực tuyến", StringComparison.CurrentCultureIgnoreCase) || loai.Contains("online", StringComparison.CurrentCultureIgnoreCase) ? "active" : "")"
+asp-controller="@routeController"
+asp-action="@routeAction"
+           asp-route-loai="trực tuyến"
+           asp-route-search="@search">
+
+            Sự kiện trực tuyến
+
+        </a>
+
+    </div>
+
+</div>
+  
 
     <section>
-        <div class="section-head-pro">
-            <h3 class="section-title-pro">Sự kiện đã diễn ra</h3>
-            <div class="section-sub-pro">Các chương trình đã kết thúc trên hệ thống</div>
-        </div>
+   
+        
 
-        @if (suKienDaDienRa.Any())
+        @if (suKienDangMo.Any())
         {
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-                @foreach (var sk in suKienDaDienRa)
-                {
-                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
-                        ? "~/images/default-event.jpg"
-                        : sk.AnhSuKien);
+            <div class="home-page-pro">
+                <div class="event-grid">
 
-                    <div class="col">
-                        <a asp-controller="KhachHang"
-                           asp-action="ChiTiet"
-                           asp-route-id="@sk.SuKienId"
-                           class="event-card-link">
+                    @foreach (var sk in suKienHienThi)
+                    {
+                        var laGoiY = hienThiGoiY
+                            && idsGoiY.Contains(sk.SuKienId);
 
-                            <div class="event-card-pro">
-                                <div class="event-img-pro">
-                                    <img src="@img" alt="@sk.TenSuKien" />
+                        var img = Url.Content(
+                            
+                            string.IsNullOrWhiteSpace(sk.AnhSuKien)
+                                ? "~/images/default-event.jpg"
+                                : sk.AnhSuKien
+                        );
 
-                                    <div class="date-badge-pro">
-                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
-                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+                        <div>
+<a asp-controller="@routeController"
+   asp-action="ChiTiet"
+   asp-route-id="@sk.SuKienId"
+   class="event-link">
+
+                                <div class="event-card">
+
+                                    <div class="event-image">
+                                        <img src="@img"
+                                             alt="@sk.TenSuKien"
+                                             loading="lazy" />
+
+                                        <div class="date-badge">
+                                            <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+                                            <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+                                        </div>
+
+<div class="event-status @(laGoiY ? "recommended" : "")">
+    @(laGoiY ? "Phù hợp với bạn" : "Còn mở")
+</div>
+
+<span class="event-type">
+    @(string.IsNullOrWhiteSpace(sk.TenLoai)
+        ? "Sự kiện"
+        : sk.TenLoai)
+</span>
                                     </div>
 
-                                    <div class="status-pill ended">Đã diễn ra</div>
-                                </div>
+                                    <div class="event-body">
 
-                                <div class="event-body-pro">
-                                    <span class="event-type-pro">
-                                        @(string.IsNullOrWhiteSpace(sk.TenLoai) ? "Sự kiện" : sk.TenLoai)
-                                    </span>
 
-                                    <div class="event-name-pro">@sk.TenSuKien</div>
+                                        <div class="event-name">
+                                            @sk.TenSuKien
+                                        </div>
 
-                                    <div class="event-meta-pro">
-                                        <div>
+                                        <div class="event-time">
                                             <i class="bi bi-clock"></i>
-                                            @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                            @sk.ThoiGianBatDau.ToString("dd/MM/yyyy HH:mm")
                                         </div>
 
                                         @if (!string.IsNullOrWhiteSpace(sk.DiaDiem))
                                         {
-                                            <div>
+                                            <div class="event-location">
                                                 <i class="bi bi-geo-alt"></i>
                                                 @sk.DiaDiem
                                             </div>
                                         }
-                                    </div>
 
-                                    <div class="event-bottom-pro">
-                                        <div class="event-price-pro">
-                                            @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
-                                                ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
-                                                : "Miễn phí")
+                                        <div class="event-bottom">
+                                            <div class="event-price">
+                                                @(sk.GiaTu.HasValue && sk.GiaTu.Value > 0
+                                                    ? "Từ " + sk.GiaTu.Value.ToString("N0") + " đ"
+                                                    : "Miễn phí")
+                                            </div>
+
+                                            <div class="event-view">
+                                                Chi tiết
+                                            </div>
                                         </div>
 
-                                        <div class="event-view-pro">Chi tiết</div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <div class="event-pagination">
+
+                    <a class="event-page-link @(currentPage <= 1 ? "disabled" : "")"
+asp-controller="@routeController"
+asp-action="@routeAction"
+                       asp-route-page="@(currentPage - 1)"
+                       asp-route-search="@search"
+                       asp-route-loai="@loai">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <a class="event-page-link @(currentPage == i ? "active" : "")"
+asp-controller="@routeController"
+asp-action="@routeAction"
+                           asp-route-page="@i"
+                           asp-route-search="@search"
+                           asp-route-loai="@loai">
+                            @i
                         </a>
-                    </div>
-                }
+                    }
+
+                    <a class="event-page-link @(currentPage >= totalPages ? "disabled" : "")"
+asp-controller="@routeController"
+asp-action="@routeAction"
+                       asp-route-page="@(currentPage + 1)"
+                       asp-route-search="@search"
+                       asp-route-loai="@loai">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+
+                </div>
+
+                <div class="event-page-info">
+                    Trang @currentPage / @totalPages
+                    · Hiển thị @suKienHienThi.Count / @totalItems sự kiện
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-pro">
+                <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+                Hiện chưa có sự kiện nào đang mở đặt vé.
             </div>
         }
     </section>

@@ -1,4 +1,6 @@
+
 @model VeSuKienWeb.Models.TaiKhoan.DangKyYeuCau
+
 @{
     ViewData["Title"] = "Đăng ký";
 }
@@ -9,151 +11,293 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f8fbff;
-        padding: 20px 0;
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background: transparent;
+        padding: 38px 16px;
+    }
+
+    .register-page::before,
+    .register-page::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        border-radius: 50%;
+        filter: blur(55px);
+        pointer-events: none;
+    }
+
+    .register-page::before {
+        width: 240px;
+        height: 240px;
+        background: rgba(190, 137, 220, .17);
+        top: 5%;
+        left: 5%;
+    }
+
+    .register-page::after {
+        width: 280px;
+        height: 280px;
+        background: rgba(239, 163, 209, .16);
+        bottom: 0;
+        right: 4%;
     }
 
     .register-card {
         width: 100%;
-        max-width: 500px;
-        background: #fff;
-        border-radius: 18px;
-        padding: 30px 36px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 8px 30px rgba(0,0,0,.05);
+        max-width: 510px;
+        position: relative;
+        overflow: hidden;
+
+        background: rgba(255, 255, 255, .91);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+
+        border: 1px solid rgba(255, 255, 255, .95);
+        border-radius: 24px;
+        padding: 34px 38px;
+
+        box-shadow:
+            0 18px 55px rgba(92, 52, 116, .12),
+            0 4px 15px rgba(92, 52, 116, .05);
     }
 
-.register-title {
-    font-size: 30px;
-    font-weight: 700;
-    color: #2563eb;
-    text-align: center;
-    margin-bottom: 8px;
-}
+ 
 
-.register-subtitle {
-    text-align: center;
-    color: #64748b;
-    font-size: 15px;
-    margin-bottom: 24px;
-}
+    .register-title {
+        font-size: 30px;
+        font-weight: 800;
+        color: #754394;
+        text-align: center;
+        margin-bottom: 8px;
+        letter-spacing: -.5px;
+    }
 
-    .form-label {
-        font-weight: 600;
-        color: #334155;
-        margin-bottom: 6px;
+    .register-subtitle {
+        text-align: center;
+        color: #927da0;
         font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 27px;
     }
 
-    .form-control {
-        height: 44px;
-        border-radius: 10px;
-        border: 1px solid #dbeafe;
-        background: #fff;
+    .register-heading-icon {
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 17px;
+
+        background: linear-gradient(
+            135deg,
+            #f0e2f8,
+            #fbe8f4
+        );
+
+        color: #9154ad;
+        font-size: 25px;
+        box-shadow: 0 5px 15px rgba(145, 84, 173, .09);
+    }
+
+    .register-page .form-label {
+        display: block;
+        font-weight: 700;
+        color: #594166;
+        margin-bottom: 7px;
+        font-size: 13px;
+    }
+
+    .register-page .form-control {
+        width: 100%;
+        height: 46px;
+        border-radius: 12px;
+        border: 1px solid #e7d9ef;
+        background: rgba(250, 247, 253, .9);
+        color: #44304f;
         font-size: 14px;
-        padding: 8px 12px;
+        padding: 9px 13px;
+        box-shadow: none;
+        transition: border-color .2s ease,
+                    box-shadow .2s ease,
+                    background .2s ease;
     }
 
-    .form-control:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    .register-page .form-control::placeholder {
+        color: #b09db9;
+        font-size: 13px;
     }
 
-    .password-wrapper {
+    .register-page .form-control:focus {
+        border-color: #b47acb;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(180, 122, 203, .13);
+        outline: none;
+    }
+
+    .register-page .password-wrapper {
         position: relative;
     }
 
-    .password-wrapper .form-control {
+    .register-page .password-wrapper .form-control {
         padding-right: 48px;
     }
 
-    .password-toggle {
+    .register-page .password-toggle {
         position: absolute;
         top: 50%;
         right: 14px;
         transform: translateY(-50%);
         border: none;
         background: transparent;
-        color: #64748b;
+        color: #a58ab3;
         font-size: 18px;
         cursor: pointer;
-        padding: 0;
+        padding: 5px;
+        transition: color .2s ease;
     }
 
-    .password-toggle:hover {
-        color: #2563eb;
+    .register-page .password-toggle:hover {
+        color: #8950a7;
     }
 
-    .register-btn {
+    .register-page .register-btn {
         width: 100%;
-        height: 46px;
+        height: 49px;
         border: none;
-        border-radius: 12px;
-        background: #2563eb;
+        border-radius: 13px;
+
+        background: linear-gradient(
+            110deg,
+            #9560b5 0%,
+            #b66fc2 55%,
+            #d47eae 100%
+        );
+
         color: #fff;
         font-size: 15px;
-        font-weight: 600;
-        transition: .25s ease;
-        margin-top: 10px;
+        font-weight: 800;
+        letter-spacing: .2px;
+
+        box-shadow: 0 7px 18px rgba(153, 91, 183, .23);
+        transition: transform .22s ease,
+                    box-shadow .22s ease,
+                    filter .22s ease;
+
+        margin-top: 8px;
+        cursor: pointer;
     }
 
-    .register-btn:hover {
-        background: #1d4ed8;
+    .register-page .register-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 23px rgba(153, 91, 183, .29);
+        filter: brightness(1.04);
     }
 
-    .register-footer {
+    .register-page .register-btn:active {
+        transform: translateY(0);
+    }
+
+    .register-page .register-footer {
         text-align: center;
-        margin-top: 14px;
-        font-size: 14px;
+        margin-top: 20px;
+        padding-top: 17px;
+        border-top: 1px solid #f0e6f4;
+        font-size: 13px;
+        color: #8c7a97;
     }
 
-    .register-footer a {
-        color: #2563eb;
-        font-weight: 700;
+    .register-page .register-footer a {
+        color: #9256ae;
+        font-weight: 800;
         text-decoration: none;
+        margin-left: 4px;
+        transition: color .2s ease;
     }
 
-    .register-footer a:hover {
+    .register-page .register-footer a:hover {
+        color: #c16fae;
         text-decoration: underline;
     }
 
-    .text-danger.small {
-        font-size: 12px;
+    .register-page .text-danger.small {
+        display: block;
+        font-size: 11px;
+        margin-top: 5px;
+        color: #d45d82 !important;
     }
 
-    .form-group-custom {
-        margin-bottom: 12px;
+    .register-page .form-group-custom {
+        margin-bottom: 15px;
+    }
+
+    @@media (max-width: 576px) {
+        .register-page {
+            min-height: auto;
+            padding: 25px 13px;
+        }
+
+        .register-card {
+            padding: 29px 21px;
+            border-radius: 20px;
+        }
+
+        .register-title {
+            font-size: 26px;
+        }
     }
 </style>
 
 <div class="register-page">
     <div class="register-card">
+
+        <div class="register-heading-icon">
+            <i class="bi bi-person-plus-fill"></i>
+        </div>
+
         <h2 class="register-title">Tạo tài khoản</h2>
+
         <p class="register-subtitle">
             Đăng ký để đặt vé và theo dõi các sự kiện yêu thích.
         </p>
 
         <form asp-action="DangKy" method="post">
+
             <div class="form-group-custom">
                 <label asp-for="HoTen" class="form-label">Họ tên</label>
-                <input asp-for="HoTen" class="form-control" placeholder="Nhập họ tên" />
-                <span asp-validation-for="HoTen" class="text-danger small"></span>
+                <input asp-for="HoTen"
+                       class="form-control"
+                       placeholder="Nhập họ tên" />
+                <span asp-validation-for="HoTen"
+                      class="text-danger small"></span>
             </div>
 
             <div class="form-group-custom">
                 <label asp-for="Email" class="form-label">Email</label>
-                <input asp-for="Email" class="form-control" placeholder="Nhập email" />
-                <span asp-validation-for="Email" class="text-danger small"></span>
+                <input asp-for="Email"
+                       class="form-control"
+                       placeholder="Nhập email" />
+                <span asp-validation-for="Email"
+                      class="text-danger small"></span>
             </div>
 
             <div class="form-group-custom">
-                <label asp-for="DienThoai" class="form-label">Số điện thoại</label>
-                <input asp-for="DienThoai" class="form-control" placeholder="Nhập số điện thoại" />
-                <span asp-validation-for="DienThoai" class="text-danger small"></span>
+                <label asp-for="DienThoai" class="form-label">
+                    Số điện thoại
+                </label>
+                <input asp-for="DienThoai"
+                       class="form-control"
+                       placeholder="Nhập số điện thoại" />
+                <span asp-validation-for="DienThoai"
+                      class="text-danger small"></span>
             </div>
 
             <div class="form-group-custom">
-                <label asp-for="MatKhau" class="form-label">Mật khẩu</label>
+                <label asp-for="MatKhau" class="form-label">
+                    Mật khẩu
+                </label>
 
                 <div class="password-wrapper">
                     <input asp-for="MatKhau"
@@ -164,16 +308,20 @@
 
                     <button type="button"
                             class="password-toggle"
-                            onclick="togglePassword('matKhauInput', 'matKhauIcon')">
+                            onclick="togglePassword('matKhauInput', 'matKhauIcon')"
+                            aria-label="Hiện hoặc ẩn mật khẩu">
                         <i class="bi bi-eye" id="matKhauIcon"></i>
                     </button>
                 </div>
 
-                <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                <span asp-validation-for="MatKhau"
+                      class="text-danger small"></span>
             </div>
 
             <div class="form-group-custom">
-                <label asp-for="XacNhanMatKhau" class="form-label">Xác nhận mật khẩu</label>
+                <label asp-for="XacNhanMatKhau" class="form-label">
+                    Xác nhận mật khẩu
+                </label>
 
                 <div class="password-wrapper">
                     <input asp-for="XacNhanMatKhau"
@@ -184,23 +332,30 @@
 
                     <button type="button"
                             class="password-toggle"
-                            onclick="togglePassword('xacNhanMatKhauInput', 'xacNhanMatKhauIcon')">
+                            onclick="togglePassword('xacNhanMatKhauInput', 'xacNhanMatKhauIcon')"
+                            aria-label="Hiện hoặc ẩn xác nhận mật khẩu">
                         <i class="bi bi-eye" id="xacNhanMatKhauIcon"></i>
                     </button>
                 </div>
 
-                <span asp-validation-for="XacNhanMatKhau" class="text-danger small"></span>
+                <span asp-validation-for="XacNhanMatKhau"
+                      class="text-danger small"></span>
             </div>
 
             <button type="submit" class="register-btn">
+                <i class="bi bi-person-check me-1"></i>
                 Đăng ký
             </button>
+
         </form>
 
         <div class="register-footer">
-            <span class="text-muted">Đã có tài khoản?</span>
-            <a asp-controller="TaiKhoan" asp-action="DangNhap">Đăng nhập</a>
+            <span>Đã có tài khoản?</span>
+            <a asp-controller="TaiKhoan" asp-action="DangNhap">
+                Đăng nhập
+            </a>
         </div>
+
     </div>
 </div>
 
@@ -208,6 +363,8 @@
     function togglePassword(inputId, iconId) {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
+
+        if (!input || !icon) return;
 
         if (input.type === "password") {
             input.type = "text";

@@ -9,5 +9,6 @@ namespace VeSuKienWeb.Models.TaiKhoan
 
         [Required]
         public string MatKhau { get; set; } = string.Empty;
+        public bool GhiNhoDangNhap { get; set; }
     }
 }

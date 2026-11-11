@@ -29,7 +29,7 @@ namespace VeSuKienWeb.Controllers
         {
             var now = DateTime.Now;
 
-            // Sự kiện nổi bật trên trang chủ.
+            // Giữ nguyên dữ liệu cho Carousel và dải cuộn phim.
             var suKienNoiBat = await _db.SuKien
                 .AsNoTracking()
                 .Include(s => s.LoaiSuKien)
@@ -42,9 +42,23 @@ namespace VeSuKienWeb.Controllers
                 .Take(6)
                 .ToListAsync();
 
+            // Danh sách tối đa 10 sự kiện sắp diễn ra.
+            var suKienSapDienRa = await _db.SuKien
+                .AsNoTracking()
+                .Include(s => s.LoaiSuKien)
+                .Include(s => s.ToChucSuKien)
+                .Include(s => s.DiaDiem)
+                .Where(s =>
+                    s.TrangThaiDuyet == "DaDuyet" &&
+                    s.ThoiGianBatDau > now &&
+                    s.ThoiGianKetThuc > now)
+                .OrderBy(s => s.ThoiGianBatDau)
+                .Take(10)
+                .ToListAsync();
+
             var goiYSuKien = new List<SuKien>();
 
-            // Giữ nguyên thuật toán gợi ý cá nhân hóa.
+            // Giữ nguyên thuật toán gợi ý cá nhân hóa Top-6.
             if (User.Identity?.IsAuthenticated == true &&
                 User.IsInRole("KhachHang"))
             {
@@ -54,7 +68,8 @@ namespace VeSuKienWeb.Controllers
                 if (int.TryParse(idStr, out int userId))
                 {
                     var ids = await _goiYService.LayGoiYAsync(
-                        userId, topN: 6);
+                        userId,
+                        topN: 5);
 
                     if (ids.Count > 0)
                     {
@@ -85,18 +100,16 @@ namespace VeSuKienWeb.Controllers
                 }
             }
 
-            // ==========================================
-            // LẤY GIÁ VÉ THỰC TẾ TỪ BẢNG LOAIVE
-            // ==========================================
-
+            // Tổng hợp ID để lấy giá vé cho tất cả khu vực.
             var danhSachId = suKienNoiBat
                 .Select(x => x.SuKienId)
-                .Concat(
-                    goiYSuKien.Select(x => x.SuKienId))
+                .Concat(suKienSapDienRa.Select(x => x.SuKienId))
+                .Concat(goiYSuKien.Select(x => x.SuKienId))
                 .Distinct()
                 .ToList();
 
-            var giaVeTheoSuKien = new Dictionary<int, decimal>();
+            var giaVeTheoSuKien =
+                new Dictionary<int, decimal>();
 
             if (danhSachId.Count > 0)
             {
@@ -117,11 +130,12 @@ namespace VeSuKienWeb.Controllers
                     x => x.GiaThapNhat);
             }
 
-            // Dùng chung cho Banner và Carousel.
+            // Truyền dữ liệu cho View.
             ViewBag.GiaVeTheoSuKien = giaVeTheoSuKien;
-
             ViewBag.GoiYSuKien = goiYSuKien;
+            ViewBag.SuKienSapDienRa = suKienSapDienRa;
 
+            // Giữ Model cũ để không thay đổi Carousel và dải cuộn phim.
             return View(suKienNoiBat);
         }
     }

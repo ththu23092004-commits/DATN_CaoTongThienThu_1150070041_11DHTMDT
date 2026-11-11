@@ -1,4 +1,3 @@
-
 "use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -7,30 +6,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!config || !widget) return;
 
-    const floatingButton = document.getElementById(
-        "favoriteFloatingButton"
-    );
-    const countElement = document.getElementById(
-        "favoriteCount"
-    );
-    const overlay = document.getElementById(
-        "favoriteOverlay"
-    );
-    const modal = document.getElementById(
-        "favoriteModal"
-    );
-    const closeButton = document.getElementById(
-        "favoriteCloseButton"
-    );
-    const listElement = document.getElementById(
-        "favoriteModalList"
-    );
+    const floatingButton = document.getElementById("favoriteFloatingButton");
+    const countElement = document.getElementById("favoriteCount");
+    const overlay = document.getElementById("favoriteOverlay");
+    const modal = document.getElementById("favoriteModal");
+    const closeButton = document.getElementById("favoriteCloseButton");
+    const listElement = document.getElementById("favoriteModalList");
 
     const token = widget.querySelector(
         'input[name="__RequestVerificationToken"]'
     )?.value;
 
     const likedIds = new Set();
+
     let authenticated = false;
     let lastFocus = null;
 
@@ -44,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const match = url.pathname.match(/\/ChiTiet\/(\d+)\/?$/i);
+
             return match ? Number(match[1]) : null;
         } catch {
             return null;
@@ -55,12 +44,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         button.classList.toggle("is-liked", liked);
         button.setAttribute("aria-pressed", String(liked));
+
         button.setAttribute(
             "aria-label",
             liked ? "Bỏ yêu thích sự kiện" : "Yêu thích sự kiện"
         );
 
         const icon = button.querySelector("i");
+
         if (icon) {
             icon.className = liked
                 ? "bi bi-heart-fill"
@@ -79,7 +70,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(
             ".favorite-heart-button[data-event-id]"
         ).forEach(button => {
-            updateHeart(button, Number(button.dataset.eventId));
+            updateHeart(
+                button,
+                Number(button.dataset.eventId)
+            );
         });
 
         updateCount();
@@ -105,7 +99,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (!response.ok) {
-            throw new Error("Không thể tải danh sách yêu thích.");
+            throw new Error(
+                "Không thể tải danh sách yêu thích."
+            );
         }
 
         return response.json();
@@ -113,6 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function applyData(data) {
         authenticated = data.authenticated === true;
+
         likedIds.clear();
 
         for (const id of data.ids || []) {
@@ -124,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function refreshFavorites(renderModal = false) {
         const data = await requestList();
+
         applyData(data);
 
         if (renderModal) {
@@ -136,7 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
     async function toggleFavorite(id, button) {
         if (!authenticated) {
             const nextUrl = encodeURIComponent(
-                window.location.pathname + window.location.search
+                window.location.pathname +
+                window.location.search
             );
 
             window.location.href =
@@ -148,14 +147,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!token) {
-            alert("Không tìm thấy mã xác thực. Vui lòng tải lại trang.");
+            alert(
+                "Không tìm thấy mã xác thực. Vui lòng tải lại trang."
+            );
+
             return;
         }
 
-        if (button) button.disabled = true;
+        if (button) {
+            button.disabled = true;
+        }
 
         try {
             const body = new URLSearchParams();
+
             body.set("suKienId", String(id));
             body.set("__RequestVerificationToken", token);
 
@@ -189,15 +194,19 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!modal.hidden) {
                 await refreshFavorites(true);
             }
+
         } catch (error) {
             alert(error.message);
+
         } finally {
-            if (button) button.disabled = false;
+            if (button) {
+                button.disabled = false;
+            }
         }
     }
 
-    // Gắn trái tim vào các thẻ ở Trang chủ và Trang Sự kiện.
-    // Nút tim nằm ngoài thẻ <a>, nên không gây mở trang chi tiết.
+    // Gắn nút yêu thích vào thẻ sự kiện.
+    // Hỗ trợ cả wrapper Bootstrap .col và wrapper div thông thường.
     function attachHearts() {
         const links = document.querySelectorAll(
             "a.event-link, a.event-card-link"
@@ -205,21 +214,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         links.forEach(link => {
             const id = getId(link);
+
             if (!id) return;
 
-            const host = link.closest(".col");
+            // Tìm wrapper phù hợp với cấu trúc từng trang.
+            const host =
+                link.closest(".favorite-card-host, .col") ||
+                link.parentElement;
+
             if (!host) return;
 
             host.classList.add("favorite-card-host");
 
-            // Xóa chữ Chi tiết khỏi giao diện.
+            // Bỏ chữ Chi tiết, thay bằng nút trái tim.
             link.querySelectorAll(
                 ".event-view, .event-view-pro"
             ).forEach(node => node.remove());
 
+            // Tránh tạo trùng nút tim.
             if (host.querySelector(
                 `.favorite-heart-button[data-event-id="${id}"]`
-            )) return;
+            )) {
+                return;
+            }
 
             const button = document.createElement("button");
 
@@ -228,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
             button.dataset.eventId = String(id);
 
             const icon = document.createElement("i");
+
             button.appendChild(icon);
 
             updateHeart(button, id);
@@ -235,9 +253,11 @@ document.addEventListener("DOMContentLoaded", () => {
             button.addEventListener("click", event => {
                 event.preventDefault();
                 event.stopPropagation();
+
                 toggleFavorite(id, button);
             });
 
+            // Nút tim nằm ngoài thẻ a.
             host.appendChild(button);
         });
     }
@@ -247,48 +267,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!data.authenticated) {
             const box = document.createElement("div");
+
             box.className = "favorite-empty";
+
             box.textContent =
                 "Vui lòng đăng nhập tài khoản khách hàng để xem yêu thích.";
+
             listElement.appendChild(box);
+
             return;
         }
 
         if (!data.items || data.items.length === 0) {
             const box = document.createElement("div");
+
             box.className = "favorite-empty";
 
             const icon = document.createElement("i");
+
             icon.className = "bi bi-heart";
 
             const message = document.createElement("div");
+
             message.textContent =
                 "Bạn chưa có sự kiện yêu thích nào.";
 
             box.append(icon, message);
+
             listElement.appendChild(box);
+
             return;
         }
 
         data.items.forEach(item => {
             const row = document.createElement("div");
+
             row.className = "favorite-item";
 
             const img = document.createElement("img");
+
             img.className = "favorite-item-image";
             img.src = item.image;
             img.alt = item.name;
             img.loading = "lazy";
 
             const info = document.createElement("div");
+
             info.className = "favorite-item-info";
 
             const link = document.createElement("a");
+
             link.className = "favorite-item-title";
             link.href = item.url;
             link.textContent = item.name;
 
             const date = document.createElement("div");
+
             date.className = "favorite-item-date";
             date.textContent = item.date;
 
@@ -296,46 +330,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!item.available) {
                 const unavailable = document.createElement("span");
-                unavailable.className = "favorite-item-unavailable";
+
+                unavailable.className =
+                    "favorite-item-unavailable";
+
                 unavailable.textContent =
                     "Sự kiện đã kết thúc hoặc không còn mở";
+
                 info.appendChild(unavailable);
             }
 
             const remove = document.createElement("button");
+
             remove.type = "button";
             remove.className = "favorite-remove-button";
             remove.title = "Bỏ yêu thích";
+
             remove.setAttribute(
                 "aria-label",
                 "Bỏ yêu thích " + item.name
             );
 
             const heart = document.createElement("i");
+
             heart.className = "bi bi-heart-fill";
+
             remove.appendChild(heart);
 
             remove.addEventListener("click", () => {
-                toggleFavorite(Number(item.id), remove);
+                toggleFavorite(
+                    Number(item.id),
+                    remove
+                );
             });
 
             row.append(img, info, remove);
+
             listElement.appendChild(row);
         });
     }
 
     async function openModal() {
         lastFocus = document.activeElement;
+
         overlay.hidden = false;
         modal.hidden = false;
 
         document.body.style.overflow = "hidden";
+
         closeButton.focus();
 
         showMessage("Đang tải danh sách yêu thích...");
 
         try {
             await refreshFavorites(true);
+
         } catch {
             showMessage(
                 "Không tải được danh sách. Vui lòng thử lại."
@@ -349,14 +398,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.body.style.overflow = "";
 
-        if (lastFocus && typeof lastFocus.focus === "function") {
+        if (
+            lastFocus &&
+            typeof lastFocus.focus === "function"
+        ) {
             lastFocus.focus();
         }
     }
 
-    floatingButton?.addEventListener("click", openModal);
-    closeButton?.addEventListener("click", closeModal);
-    overlay?.addEventListener("click", closeModal);
+    floatingButton?.addEventListener(
+        "click",
+        openModal
+    );
+
+    closeButton?.addEventListener(
+        "click",
+        closeModal
+    );
+
+    overlay?.addEventListener(
+        "click",
+        closeModal
+    );
 
     document.addEventListener("keydown", event => {
         if (modal.hidden) return;
@@ -377,9 +440,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const first = focusables[0];
             const last = focusables[focusables.length - 1];
 
-            if (event.shiftKey && document.activeElement === first) {
+            if (
+                event.shiftKey &&
+                document.activeElement === first
+            ) {
                 event.preventDefault();
                 last.focus();
+
             } else if (
                 !event.shiftKey &&
                 document.activeElement === last
@@ -393,7 +460,9 @@ document.addEventListener("DOMContentLoaded", () => {
     attachHearts();
 
     refreshFavorites().catch(error => {
-        console.error("Lỗi tải yêu thích:", error);
+        console.error(
+            "Lỗi tải yêu thích:",
+            error
+        );
     });
 });
-

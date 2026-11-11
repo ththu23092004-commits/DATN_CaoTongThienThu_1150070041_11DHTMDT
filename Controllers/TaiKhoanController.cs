@@ -85,6 +85,7 @@ namespace VeSuKienWeb.Controllers
                 return View(model);
 
             var email = model.Email.Trim();
+
             var matKhauBam =
                 MatKhauHelper.BamMatKhau(model.MatKhau);
 
@@ -132,9 +133,25 @@ namespace VeSuKienWeb.Controllers
 
             var principal = new ClaimsPrincipal(identity);
 
+            // CẤU HÌNH GHI NHỚ ĐĂNG NHẬP
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = model.GhiNhoDangNhap,
+                AllowRefresh = true
+            };
+
+            // Nếu người dùng tích ghi nhớ đăng nhập:
+            // Cookie có thời hạn 30 ngày.
+            if (model.GhiNhoDangNhap)
+            {
+                authProperties.ExpiresUtc =
+                    DateTimeOffset.UtcNow.AddDays(30);
+            }
+
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                principal);
+                principal,
+                authProperties);
 
             var role = user.VaiTro ?? "KhachHang";
 

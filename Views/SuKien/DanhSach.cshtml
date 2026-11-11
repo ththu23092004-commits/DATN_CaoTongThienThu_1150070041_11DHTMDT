@@ -196,24 +196,30 @@
         color: #64748b;
     }
 
-    .event-body-pro {
-        padding: 16px 17px 17px;
-    }
+ 
+.event-img-pro .event-type-pro {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 6;
 
-    .event-type-pro {
-        display: inline-block;
-        max-width: 100%;
-        padding: 5px 10px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #2563eb;
-        font-size: 11px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 12px;
+    border-radius: 999px;
+
+    background: rgba(246, 226, 255, 0.96);
+    color: #7a46a6;
+
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1;
+
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(83, 47, 110, 0.16);
+}
 
     .event-name-pro {
         font-size: 17px;
@@ -241,7 +247,10 @@
         text-overflow: ellipsis;
         margin-bottom: 4px;
     }
-
+.event-meta-pro .event-location-row {
+    min-height: 21px;
+    margin-bottom: 4px;
+}
     .online-note {
         display: inline-block;
         margin-top: 2px;
@@ -351,21 +360,27 @@
                            class="event-card-link">
 
                             <div class="event-card-pro">
-                                <div class="event-img-pro">
-                                    <img src="@img" alt="@sk.TenSuKien" />
+<div class="event-img-pro">
+    <img src="@img" alt="@sk.TenSuKien" />
 
-                                    <div class="date-badge-pro">
-                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
-                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
-                                    </div>
+    <div class="date-badge-pro">
+        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
+        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
+    </div>
 
-                                    <div class="status-pill">Đang mở</div>
-                                </div>
+    <div class="status-pill">Đang mở</div>
 
-                                <div class="event-body-pro">
-                                    <span class="event-type-pro">
-                                        @(sk.LoaiSuKien != null ? sk.LoaiSuKien.TenLoai : "Sự kiện")
-                                    </span>
+@if (sk.LoaiSuKien != null)
+{
+    <span class="event-type-pro">
+        @(laOnline ? "Trực tuyến" : "Trực tiếp")
+    </span>
+}
+</div>
+                               
+                    
+
+                            <div class="event-body-pro">
 
                                     <div class="event-name-pro">@sk.TenSuKien</div>
 
@@ -374,15 +389,19 @@
                                             <i class="bi bi-clock"></i> @thoiGian
                                         </div>
 
-                                        @if (sk.DiaDiem != null)
-                                        {
-                                            <div>
-                                                <i class="bi bi-geo-alt"></i>
-                                                @(string.IsNullOrWhiteSpace(sk.DiaDiem.TenDiaDiem)
-                                                    ? sk.DiaDiem.DiaChi
-                                                    : sk.DiaDiem.TenDiaDiem)
-                                            </div>
-                                        }
+<div class="event-location-row">
+    @if (sk.DiaDiem != null)
+    {
+        var diaDiem = !string.IsNullOrWhiteSpace(sk.DiaDiem.TenDiaDiem)
+            ? sk.DiaDiem.TenDiaDiem
+            : sk.DiaDiem.DiaChi;
+
+        if (!string.IsNullOrWhiteSpace(diaDiem))
+        {
+            <i class="bi bi-geo-alt"></i> @diaDiem
+        }
+    }
+</div>
                                     </div>
 
                                     @if (laQuanTri && laOnline)
@@ -452,12 +471,16 @@
                                     </div>
 
                                     <div class="status-pill ended">Đã diễn ra</div>
+                                    @if (sk.LoaiSuKien != null)
+{
+    <span class="event-type-pro">
+        @(laOnline ? "Trực tuyến" : "Trực tiếp")
+    </span>
+}
                                 </div>
 
                                 <div class="event-body-pro">
-                                    <span class="event-type-pro">
-                                        @(sk.LoaiSuKien != null ? sk.LoaiSuKien.TenLoai : "Sự kiện")
-                                    </span>
+                                 
 
                                     <div class="event-name-pro">@sk.TenSuKien</div>
 

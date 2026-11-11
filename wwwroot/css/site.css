@@ -557,26 +557,30 @@ body.event-theme-body .home-page-pro .event-link:hover .event-card {
 
 body.event-theme-body .home-page-pro .info-row {
     background: linear-gradient(
-        145deg,
-        rgba(74, 43, 104, 0.82),
-        rgba(35, 22, 61, 0.93)
+        135deg,
+        rgba(255, 255, 255, 0.78),
+        rgba(246, 226, 255, 0.68)
     ) !important;
 
-    border: 1px solid
-        rgba(255,255,255,0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
 
     box-shadow:
-        0 20px 45px rgba(12, 5, 30, 0.22);
+        0 16px 40px rgba(105, 65, 145, 0.12);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
+
+
 
 body.event-theme-body .home-page-pro .info-content h3,
 body.event-theme-body .home-page-pro .info-heading h2 {
-    color: #ffffff !important;
+    color: #302044 !important;
 }
 
 body.event-theme-body .home-page-pro .info-content p,
 body.event-theme-body .home-page-pro .info-heading p {
-    color: #dfd2ed !important;
+    color: #655477 !important;
 }
 
 body.event-theme-body .home-page-pro .info-tag,

@@ -39,19 +39,17 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
 }
 
 
-    var data = Model ?? new List<VeSuKienWeb.Models.SuKien>();
-    var now = DateTime.Now;
+var data = Model ?? new List<VeSuKienWeb.Models.SuKien>();
+var now = DateTime.Now;
 
-    var suKienNoiBat = data
-        .Where(x => x.TrangThaiDuyet == "DaDuyet" && x.ThoiGianKetThuc > now)
+var suKienSapDienRa =
+    ViewBag.SuKienSapDienRa as List<VeSuKienWeb.Models.SuKien>
+    ?? data
+        .Where(x =>
+            x.TrangThaiDuyet == "DaDuyet" &&
+            x.ThoiGianBatDau > now)
         .OrderBy(x => x.ThoiGianBatDau)
-        .Take(4)
-        .ToList();
-
-    var suKienSapDienRa = data
-        .Where(x => x.TrangThaiDuyet == "DaDuyet" && x.ThoiGianBatDau > now)
-        .OrderBy(x => x.ThoiGianBatDau)
-        .Take(8)
+        .Take(10)
         .ToList();
 }
 
@@ -383,7 +381,10 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
     grid-template-columns: 1.15fr 1fr;
     gap: 0;
     align-items: stretch;
-    margin-bottom: 38px;
+
+    width: min(1040px, calc(100% - 32px));
+    margin: 0 auto 32px;
+
     background: #fff;
     border-radius: 32px;
     overflow: hidden;
@@ -395,10 +396,11 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
     grid-template-columns: 1fr 1.15fr;
 }
 
-.info-image {
-    height: 390px;
-    overflow: hidden;
-    background: #e2e8f0;
+.info-content {
+    padding: 34px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .info-image img {
@@ -431,7 +433,7 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
 }
 
 .info-content h3 {
-    font-size: 34px;
+    font-size: 30px;
     line-height: 1.2;
     font-weight: 900;
     color: #0f172a;
@@ -670,82 +672,7 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
 }
 
 
-    <section class="home-section">
-        <div class="section-head">
-            <div class="section-label">Nổi bật</div>
-            <h2 class="section-title">Sự kiện nổi bật</h2>
-            <div class="section-sub">Những chương trình đang được quan tâm</div>
-        </div>
 
-        @if (suKienNoiBat.Any())
-        {
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
-                @foreach (var sk in suKienNoiBat)
-                {
-                    var img = Url.Content(string.IsNullOrWhiteSpace(sk.AnhSuKien)
-                        ? "~/images/default-event.jpg"
-                        : sk.AnhSuKien);
-
-                    <div class="col">
-                        <a asp-controller="KhachHang"
-                           asp-action="ChiTiet"
-                           asp-route-id="@sk.SuKienId"
-                           class="event-link">
-
-                            <div class="event-card">
-                                <div class="event-image">
-                                    <img src="@img" alt="@sk.TenSuKien" />
-
-                                    <div class="date-badge">
-                                        <strong>@sk.ThoiGianBatDau.ToString("dd")</strong>
-                                        <span>TH @sk.ThoiGianBatDau.ToString("MM")</span>
-                                    </div>
-
-                                    <div class="event-status">Còn mở</div>
-                                </div>
-
-                                <div class="event-body">
-                                    <span class="event-type">
-                                        @(sk.LoaiSuKien != null ? sk.LoaiSuKien.TenLoai : "Sự kiện")
-                                    </span>
-
-                                    <div class="event-name">@sk.TenSuKien</div>
-
-                                    <div class="event-time">
-    <i class="bi bi-clock"></i>
-    @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-</div>
-
-@if (sk.ToChucSuKien != null)
-@if (sk.DiaDiem != null)
-{
-    <div class="event-location">
-        <i class="bi bi-geo-alt"></i>
-        @(string.IsNullOrWhiteSpace(sk.DiaDiem.TenDiaDiem)
-            ? sk.DiaDiem.DiaChi
-            : sk.DiaDiem.TenDiaDiem)
-    </div>
-}
-
-                                    <div class="event-bottom">
-<div class="event-price">
-    @HienThiGiaVe(sk)
-</div>
-
-                                        <div class="event-view">Chi tiết</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="empty-box">Hiện chưa có sự kiện nổi bật.</div>
-        }
-    </section>
 
     <section class="home-section">
         <div class="section-head">
@@ -854,8 +781,9 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
             </h3>
 
             <p>
-                Khám phá các liveshow, đại nhạc hội và chương trình biểu diễn nghệ thuật được tổ chức trên toàn quốc.
-                Người tham gia có thể theo dõi lịch diễn, lựa chọn vị trí phù hợp và đặt vé trực tuyến nhanh chóng.
+                <p>
+    Khám phá liveshow, đại nhạc hội và các chương trình biểu diễn hấp dẫn. Dễ dàng chọn lịch diễn và đặt vé trực tuyến.
+</p>
             </p>
 
             <a href="/KhachHang/Index" class="info-btn">
@@ -880,8 +808,7 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
             </h3>
 
             <p>
-                Từ workshop kỹ năng mềm đến các hội thảo chuyên ngành,
-                hệ thống giúp người tham gia dễ dàng tìm kiếm chương trình phù hợp và đăng ký chỉ với vài thao tác đơn giản.
+                Khám phá các workshop và hội thảo thú vị để học hỏi, kết nối và phát triển kỹ năng.
             </p>
 
             <a href="/KhachHang/Index" class="info-btn">
@@ -914,8 +841,7 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
             </h3>
 
             <p>
-                Các sự kiện trực tuyến được tổ chức thông qua nền tảng họp trực tuyến,
-                cho phép người tham gia dễ dàng kết nối từ mọi nơi mà không cần di chuyển.
+                Tham gia sự kiện trực tuyến từ bất kỳ đâu, kết nối và trải nghiệm mà không cần di chuyển.
             </p>
 
             <a href="/KhachHang/Index" class="info-btn">
@@ -949,7 +875,7 @@ string HienThiGiaVe(VeSuKienWeb.Models.SuKien sk)
                 <p class="footer-info">
                     Email: eventticket@gmail.com<br />
                     Hotline: 0909 163 821<br />
-                    Thời gian hỗ trợ: 08:00 đến 22:00
+                
                 </p>
             </div>
         </div>

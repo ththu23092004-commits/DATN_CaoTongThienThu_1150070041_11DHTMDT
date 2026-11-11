@@ -351,39 +351,149 @@ body.event-redesign .home-page-pro .info-heading p {
     color: var(--ev-muted) !important;
 }
 
-body.event-redesign .home-page-pro .info-row {
-    border-radius: 27px !important;
+/* CAC KHOI GIOI THIEU - GLASS LIGHT */
+
+body.event-theme-body .home-page-pro .info-row {
+    height: 360px !important;
+    min-height: 360px !important;
+
     background: linear-gradient(
         135deg,
-        rgba(76, 44, 102, .92),
-        rgba(37, 23, 62, .98)
+        rgba(255, 255, 255, 0.82),
+        rgba(246, 231, 255, 0.72)
     ) !important;
-    border: 1px solid rgba(239,198,255,.14) !important;
-    box-shadow: 0 20px 50px rgba(5,2,18,.2) !important;
-    margin-bottom: 30px;
+
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+
+    box-shadow:
+        0 16px 40px rgba(80, 45, 110, 0.13);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    overflow: hidden;
 }
 
-body.event-redesign .home-page-pro .info-image {
-    background: #261733;
+body.event-theme-body .home-page-pro .info-image {
+    height: 360px !important;
+    min-height: 0 !important;
 }
 
-body.event-redesign .home-page-pro .info-content {
-    padding: 40px;
+body.event-theme-body .home-page-pro .info-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-body.event-redesign .home-page-pro .info-tag {
-    color: #f6ceff !important;
-    background: rgba(190,112,220,.22) !important;
+body.event-theme-body .home-page-pro .info-content {
+    padding: 22px 30px !important;
+    background: transparent !important;
 }
 
-body.event-redesign .home-page-pro .info-content h3 {
-    color: #fff !important;
-    font-size: clamp(25px, 3vw, 34px);
+body.event-theme-body .home-page-pro .info-content h3 {
+    color: #302044 !important;
+    font-size: 30px;
 }
 
-body.event-redesign .home-page-pro .info-content p {
-    color: #d5c6df !important;
-    line-height: 1.8;
+body.event-theme-body .home-page-pro .info-content p {
+    color: #655477 !important;
+}
+
+body.event-theme-body .home-page-pro .info-tag {
+    color: #80509c !important;
+    background: rgba(190, 140, 220, 0.16) !important;
+    border-color: rgba(190, 140, 220, 0.25) !important;
+}
+
+/* RESPONSIVE */
+/* GIAM CHIEU CAO CAC THE GIOI THIEU */
+
+body.event-theme-body .home-page-pro .info-row,
+body.event-theme-body .home-page-pro .info-row.reverse {
+    height: 300px !important;
+    min-height: 300px !important;
+    max-height: 300px !important;
+
+    grid-template-rows: 300px !important;
+    align-items: stretch !important;
+
+    overflow: hidden !important;
+
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.82),
+        rgba(246, 231, 255, 0.72)
+    ) !important;
+
+    border: 1px solid rgba(255,255,255,0.75) !important;
+
+    box-shadow: 0 12px 32px rgba(80,45,110,0.12);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+body.event-theme-body .home-page-pro .info-image {
+    height: 300px !important;
+    min-height: 0 !important;
+    max-height: 300px !important;
+    overflow: hidden !important;
+}
+
+body.event-theme-body .home-page-pro .info-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+body.event-theme-body .home-page-pro .info-content {
+    height: 300px !important;
+    min-height: 0 !important;
+    padding: 16px 26px !important;
+    overflow: hidden !important;
+    box-sizing: border-box;
+    background: transparent !important;
+}
+
+body.event-theme-body .home-page-pro .info-content h3 {
+    font-size: 27px !important;
+    line-height: 1.15;
+    margin-bottom: 10px;
+    color: #302044 !important;
+}
+
+body.event-theme-body .home-page-pro .info-content p {
+    font-size: 14px !important;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    color: #655477 !important;
+}
+
+/* GIU NEN BADGE */
+body.event-theme-body .home-page-pro .info-tag {
+    color: #80509c !important;
+    background: rgba(190,140,220,0.16) !important;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+    body.event-theme-body .home-page-pro .info-row,
+    body.event-theme-body .home-page-pro .info-row.reverse {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        grid-template-rows: auto !important;
+    }
+
+    body.event-theme-body .home-page-pro .info-image {
+        height: 200px !important;
+        max-height: 200px !important;
+    }
+
+    body.event-theme-body .home-page-pro .info-content {
+        height: auto !important;
+        padding: 22px !important;
+    }
 }
 
 body.event-redesign .home-page-pro .info-btn {
@@ -399,28 +509,127 @@ body.event-redesign .home-page-pro .info-btn {
    FOOTER ĐỒNG NHẤT
    ============================================== */
 
+/* ==========================================
+   FOOTER - PASTEL GLOW
+   Lavender + Pink + Sparkle
+   ========================================== */
+
 body.event-redesign .home-footer {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+
     margin-top: 80px;
     border-radius: 24px !important;
-    background: rgba(25, 14, 42, .68) !important;
-    border: 1px solid rgba(235,192,255,.12) !important;
-    box-shadow: none !important;
+
+    background: linear-gradient(
+        120deg,
+        #fffaff 0%,
+        #f4e5ff 35%,
+        #ffe8f4 70%,
+        #eee7ff 100%
+    ) !important;
+
+    border: 1px solid rgba(255,255,255,0.9) !important;
+
+    box-shadow:
+        0 15px 40px rgba(145,91,180,0.16),
+        0 0 25px rgba(224,166,255,0.15) !important;
 }
 
+/* Ánh sáng loang */
+body.event-redesign .home-footer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            ellipse at 10% 10%,
+            rgba(255,255,255,0.95),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 85% 20%,
+            rgba(255,182,225,0.38),
+            transparent 40%
+        ),
+        radial-gradient(
+            ellipse at 50% 100%,
+            rgba(190,155,255,0.25),
+            transparent 45%
+        );
+}
+
+/* Những hạt sáng lấp lánh */
+body.event-redesign .home-footer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,0.95) 1.5px,
+            transparent 2.5px
+        ),
+        radial-gradient(
+            circle,
+            rgba(205,130,230,0.55) 1px,
+            transparent 2px
+        ),
+        radial-gradient(
+            circle,
+            rgba(255,255,255,0.8) 2px,
+            transparent 3px
+        );
+
+    background-size:
+        95px 85px,
+        130px 110px,
+        170px 140px;
+
+    background-position:
+        15px 12px,
+        55px 35px,
+        100px 20px;
+
+    opacity: 0.65;
+}
+
+/* Nội dung luôn nằm trên lớp ánh sáng */
+body.event-redesign .home-footer > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Tiêu đề */
 body.event-redesign .home-footer .footer-brand,
 body.event-redesign .home-footer .footer-title {
-    color: #fff !important;
+    color: #48265f !important;
 }
 
+/* Nội dung và liên kết */
 body.event-redesign .home-footer .footer-text,
 body.event-redesign .home-footer .footer-info,
 body.event-redesign .home-footer .footer-link {
-    color: #cbbbdc !important;
+    color: #755d85 !important;
+}
+
+/* Hiệu ứng hover */
+body.event-redesign .home-footer .footer-link {
+    transition: color 0.25s ease, transform 0.25s ease;
 }
 
 body.event-redesign .home-footer .footer-link:hover {
-    color: #ff9bd3 !important;
+    color: #c044a0 !important;
+    transform: translateX(4px);
 }
+
 
 /* ==============================================
    CÁC KHU KHÁCH HÀNG KHÁC
@@ -723,23 +932,25 @@ body.event-redesign .ve3d-ticket {
    NEN CHINH LAVENDER SANG - TOAN BO WEBSITE
    ========================================== */
 
+/* NEN LAVENDER DAM HON - VAN GIU TONE PASTEL */
+
 body.event-redesign {
     background:
         radial-gradient(
             ellipse at 15% 15%,
-            rgba(232, 196, 255, 0.55),
+            rgba(234, 224, 243, 0.089),
             transparent 42%
         ),
         radial-gradient(
             ellipse at 85% 35%,
-            rgba(255, 205, 234, 0.45),
+            rgba(252, 197, 227, 0.144),
             transparent 40%
         ),
         linear-gradient(
             160deg,
-            #fcf9ff 0%,
-            #f5edff 50%,
-            #fff7fc 100%
+            #f5eaff 0%,
+            #ead9f8 50%,
+            #f8e8f5 100%
         ) !important;
 
     background-attachment: fixed !important;
@@ -790,7 +1001,7 @@ body.event-redesign .event-main-nav {
 
 /* Ten thuong hieu */
 body.event-redesign .event-brand-text {
-    color: #45265f !important;
+    color: #613f7e !important;
 }
 
 /* Menu */
@@ -1088,5 +1299,253 @@ body.event-redesign .ve3d-section::after {
     body.event-redesign .ve3d-section::after {
         height: 450px;
         opacity: 0.65;
+    }
+}
+/* ==========================================
+   THU GON THE SU KIEN - HIEN THI 5 THE
+   Giu nguyen giao dien va hieu ung hien tai
+   ========================================== */
+
+@media (min-width: 1200px) {
+
+    /* Chuyen tu 4 thanh 5 the tren mot hang */
+    body.event-redesign .home-page-pro
+    .row.row-cols-xl-4:has(.event-card) > .col {
+        flex: 0 0 20% !important;
+        width: 20% !important;
+    }
+
+    /* Thu gon chieu cao hinh anh */
+    body.event-redesign .home-page-pro .event-image {
+        height: 165px;
+    }
+
+    /* Thu gon khoang cach noi dung */
+    body.event-redesign .home-page-pro .event-body {
+        padding: 15px;
+    }
+
+    /* Dieu chinh chu vua voi kich thuoc moi */
+    body.event-redesign .home-page-pro .event-name {
+        font-size: 14px;
+    }
+
+    body.event-redesign .home-page-pro .event-price {
+        font-size: 14px;
+    }
+}
+/* ==========================================
+   EVENT CARD - LIGHT LAVENDER
+   Chi doi nen va mau chu de de doc
+   ========================================== */
+
+body.event-redesign .home-page-pro .event-card {
+    background: linear-gradient(
+        145deg,
+        #fffaff 0%,
+        #f9efff 55%,
+        #f1e4fc 100%
+    ) !important;
+
+    color: #352044 !important;
+}
+
+/* Ten su kien */
+body.event-redesign .home-page-pro .event-name {
+    color: #382044 !important;
+}
+
+/* Thoi gian va dia diem */
+body.event-redesign .home-page-pro .event-time,
+body.event-redesign .home-page-pro .event-location {
+    color: #725b83 !important;
+}
+
+/* Icon */
+body.event-redesign .home-page-pro .event-time i,
+body.event-redesign .home-page-pro .event-location i {
+    color: #a65bc5 !important;
+}
+
+/* Loai su kien */
+body.event-redesign .home-page-pro .event-type {
+    color: #813e9c !important;
+    background: #f0ddfa !important;
+    border-color: #e4c8f2 !important;
+}
+
+/* Duong phan cach */
+body.event-redesign .home-page-pro .event-bottom {
+    border-top-color: rgba(112, 70, 135, .18) !important;
+}
+
+/* Gia ve */
+body.event-redesign .home-page-pro .event-price {
+    color: #bd438e !important;
+}
+
+/* Xem chi tiet */
+body.event-redesign .home-page-pro .event-view {
+    color: #9850b4 !important;
+}
+/* CANH DEU PHAN GACH NGANG VA GIA VE */
+
+body.event-redesign .home-page-pro .event-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+body.event-redesign .home-page-pro .event-image {
+    flex-shrink: 0;
+}
+
+body.event-redesign .home-page-pro .event-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+}
+
+body.event-redesign .home-page-pro .event-bottom {
+    margin-top: auto;
+}
+/* BADGE TRUC TIEP / TRUC TUYEN - GON NHE */
+
+@media (min-width: 1200px) {
+    body.event-redesign .home-page-pro .event-card {
+        position: relative;
+    }
+
+    body.event-redesign .home-page-pro .event-type {
+        position: absolute !important;
+        top: 135px !important;
+        left: 12px !important;
+        z-index: 10;
+
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+
+        width: max-content;
+        max-width: 65%;
+
+        padding: 4px 9px !important;
+        margin: 0 !important;
+
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+        font-weight: 800;
+
+        border-radius: 20px !important;
+        white-space: nowrap;
+
+        box-shadow: 0 3px 10px rgba(60, 25, 80, .12);
+        pointer-events: none;
+    }
+}
+/* ==========================================
+   THU NHO CAC THE GIOI THIEU TRANG CHU
+   ========================================== */
+
+body .home-page-pro .info-showcase .info-row,
+body .home-page-pro .info-showcase .info-row.reverse {
+    display: grid !important;
+
+    grid-template-columns: 1.15fr 1fr !important;
+    grid-template-rows: 240px !important;
+
+    height: 240px !important;
+    min-height: 240px !important;
+    max-height: 240px !important;
+
+    align-items: stretch !important;
+    overflow: hidden !important;
+
+    margin-bottom: 24px !important;
+}
+
+/* Hình ảnh nhỏ theo thẻ */
+body .home-page-pro .info-showcase .info-image {
+    height: 240px !important;
+    min-height: 240px !important;
+    max-height: 240px !important;
+
+    overflow: hidden !important;
+}
+
+body .home-page-pro .info-showcase .info-image img {
+    width: 100% !important;
+    height: 100% !important;
+
+    object-fit: cover !important;
+    object-position: center !important;
+}
+
+/* Thu gọn phần nội dung */
+body .home-page-pro .info-showcase .info-content {
+    height: 240px !important;
+    min-height: 0 !important;
+    max-height: 240px !important;
+
+    padding: 14px 22px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* Tiêu đề */
+body .home-page-pro .info-showcase .info-content h3 {
+    font-size: 23px !important;
+    line-height: 1.15 !important;
+    margin-bottom: 8px !important;
+}
+
+/* Mô tả */
+body .home-page-pro .info-showcase .info-content p {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+    margin-bottom: 9px !important;
+}
+
+/* Nhãn chủ đề */
+body .home-page-pro .info-showcase .info-tag {
+    font-size: 10px !important;
+    padding: 5px 11px !important;
+    margin-bottom: 9px !important;
+    width: fit-content !important;
+}
+
+/* Nút */
+body .home-page-pro .info-showcase .info-btn {
+    font-size: 12px !important;
+    padding: 8px 16px !important;
+    width: fit-content !important;
+}
+
+/* Responsive điện thoại */
+@media (max-width: 768px) {
+    body .home-page-pro .info-showcase .info-row,
+    body .home-page-pro .info-showcase .info-row.reverse {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto !important;
+    }
+
+    body .home-page-pro .info-showcase .info-image {
+        height: 190px !important;
+        min-height: 190px !important;
+        max-height: 190px !important;
+    }
+
+    body .home-page-pro .info-showcase .info-content {
+        height: auto !important;
+        max-height: none !important;
+        padding: 20px !important;
     }
 }
