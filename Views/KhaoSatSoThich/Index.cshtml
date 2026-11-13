@@ -4,35 +4,650 @@
 @{
     ViewData["Title"] = "Khám phá sở thích sự kiện";
 
-    var chuDes = ViewBag.ChuDes as List<VeSuKienWeb.Models.ChuDeSuKien>
+    var chuDes = ViewBag.ChuDes
+        as List<VeSuKienWeb.Models.ChuDeSuKien>
         ?? new List<VeSuKienWeb.Models.ChuDeSuKien>();
 
-    var soChuDeDaChon = Model?.ChuDeIds?.Count ?? 0;
-    var hinhThuc = Model?.HinhThucUuTien ?? "KhongGioiHan";
+    int soChuDeDaChon = Model?.ChuDeIds?.Count ?? 0;
+
+    string hinhThuc = Model?.HinhThucUuTien
+        ?? "KhongGioiHan";
+
+    bool coLoi = !ViewData.ModelState.IsValid;
 }
 
-<div class="survey-page">
-    <div class="survey-container">
+<style>
+    /* ============================================
+       ONBOARDING POPUP - LAVENDER / PASTEL
+       ============================================ */
 
-        <div class="survey-heading">
-            <div class="survey-heading-line"></div>
+    .svy-overlay,
+    .svy-overlay * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
 
-            <h1>Khám phá sự kiện dành riêng cho bạn</h1>
+    .svy-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 5000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(45, 29, 56, .56);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
 
-            <p>
-                Mỗi người có một sở thích riêng. Hãy chia sẻ đôi chút về
-                những điều bạn quan tâm để chúng tôi tìm ra những sự kiện
-                phù hợp với bạn.
-            </p>
+    .svy-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(780px, 100%);
+        max-height: min(720px, calc(100dvh - 36px));
+        overflow: hidden;
+        border: 1px solid #eedff1;
+        border-radius: 21px;
+        background: #fff;
+        box-shadow: 0 30px 90px rgba(36, 21, 49, .28);
+        color: #604b6d;
+        animation: svyAppear .27s ease-out;
+    }
 
-            <div class="survey-progress">
-                <span class="progress-line"></span>
-                <span class="progress-active">01. Sở thích</span>
-                <span class="progress-dot"></span>
-                <span>02. Cá nhân hóa</span>
-                <span class="progress-dot"></span>
-                <span>03. Gợi ý sự kiện</span>
+    @@keyframes svyAppear {
+        from {
+            opacity: 0;
+            transform: translateY(15px) scale(.985);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .svy-top {
+        padding: 20px 29px 17px;
+        border-bottom: 1px solid #f0e6f3;
+        background: linear-gradient(
+            115deg,
+            #fffafd 0%,
+            #f8effb 100%
+        );
+    }
+
+    .svy-topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .svy-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #79528b;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .svy-brand-icon {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+        background: linear-gradient(135deg,#a977be,#ce8fca);
+        color: #fff;
+        font-size: 16px;
+    }
+
+    .svy-step-indicator {
+        padding: 7px 11px;
+        border: 1px solid #e9d9ee;
+        border-radius: 999px;
+        background: #fff;
+        color: #9977aa;
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    .svy-heading {
+        margin-top: 20px;
+    }
+
+    .svy-eyebrow {
+        display: block;
+        color: #b383bd;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .svy-heading h1 {
+        margin: 8px 0 8px;
+        color: #533c62;
+        font-size: clamp(20px, 3.5vw, 26px);
+        font-weight: 800;
+        line-height: 1.4;
+        letter-spacing: -.45px;
+    }
+
+    .svy-heading p {
+        margin: 0;
+        color: #9c87a7;
+        font-size: 11.5px;
+        line-height: 1.8;
+    }
+
+    .svy-progress-track {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 19px;
+    }
+
+    .svy-progress-part {
+        height: 5px;
+        border-radius: 99px;
+        background: #e9ddec;
+        transition: background .2s;
+    }
+
+    .svy-progress-part.active {
+        background: linear-gradient(90deg,#a877bf,#ca8bc2);
+    }
+
+    .svy-progress-labels {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+        color: #b09ab8;
+        font-size: 9px;
+        font-weight: 600;
+    }
+
+    .svy-progress-labels span.active {
+        color: #9966ae;
+        font-weight: 800;
+    }
+
+    /* CONTENT */
+
+#surveyForm {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#surveyScroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+    .svy-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 26px 29px;
+        scrollbar-width: thin;
+        scrollbar-color: #d9c6df transparent;
+    }
+
+    .svy-step[hidden] {
+        display: none !important;
+    }
+
+    .svy-step-heading {
+        margin-bottom: 19px;
+    }
+
+    .svy-step-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin: 0 0 7px;
+        color: #5e466b;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .svy-step-icon {
+        display: grid;
+        place-items: center;
+        width: 35px;
+        height: 35px;
+        flex: 0 0 35px;
+        border-radius: 11px;
+        background: #f2e7f7;
+        color: #a16bb5;
+        font-size: 17px;
+    }
+
+    .svy-step-description {
+        margin: 0;
+        color: #9c8ba6;
+        font-size: 11px;
+        line-height: 1.8;
+    }
+
+    /* TOPICS */
+
+    .svy-topic-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 14px;
+        padding: 7px 11px;
+        border-radius: 8px;
+        background: #f8f0fa;
+        color: #936da4;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .svy-topic-grid {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+        gap: 11px;
+    }
+
+    .svy-topic-card {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        min-height: 86px;
+        padding: 15px;
+        border: 1px solid #ebdfed;
+        border-radius: 13px;
+        background: #fff;
+        cursor: pointer;
+        transition: background .18s, border-color .18s;
+    }
+
+    .svy-topic-card:hover {
+        border-color: #d8b7e2;
+        background: #fdf9fe;
+    }
+
+    .svy-topic-card:has(.svy-topic-input:checked) {
+        border-color: #c58bd3;
+        background: #f8effb;
+    }
+
+    .svy-topic-input {
+        flex: 0 0 18px;
+        width: 18px;
+        height: 18px;
+        margin: 2px 0 0;
+        accent-color: #a671ba;
+        cursor: pointer;
+    }
+
+    .svy-topic-body {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .svy-topic-name {
+        color: #684b77;
+        font-size: 12px;
+        line-height: 1.5;
+        font-weight: 800;
+    }
+
+    .svy-topic-desc {
+        color: #a391ad;
+        font-size: 10px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+    /* LOCATION */
+
+    .svy-field {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+    .svy-field label {
+        color: #796487;
+        font-size: 11px;
+        font-weight: 750;
+    }
+
+    .svy-field label i {
+        color: #a976bc;
+        margin-right: 6px;
+    }
+
+    .svy-input {
+        width: 100%;
+        min-height: 49px;
+        padding: 12px 15px;
+        border: 1px solid #e6d8e9;
+        border-radius: 11px;
+        background: #fff;
+        color: #604b6e;
+        font-size: 12px;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+    .svy-input:focus {
+        border-color: #b983c8;
+        box-shadow: 0 0 0 3px rgba(178,112,196,.11);
+    }
+
+    .svy-input::placeholder {
+        color: #b3a2bc;
+    }
+
+    .svy-location-example {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+    }
+
+    .svy-location-option {
+        padding: 8px 11px;
+        border: 1px solid #e8daec;
+        border-radius: 9px;
+        background: #fdfafe;
+        color: #926da4;
+        font-size: 10px;
+        font-weight: 650;
+        cursor: pointer;
+        transition: .15s;
+    }
+
+    .svy-location-option:hover {
+        background: #f3e8f7;
+        border-color: #d8b9e2;
+    }
+
+    .svy-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 22px;
+        padding: 14px;
+        border: 1px solid #ebdfed;
+        border-radius: 11px;
+        background: #fcf8fd;
+        color: #9783a2;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    .svy-note i {
+        color: #b281c1;
+        font-size: 15px;
+        margin-top: 1px;
+    }
+
+    /* FORMATS */
+
+    .svy-format-grid {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+        gap: 12px;
+    }
+
+    .svy-format-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 76px;
+        padding: 14px;
+        border: 1px solid #eaddec;
+        border-radius: 12px;
+        background: #fff;
+        cursor: pointer;
+        transition: .17s;
+    }
+
+    .svy-format-card:hover {
+        border-color: #d8bae2;
+        background: #fcf8fd;
+    }
+
+    .svy-format-card:has(input:checked) {
+        border-color: #c78dd7;
+        background: #f8effb;
+    }
+
+    .svy-format-card input {
+        flex: 0 0 18px;
+        width: 18px;
+        height: 18px;
+        accent-color: #a571b9;
+        cursor: pointer;
+    }
+
+    .svy-format-icon {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        border-radius: 10px;
+        background: #f2e8f7;
+        color: #a16ab5;
+        font-size: 17px;
+    }
+
+    .svy-format-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .svy-format-text strong {
+        color: #6a5077;
+        font-size: 11.5px;
+        font-weight: 800;
+    }
+
+    .svy-format-text small {
+        color: #a08da9;
+        font-size: 10px;
+        line-height: 1.55;
+    }
+
+    .svy-error {
+        display: block;
+        color: #bc617b;
+        font-size: 10.5px;
+        margin-top: 9px;
+    }
+
+    .svy-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 29px;
+        border-top: 1px solid #f0e7f2;
+        background: #fff;
+    }
+
+    .svy-footer-info {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: #a391aa;
+        font-size: 10px;
+        line-height: 1.6;
+    }
+
+    .svy-footer-info i {
+        color: #ab83b8;
+        font-size: 14px;
+    }
+
+    .svy-footer-actions {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+    }
+
+    .svy-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 104px;
+        min-height: 42px;
+        padding: 10px 16px;
+        border: 1px solid #e5d5e9;
+        border-radius: 10px;
+        background: #fff;
+        color: #8b6b9c;
+        font-size: 11px;
+        font-weight: 750;
+        cursor: pointer;
+        transition: .15s;
+    }
+
+    .svy-btn:hover {
+        background: #f6eef8;
+    }
+
+    .svy-btn-primary {
+        border: 0;
+        background: linear-gradient(110deg,#a56ab8,#cc83c0);
+        color: #fff;
+        box-shadow: 0 5px 13px rgba(158,95,181,.14);
+    }
+
+    .svy-btn-primary:hover {
+        background: linear-gradient(110deg,#9855ad,#be71b5);
+        color: #fff;
+    }
+
+    .svy-btn[hidden] {
+        display: none !important;
+    }
+
+    @@media(max-width:650px) {
+        .svy-overlay {
+            padding: 8px;
+        }
+
+        .svy-dialog {
+            max-height: calc(100dvh - 16px);
+            border-radius: 14px;
+        }
+
+        .svy-top {
+            padding: 16px 17px;
+        }
+
+        .svy-scroll {
+            padding: 19px 17px;
+        }
+
+        .svy-footer {
+            padding: 13px 17px;
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .svy-footer-actions {
+            justify-content: flex-end;
+        }
+
+        .svy-topic-grid,
+        .svy-format-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .svy-progress-labels {
+            font-size: 8.5px;
+        }
+
+        .svy-heading h1 {
+            font-size: 20px;
+        }
+    }
+
+    @@media(prefers-reduced-motion:reduce) {
+        .svy-dialog {
+            animation: none;
+        }
+
+        .svy-overlay * {
+            transition: none !important;
+        }
+    }
+</style>
+
+<div class="svy-overlay" id="surveyOverlay">
+
+    <div class="svy-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="surveyTitle">
+
+        <div class="svy-top">
+
+            <div class="svy-topline">
+                <div class="svy-brand">
+                    <span class="svy-brand-icon">
+                        <i class="bi bi-stars"></i>
+                    </span>
+                    Khám phá sở thích
+                </div>
+
+                <span class="svy-step-indicator" id="surveyStepBadge">
+                    Bước 1 / 3
+                </span>
             </div>
+
+            <div class="svy-heading">
+                <span class="svy-eyebrow">
+                    DÀNH RIÊNG CHO BẠN
+                </span>
+
+                <h1 id="surveyTitle">
+                    Cùng tìm sự kiện hợp gu của bạn
+                </h1>
+
+                <p>
+                    Chỉ vài lựa chọn nhỏ để trải nghiệm
+                    khám phá sự kiện trở nên thú vị hơn.
+                </p>
+            </div>
+
+            <div class="svy-progress-track"
+                 aria-label="Tiến trình khảo sát">
+
+                <span class="svy-progress-part active"></span>
+                <span class="svy-progress-part"></span>
+                <span class="svy-progress-part"></span>
+            </div>
+
+            <div class="svy-progress-labels">
+                <span class="active">01. Sở thích</span>
+                <span>02. Địa điểm</span>
+                <span>03. Hình thức</span>
+            </div>
+
         </div>
 
         <form asp-controller="KhaoSatSoThich"
@@ -42,168 +657,301 @@
 
             @Html.AntiForgeryToken()
 
-            <!-- PHẦN 01: CHỦ ĐỀ YÊU THÍCH -->
-            <section class="survey-section">
+            <div class="svy-scroll" id="surveyScroll">
 
-                <div class="section-heading">
-                    <div class="section-number">01</div>
+                <!-- BUOC 1: CHU DE -->
+                <section class="svy-step"
+                         data-survey-step="1">
 
-                    <div class="section-title">
-                        <h2>Bạn quan tâm đến chủ đề nào?</h2>
-                        <p>Chọn những lĩnh vực bạn yêu thích. Bạn có thể chọn nhiều chủ đề.</p>
-                    </div>
-                </div>
-
-                <div class="topic-selection-info">
-                    Đã chọn <strong id="selectedTopicCount">@soChuDeDaChon</strong> chủ đề
-                </div>
-
-                <div class="topic-grid">
-
-                    @foreach (var item in chuDes)
-                    {
-                        var selected = Model?.ChuDeIds?.Contains(item.ChuDeId) ?? false;
-
-                        <label class="topic-card @(selected ? "selected" : "")"
-                               for="topic-@item.ChuDeId">
-
-                            <input type="checkbox"
-                                   class="topic-input"
-                                   id="topic-@item.ChuDeId"
-                                   name="ChuDeIds"
-                                   value="@item.ChuDeId"
-                                   checked="@selected" />
-
-                            <span class="topic-content">
-                                <strong>@item.TenChuDe</strong>
-                                <small>@item.MoTa</small>
+                    <div class="svy-step-heading">
+                        <h2 class="svy-step-title">
+                            <span class="svy-step-icon">
+                                <i class="bi bi-heart"></i>
                             </span>
+                            Bạn thích chủ đề sự kiện nào?
+                        </h2>
 
-                        </label>
+                        <p class="svy-step-description">
+                            Có thể chọn nhiều chủ đề theo sở thích của bạn.
+                        </p>
+                    </div>
+
+                    <div class="svy-topic-count">
+                        <i class="bi bi-check2-circle"></i>
+                        Đã chọn
+                        <strong id="selectedTopicCount">
+                            @soChuDeDaChon
+                        </strong>
+                        chủ đề
+                    </div>
+
+                    <div class="svy-topic-grid">
+
+                        @foreach (var item in chuDes)
+                        {
+                            bool selected = Model?.ChuDeIds?
+                                .Contains(item.ChuDeId) ?? false;
+
+                            <label class="svy-topic-card">
+
+                                <input type="checkbox"
+                                       class="svy-topic-input"
+                                       name="ChuDeIds"
+                                       value="@item.ChuDeId"
+                                       checked="@selected" />
+
+                                <span class="svy-topic-body">
+                                    <strong class="svy-topic-name">
+                                        @item.TenChuDe
+                                    </strong>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.MoTa))
+                                    {
+                                        <small class="svy-topic-desc">
+                                            @item.MoTa
+                                        </small>
+                                    }
+                                </span>
+
+                            </label>
+                        }
+
+                    </div>
+
+                    @if (!chuDes.Any())
+                    {
+                        <div class="svy-note">
+                            <i class="bi bi-info-circle"></i>
+                            Hiện chưa có chủ đề để lựa chọn.
+                        </div>
                     }
 
-                </div>
+                    <span asp-validation-for="ChuDeIds"
+                          class="svy-error"></span>
 
-                <span asp-validation-for="ChuDeIds"
-                      class="validation-message"></span>
-
-                <div class="section-note">
-                    Bạn có thể chọn nhiều chủ đề để nhận được gợi ý đa dạng hơn.
-                </div>
-
-            </section>
-
-            <!-- PHẦN 02: ĐỊA ĐIỂM -->
-            <section class="survey-section">
-
-                <div class="section-heading">
-                    <div class="section-number">02</div>
-
-                    <div class="section-title">
-                        <h2>Bạn muốn tham gia sự kiện ở đâu?</h2>
-                        <p>Cho chúng tôi biết địa điểm ưu tiên để tìm sự kiện thuận tiện hơn.</p>
+                    <div class="svy-note">
+                        <i class="bi bi-lightbulb"></i>
+                        Bạn vẫn có thể thay đổi chủ đề yêu thích
+                        trong phần thông tin tài khoản sau này.
                     </div>
-                </div>
 
-                <input asp-for="DiaDiemUuTien"
-                       class="survey-input"
-                       placeholder="Ví dụ: TP. Hồ Chí Minh, Hà Nội, Đà Nẵng..." />
+                </section>
 
-                <div class="section-note">
-                    Địa điểm giúp hệ thống ưu tiên các sự kiện gần nơi bạn quan tâm.
-                </div>
+                <!-- BUOC 2: DIA DIEM -->
+                <section class="svy-step"
+                         data-survey-step="2"
+                         hidden>
 
-            </section>
+                    <div class="svy-step-heading">
+                        <h2 class="svy-step-title">
+                            <span class="svy-step-icon">
+                                <i class="bi bi-geo-alt"></i>
+                            </span>
+                            Bạn muốn tham gia sự kiện ở đâu?
+                        </h2>
 
-            <!-- PHẦN 03: HÌNH THỨC TỔ CHỨC -->
-            <section class="survey-section">
-
-                <div class="section-heading">
-                    <div class="section-number">03</div>
-
-                    <div class="section-title">
-                        <h2>Bạn thích hình thức tổ chức nào?</h2>
-                        <p>Chọn hình thức tham gia phù hợp với nhu cầu của bạn.</p>
+                        <p class="svy-step-description">
+                            Nhập khu vực bạn quan tâm để ưu tiên
+                            các sự kiện thuận tiện hơn.
+                        </p>
                     </div>
+
+                    <div class="svy-field">
+                        <label for="surveyLocation">
+                            <i class="bi bi-pin-map"></i>
+                            Địa điểm ưu tiên
+                        </label>
+
+                        <input asp-for="DiaDiemUuTien"
+                               id="surveyLocation"
+                               class="svy-input"
+                               maxlength="100"
+                               placeholder="Ví dụ: TP. Hồ Chí Minh..." />
+
+                        <span asp-validation-for="DiaDiemUuTien"
+                              class="svy-error"></span>
+                    </div>
+
+                    <div class="svy-location-example">
+
+                        <button type="button"
+                                class="svy-location-option"
+                                data-location="TP. Hồ Chí Minh">
+                            TP. Hồ Chí Minh
+                        </button>
+
+                        <button type="button"
+                                class="svy-location-option"
+                                data-location="Hà Nội">
+                            Hà Nội
+                        </button>
+
+                        <button type="button"
+                                class="svy-location-option"
+                                data-location="Đà Nẵng">
+                            Đà Nẵng
+                        </button>
+
+                        <button type="button"
+                                class="svy-location-option"
+                                data-location="Cần Thơ">
+                            Cần Thơ
+                        </button>
+                    </div>
+
+                    <div class="svy-note">
+                        <i class="bi bi-info-circle"></i>
+                        Không bắt buộc chọn địa điểm.
+                        Nếu chưa có khu vực ưu tiên,
+                        bạn có thể để trống.
+                    </div>
+
+                </section>
+
+                <!-- BUOC 3: HINH THUC -->
+                <section class="svy-step"
+                         data-survey-step="3"
+                         hidden>
+
+                    <div class="svy-step-heading">
+                        <h2 class="svy-step-title">
+                            <span class="svy-step-icon">
+                                <i class="bi bi-calendar-event"></i>
+                            </span>
+                            Bạn thích tham gia theo hình thức nào?
+                        </h2>
+
+                        <p class="svy-step-description">
+                            Chọn hình thức phù hợp nhất với bạn.
+                        </p>
+                    </div>
+
+                    <div class="svy-format-grid">
+
+                        <label class="svy-format-card">
+                            <input type="radio"
+                                   name="HinhThucUuTien"
+                                   value="KhongGioiHan"
+                                   checked="@(hinhThuc == "KhongGioiHan")" />
+
+                            <span class="svy-format-icon">
+                                <i class="bi bi-grid"></i>
+                            </span>
+
+                            <span class="svy-format-text">
+                                <strong>Không giới hạn</strong>
+                                <small>Mọi hình thức sự kiện</small>
+                            </span>
+                        </label>
+
+                        <label class="svy-format-card">
+                            <input type="radio"
+                                   name="HinhThucUuTien"
+                                   value="TrucTiep"
+                                   checked="@(hinhThuc == "TrucTiep")" />
+
+                            <span class="svy-format-icon">
+                                <i class="bi bi-geo-alt"></i>
+                            </span>
+
+                            <span class="svy-format-text">
+                                <strong>Trực tiếp</strong>
+                                <small>Tham gia tại địa điểm tổ chức</small>
+                            </span>
+                        </label>
+
+                        <label class="svy-format-card">
+                            <input type="radio"
+                                   name="HinhThucUuTien"
+                                   value="TrucTuyen"
+                                   checked="@(hinhThuc == "TrucTuyen")" />
+
+                            <span class="svy-format-icon">
+                                <i class="bi bi-camera-video"></i>
+                            </span>
+
+                            <span class="svy-format-text">
+                                <strong>Trực tuyến</strong>
+                                <small>Tham gia qua Internet</small>
+                            </span>
+                        </label>
+
+                        <label class="svy-format-card">
+                            <input type="radio"
+                                   name="HinhThucUuTien"
+                                   value="Hybrid"
+                                   checked="@(hinhThuc == "Hybrid")" />
+
+                            <span class="svy-format-icon">
+                                <i class="bi bi-layers"></i>
+                            </span>
+
+                            <span class="svy-format-text">
+                                <strong>Kết hợp (Hybrid)</strong>
+                                <small>Trực tiếp và trực tuyến</small>
+                            </span>
+                        </label>
+
+                    </div>
+
+                    <span asp-validation-for="HinhThucUuTien"
+                          class="svy-error"></span>
+
+                    <div class="svy-note">
+                        <i class="bi bi-stars"></i>
+                        Hệ thống sẽ kết hợp lựa chọn này với
+                        sở thích và lịch sử hoạt động để
+                        gợi ý sự kiện phù hợp hơn.
+                    </div>
+
+                </section>
+
+                @if (coLoi)
+                {
+                    <div class="svy-note"
+                         style="color:#b65e78;background:#fff1f4">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Một số thông tin chưa hợp lệ.
+                        Vui lòng kiểm tra các bước khảo sát.
+                    </div>
+                }
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="svy-footer">
+
+                <div class="svy-footer-info">
+                    <i class="bi bi-shield-check"></i>
+                    Sở thích được dùng để cá nhân hóa gợi ý.
                 </div>
 
-                <div class="format-options">
+                <div class="svy-footer-actions">
 
-                    <label class="format-card">
-                        <input type="radio"
-                               name="HinhThucUuTien"
-                               value="KhongGioiHan"
-                               id="format-all"
-                               checked="@(hinhThuc == "KhongGioiHan")" />
+                    <button type="button"
+                            class="svy-btn"
+                            id="surveyPrevious"
+                            hidden>
+                        <i class="bi bi-arrow-left"></i>
+                        Quay lại
+                    </button>
 
-                        <span class="format-content">
-                            <strong>Không giới hạn</strong>
-                            <small>Quan tâm đến tất cả hình thức tổ chức.</small>
-                        </span>
-                    </label>
+                    <button type="button"
+                            class="svy-btn svy-btn-primary"
+                            id="surveyNext">
+                        Tiếp tục
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
 
-                    <label class="format-card">
-                        <input type="radio"
-                               name="HinhThucUuTien"
-                               value="TrucTiep"
-                               id="format-direct"
-                               checked="@(hinhThuc == "TrucTiep")" />
-
-                        <span class="format-content">
-                            <strong>Trực tiếp</strong>
-                            <small>Tham gia tại địa điểm tổ chức.</small>
-                        </span>
-                    </label>
-
-                    <label class="format-card">
-                        <input type="radio"
-                               name="HinhThucUuTien"
-                               value="TrucTuyen"
-                               id="format-online"
-                               checked="@(hinhThuc == "TrucTuyen")" />
-
-                        <span class="format-content">
-                            <strong>Trực tuyến</strong>
-                            <small>Tham gia sự kiện qua Internet.</small>
-                        </span>
-                    </label>
-
-                    <label class="format-card">
-                        <input type="radio"
-                               name="HinhThucUuTien"
-                               value="Hybrid"
-                               id="format-hybrid"
-                               checked="@(hinhThuc == "Hybrid")" />
-
-                        <span class="format-content">
-                            <strong>Kết hợp (Hybrid)</strong>
-                            <small>Sự kiện có cả hình thức trực tiếp và trực tuyến.</small>
-                        </span>
-                    </label>
+                    <button type="submit"
+                            class="svy-btn svy-btn-primary"
+                            id="surveySubmit"
+                            hidden>
+                        Hoàn tất
+                        <i class="bi bi-check2-circle"></i>
+                    </button>
 
                 </div>
-
-                <span asp-validation-for="HinhThucUuTien"
-                      class="validation-message"></span>
-
-            </section>
-
-            <!-- NÚT LƯU -->
-            <div class="survey-actions">
-
-                <p class="survey-privacy">
-                    Sở thích của bạn được sử dụng để cá nhân hóa danh sách gợi ý sự kiện.
-                </p>
-
-                <button type="submit" class="survey-submit">
-                    Lưu sở thích và tiếp tục
-                    <span>→</span>
-                </button>
-
-                <p class="survey-footer-text">
-                    Bạn có thể thay đổi sở thích bất cứ lúc nào trong tài khoản.
-                </p>
-
             </div>
 
         </form>
@@ -211,496 +959,117 @@
     </div>
 </div>
 
-<style>
-    .survey-page {
-        --event-blue: #1671d8;
-        --event-blue-dark: #105bb1;
-        --event-blue-light: #edf5ff;
-        --event-border: #dce6f2;
-        --event-text: #243247;
-        --event-muted: #718096;
-
-        background: #f5f8fc;
-        min-height: 100vh;
-        padding: 36px 18px 55px;
-        color: var(--event-text);
-        font-family: inherit;
-    }
-
-    .survey-container {
-        max-width: 900px;
-        margin: 0 auto;
-    }
-
-    .survey-heading {
-        max-width: 760px;
-        text-align: center;
-        margin: 0 auto 30px;
-    }
-
-    .survey-heading-line {
-        width: 42px;
-        height: 4px;
-        background: var(--event-blue);
-        border-radius: 10px;
-        margin: 0 auto 19px;
-    }
-
-    .survey-heading h1 {
-        font-size: clamp(27px, 3vw, 34px);
-        font-weight: 750;
-        line-height: 1.3;
-        margin: 0 0 12px;
-        color: #172b46;
-    }
-
-    .survey-heading > p {
-        max-width: 690px;
-        margin: 0 auto;
-        color: var(--event-muted);
-        font-size: 15px;
-        line-height: 1.75;
-    }
-
-    .survey-progress {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 23px;
-        color: #8793a3;
-        font-size: 12px;
-    }
-
-    .progress-line {
-        width: 27px;
-        height: 3px;
-        border-radius: 5px;
-        background: var(--event-blue);
-    }
-
-    .progress-active {
-        color: var(--event-blue);
-        font-weight: 700;
-    }
-
-    .progress-dot {
-        width: 5px;
-        height: 5px;
-        background: #cbd6e3;
-        border-radius: 50%;
-    }
-
-    .survey-section {
-        background: #fff;
-        border: 1px solid var(--event-border);
-        border-radius: 16px;
-        padding: 25px 26px;
-        margin-bottom: 17px;
-        box-shadow: 0 4px 18px rgba(37, 75, 120, .035);
-    }
-
-    .section-heading {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        margin-bottom: 19px;
-    }
-
-    .section-number {
-        width: 42px;
-        height: 42px;
-        flex-shrink: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 12px;
-        background: var(--event-blue-light);
-        color: var(--event-blue);
-        font-weight: 800;
-        font-size: 15px;
-    }
-
-    .section-title {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .section-title h2 {
-        font-size: 19px;
-        font-weight: 750;
-        color: #233650;
-        margin: 0 0 5px;
-    }
-
-    .section-title p {
-        font-size: 13px;
-        line-height: 1.6;
-        color: var(--event-muted);
-        margin: 0;
-    }
-
-    .topic-selection-info {
-        margin-bottom: 13px;
-        color: var(--event-muted);
-        font-size: 13px;
-    }
-
-    .topic-selection-info strong {
-        color: var(--event-blue);
-        font-size: 15px;
-    }
-
-    .topic-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .topic-card {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        min-height: 82px;
-        padding: 14px;
-        border: 1px solid var(--event-border);
-        border-radius: 11px;
-        background: #fff;
-        cursor: pointer;
-        transition: .2s ease;
-    }
-
-    .topic-card:hover {
-        border-color: #86b7ed;
-        background: #f8fbff;
-        transform: translateY(-1px);
-    }
-
-    .topic-card.selected {
-        border-color: var(--event-blue);
-        background: #f0f6ff;
-        box-shadow: 0 3px 12px rgba(22, 113, 216, .07);
-    }
-
-    .topic-input {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 21px;
-        height: 21px;
-        flex-shrink: 0;
-        margin: 0;
-        border: 1.5px solid #b7c5d6;
-        border-radius: 6px;
-        background: #fff;
-        cursor: pointer;
-        display: grid;
-        place-items: center;
-        transition: .2s;
-    }
-
-    .topic-input:checked {
-        background: var(--event-blue);
-        border-color: var(--event-blue);
-    }
-
-    .topic-input:checked::after {
-        content: "✓";
-        color: white;
-        font-size: 13px;
-        font-weight: 800;
-    }
-
-    .topic-input:focus-visible {
-        outline: 3px solid rgba(22, 113, 216, .2);
-        outline-offset: 3px;
-    }
-
-    .topic-content {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        gap: 5px;
-        min-width: 0;
-    }
-
-    .topic-content strong {
-        font-size: 15px;
-        color: #293b53;
-        font-weight: 700;
-        line-height: 1.5;
-    }
-
-    .topic-content small {
-        color: var(--event-muted);
-        font-size: 13px;
-        line-height: 1.55;
-    }
-
-    .section-note {
-        margin-top: 15px;
-        color: #8390a0;
-        font-size: 12px;
-        line-height: 1.6;
-    }
-
-    .survey-input {
-        width: 100%;
-        min-height: 48px;
-        border: 1px solid var(--event-border);
-        border-radius: 10px;
-        padding: 12px 15px;
-        background: #fff;
-        color: var(--event-text);
-        font-size: 14px;
-        outline: none;
-        transition: .2s;
-    }
-
-    .survey-input:focus {
-        border-color: var(--event-blue);
-        box-shadow: 0 0 0 3px rgba(22, 113, 216, .08);
-    }
-
-    .survey-input::placeholder {
-        color: #a1adbb;
-    }
-
-    .format-options {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .format-card {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        min-height: 77px;
-        padding: 15px;
-        border: 1px solid var(--event-border);
-        border-radius: 11px;
-        cursor: pointer;
-        background: #fff;
-        transition: .2s;
-    }
-
-    .format-card:hover {
-        border-color: #86b7ed;
-        background: #f8fbff;
-    }
-
-    .format-card:has(input:checked) {
-        border-color: var(--event-blue);
-        background: #f0f6ff;
-        box-shadow: 0 3px 12px rgba(22, 113, 216, .07);
-    }
-
-    .format-card input {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 19px;
-        height: 19px;
-        flex-shrink: 0;
-        margin: 0;
-        border: 1.5px solid #b7c5d6;
-        border-radius: 50%;
-        background: #fff;
-        cursor: pointer;
-        display: grid;
-        place-items: center;
-    }
-
-    .format-card input:checked {
-        border: 5px solid var(--event-blue);
-    }
-
-    .format-card input:focus-visible {
-        outline: 3px solid rgba(22, 113, 216, .2);
-        outline-offset: 3px;
-    }
-
-    .format-content {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        flex: 1;
-        min-width: 0;
-    }
-
-    .format-content strong {
-        font-size: 15px;
-        color: #293b53;
-        font-weight: 700;
-    }
-
-    .format-content small {
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--event-muted);
-    }
-
-    .survey-actions {
-        text-align: center;
-        padding: 17px 0 5px;
-    }
-
-    .survey-privacy {
-        color: var(--event-muted);
-        font-size: 13px;
-        line-height: 1.6;
-        margin: 0 0 17px;
-    }
-
-    .survey-submit {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        gap: 17px;
-        min-width: 235px;
-        padding: 14px 24px;
-        border: none;
-        border-radius: 9px;
-        background: var(--event-blue);
-        color: white;
-        font-size: 15px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 5px 15px rgba(22, 113, 216, .18);
-        transition: .2s;
-    }
-
-    .survey-submit:hover {
-        background: var(--event-blue-dark);
-        transform: translateY(-2px);
-        box-shadow: 0 7px 18px rgba(22, 113, 216, .23);
-    }
-
-    .survey-submit span {
-        font-size: 19px;
-    }
-
-    .survey-footer-text {
-        margin: 13px 0 0;
-        color: #8995a3;
-        font-size: 12px;
-    }
-
-    .validation-message {
-        display: block;
-        color: #d33d3d;
-        font-size: 13px;
-        margin-top: 10px;
-    }
-
-    @@media (max-width: 650px) {
-        .survey-page {
-            padding: 25px 12px 38px;
-        }
-
-        .survey-heading {
-            margin-bottom: 24px;
-        }
-
-        .survey-heading h1 {
-            font-size: 26px;
-        }
-
-        .survey-heading > p {
-            font-size: 13px;
-        }
-
-        .survey-progress {
-            gap: 7px;
-            font-size: 10px;
-        }
-
-        .survey-section {
-            padding: 19px 15px;
-            margin-bottom: 14px;
-        }
-
-        .section-heading {
-            gap: 10px;
-        }
-
-        .section-number {
-            width: 37px;
-            height: 37px;
-            font-size: 13px;
-        }
-
-        .section-title h2 {
-            font-size: 16px;
-        }
-
-        .section-title p {
-            font-size: 12px;
-        }
-
-        .topic-grid,
-        .format-options {
-            grid-template-columns: 1fr;
-        }
-
-        .topic-card {
-            min-height: 75px;
-            padding: 12px;
-        }
-
-        .topic-content strong,
-        .format-content strong {
-            font-size: 14px;
-        }
-
-        .topic-content small,
-        .format-content small {
-            font-size: 12px;
-        }
-
-        .survey-submit {
-            width: 100%;
-        }
-    }
-
-    @@media (prefers-reduced-motion: reduce) {
-        .survey-page *,
-        .survey-page *::before,
-        .survey-page *::after {
-            transition: none !important;
-            transform: none !important;
-        }
-    }
-</style>
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const topicInputs = document.querySelectorAll(".topic-input");
-        const countElement = document.getElementById("selectedTopicCount");
+document.addEventListener("DOMContentLoaded", function () {
+    "use strict";
 
-        function updateTopics() {
-            let count = 0;
+    const form = document.getElementById("surveyForm");
+    const steps = Array.from(
+        document.querySelectorAll("[data-survey-step]")
+    );
 
-            topicInputs.forEach(function (input) {
-                const card = input.closest(".topic-card");
+    const progress = Array.from(
+        document.querySelectorAll(".svy-progress-part")
+    );
 
-                if (input.checked) {
-                    count++;
-                    card.classList.add("selected");
-                } else {
-                    card.classList.remove("selected");
-                }
-            });
+    const progressLabels = Array.from(
+        document.querySelectorAll(".svy-progress-labels span")
+    );
 
-            if (countElement) {
-                countElement.textContent = count;
-            }
-        }
+    const stepBadge = document.getElementById("surveyStepBadge");
+    const previous = document.getElementById("surveyPrevious");
+    const next = document.getElementById("surveyNext");
+    const submit = document.getElementById("surveySubmit");
+    const scrollBox = document.getElementById("surveyScroll");
 
-        topicInputs.forEach(function (input) {
-            input.addEventListener("change", updateTopics);
+    const topicInputs = Array.from(
+        document.querySelectorAll(".svy-topic-input")
+    );
+
+    const count = document.getElementById("selectedTopicCount");
+    const locationInput = document.getElementById("surveyLocation");
+
+    let currentStep = 1;
+
+    function updateSelectedTopics() {
+        const selected = topicInputs.filter(x => x.checked);
+        count.textContent = selected.length;
+    }
+
+    function goToStep(step) {
+        currentStep = Math.max(1, Math.min(3, step));
+
+        steps.forEach((section, index) => {
+            section.hidden = index + 1 !== currentStep;
         });
 
-        updateTopics();
+        progress.forEach((part, index) => {
+            part.classList.toggle(
+                "active",
+                index + 1 <= currentStep
+            );
+        });
+
+        progressLabels.forEach((label, index) => {
+            label.classList.toggle(
+                "active",
+                index + 1 === currentStep
+            );
+        });
+
+        stepBadge.textContent =
+            "Bước " + currentStep + " / 3";
+
+        previous.hidden = currentStep === 1;
+        next.hidden = currentStep === 3;
+        submit.hidden = currentStep !== 3;
+
+        scrollBox.scrollTop = 0;
+    }
+
+    topicInputs.forEach(input => {
+        input.addEventListener(
+            "change",
+            updateSelectedTopics
+        );
     });
+
+    document.querySelectorAll("[data-location]")
+        .forEach(button => {
+            button.addEventListener("click", function () {
+                locationInput.value = this.dataset.location;
+                locationInput.dispatchEvent(
+                    new Event("change", { bubbles: true })
+                );
+            });
+        });
+
+    previous.addEventListener("click", function () {
+        goToStep(currentStep - 1);
+    });
+
+    next.addEventListener("click", function () {
+        goToStep(currentStep + 1);
+    });
+
+    // Giữ đúng các trường dữ liệu hiện tại.
+    // Không thay đổi action POST hoặc cách lưu SQL.
+    form.addEventListener("submit", function (event) {
+        if (currentStep !== 3) {
+            event.preventDefault();
+            goToStep(3);
+            return;
+        }
+
+        // Tránh gửi form lặp nếu người dùng nhấn nhanh.
+        submit.disabled = true;
+        submit.textContent = "Đang lưu...";
+
+        // Nếu trình duyệt chặn submit vì lỗi validation,
+        // sự kiện submit không chạy và nút vẫn có thể bấm.
+    });
+
+    updateSelectedTopics();
+    goToStep(1);
+});
 </script>

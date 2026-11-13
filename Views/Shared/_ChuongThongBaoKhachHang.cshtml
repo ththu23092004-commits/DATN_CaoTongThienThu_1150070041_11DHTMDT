@@ -1,0 +1,620 @@
+
+<style>
+    .kh-bell,
+    .kh-bell * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .kh-bell {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        margin-right: 13px;
+        z-index: 1100;
+    }
+
+    .kh-bell-button {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid #e8d7ec;
+        border-radius: 11px;
+        background: rgba(255,255,255,.7);
+        color: #86569b;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .kh-bell-button:hover,
+    .kh-bell-button[aria-expanded="true"] {
+        background: #f0e1f5;
+        border-color: #d8bde3;
+        color: #9d62b0;
+    }
+
+    .kh-bell-button i {
+        font-size: 19px;
+        line-height: 1;
+    }
+
+    .kh-bell-count {
+        position: absolute;
+        top: -6px;
+        right: -7px;
+        display: grid;
+        place-items: center;
+        min-width: 19px;
+        height: 19px;
+        padding: 0 4px;
+        border: 2px solid #f6eafd;
+        border-radius: 999px;
+        background: #c86d92;
+        color: white;
+        font-size: 9px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .kh-bell-count[hidden],
+    .kh-bell-panel[hidden] {
+        display: none !important;
+    }
+
+    .kh-bell-panel {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 0;
+        width: min(390px, calc(100vw - 25px));
+        max-height: 465px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid #ead9ee;
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(70,38,85,.17);
+        color: #614b6c;
+    }
+
+    .kh-bell-panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 17px;
+        border-bottom: 1px solid #f0e7f3;
+        background: #fdf9fe;
+    }
+
+    .kh-bell-title {
+        margin: 0;
+        color: #594066;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .kh-bell-subtitle {
+        margin-top: 4px;
+        color: #a08ba9;
+        font-size: 10px;
+    }
+
+    .kh-bell-readall {
+        padding: 6px 8px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: #9765aa;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .kh-bell-readall:hover {
+        background: #f1e5f6;
+    }
+
+    .kh-bell-list {
+        overflow-y: auto;
+        max-height: 360px;
+        scrollbar-width: thin;
+    }
+
+    .kh-bell-item {
+        display: flex;
+        align-items: flex-start;
+        width: 100%;
+        gap: 11px;
+        padding: 13px 16px;
+        background: #fff;
+        border: 0;
+        border-bottom: 1px solid #f3edf4;
+        text-align: left;
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+
+    .kh-bell-item:hover {
+        background: #fbf6fd;
+    }
+
+    .kh-bell-item.unread {
+        background: #fcf7fe;
+    }
+
+    .kh-bell-icon {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        border-radius: 10px;
+        background: #f0e4f5;
+        color: #9b65ae;
+        font-size: 16px;
+    }
+
+    .kh-bell-icon.payment {
+        background: #fff3e5;
+        color: #bc8c46;
+    }
+
+    .kh-bell-icon.event {
+        background: #eaf3fd;
+        color: #6b96c9;
+    }
+
+    .kh-bell-icon.cancel {
+        background: #e8f6ee;
+        color: #5b9e77;
+    }
+
+    .kh-bell-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .kh-bell-text {
+        color: #644e70;
+        font-size: 11px;
+        font-weight: 650;
+        line-height: 1.75;
+        overflow-wrap: anywhere;
+    }
+
+    .kh-bell-date {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 7px;
+        color: #a995b0;
+        font-size: 9.5px;
+    }
+
+    .kh-bell-dot {
+        flex: 0 0 7px;
+        width: 7px;
+        height: 7px;
+        margin-top: 8px;
+        border-radius: 50%;
+        background: #b772c3;
+    }
+
+    .kh-bell-empty {
+        padding: 33px 20px;
+        text-align: center;
+        color: #a08eaa;
+        font-size: 11px;
+        line-height: 1.8;
+    }
+
+    .kh-bell-empty i {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 27px;
+        color: #b89ac5;
+    }
+
+    .kh-bell-foot {
+        padding: 11px 15px;
+        border-top: 1px solid #f0e7f3;
+        background: #fdfafe;
+        color: #a18dab;
+        font-size: 10px;
+        text-align: center;
+    }
+
+    @@media(max-width:991px) {
+        .kh-bell {
+            margin: 8px 0 13px 12px;
+        }
+
+        .kh-bell-panel {
+            right: auto;
+            left: 0;
+        }
+    }
+</style>
+
+<div class="kh-bell" id="khBellRoot">
+
+    <form id="khBellTokenForm" hidden>
+        @Html.AntiForgeryToken()
+    </form>
+
+    <button type="button"
+            class="kh-bell-button"
+            id="khBellButton"
+            aria-label="Thông báo"
+            aria-expanded="false"
+            aria-controls="khBellPanel">
+        <i class="bi bi-bell"></i>
+
+        <span class="kh-bell-count"
+              id="khBellCount"
+              hidden>0</span>
+    </button>
+
+    <div class="kh-bell-panel"
+         id="khBellPanel"
+         hidden>
+
+        <div class="kh-bell-panel-head">
+            <div>
+                <h2 class="kh-bell-title">Thông báo</h2>
+
+                <div class="kh-bell-subtitle"
+                     id="khBellSubtitle">
+                    Đang cập nhật...
+                </div>
+            </div>
+
+            <button type="button"
+                    class="kh-bell-readall"
+                    id="khBellReadAll">
+                Đã đọc tất cả
+            </button>
+        </div>
+
+        <div class="kh-bell-list" id="khBellList">
+            <div class="kh-bell-empty">
+                Đang tải thông báo...
+            </div>
+        </div>
+
+        <div class="kh-bell-foot">
+            Chọn một thông báo để xem chi tiết
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    const root = document.getElementById("khBellRoot");
+    if (!root) return;
+
+    const $ = id => document.getElementById(id);
+
+    const button = $("khBellButton");
+    const panel = $("khBellPanel");
+    const badge = $("khBellCount");
+    const list = $("khBellList");
+    const subtitle = $("khBellSubtitle");
+    const readAll = $("khBellReadAll");
+
+    const baseUrl = "/api/thong-bao-khach-hang";
+
+    let items = [];
+    let unread = 0;
+    let loading = false;
+
+    function token() {
+        return document.querySelector(
+            '#khBellTokenForm input[name="__RequestVerificationToken"]'
+        )?.value || "";
+    }
+
+    function showCount() {
+        badge.hidden = unread <= 0;
+        badge.textContent = unread > 99
+            ? "99+"
+            : String(unread);
+
+        subtitle.textContent = unread > 0
+            ? unread + " thông báo chưa đọc"
+            : "Bạn đã xem hết thông báo mới";
+
+        readAll.hidden = unread === 0;
+    }
+
+    function createText(tag, className, value) {
+        const element = document.createElement(tag);
+        element.className = className;
+        element.textContent = value ?? "";
+        return element;
+    }
+
+    function iconFor(type) {
+        switch (type) {
+            case "suKien":
+                return {
+                    icon: "bi-calendar-event",
+                    css: "event"
+                };
+
+            case "thanhToan":
+                return {
+                    icon: "bi-credit-card",
+                    css: "payment"
+                };
+
+            case "huyVe":
+                return {
+                    icon: "bi-ticket-perforated",
+                    css: "cancel"
+                };
+
+            default:
+                return {
+                    icon: "bi-bell",
+                    css: ""
+                };
+        }
+    }
+
+    function formatDate(value) {
+        if (!value) return "";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime()))
+            return "";
+
+        return date.toLocaleString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    async function post(url) {
+        const response = await fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "RequestVerificationToken": token(),
+                "Accept": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                "Không thể cập nhật trạng thái thông báo."
+            );
+        }
+
+        return response.json();
+    }
+
+    async function openItem(item) {
+        // Không chuyển trang nếu chưa lưu thành công
+        // trạng thái đã đọc.
+        if (!item.daDoc) {
+            try {
+                await post(
+                    baseUrl + "/da-doc/" +
+                    encodeURIComponent(item.id)
+                );
+
+                item.daDoc = true;
+                unread = Math.max(0, unread - 1);
+
+                showCount();
+                render();
+            }
+            catch (error) {
+                console.error(error);
+                return;
+            }
+        }
+
+        // URL lấy từ server, không lấy trực tiếp
+        // từ nội dung thông báo.
+        const destination =
+            typeof item.url === "string" &&
+            item.url.startsWith("/") &&
+            !item.url.startsWith("//")
+                ? item.url
+                : "/KhachHang/VeCuaToi";
+
+        window.location.href = destination;
+    }
+
+    function render() {
+        list.replaceChildren();
+
+        if (!items.length) {
+            const empty = createText(
+                "div",
+                "kh-bell-empty",
+                "Hiện chưa có thông báo."
+            );
+
+            list.appendChild(empty);
+            return;
+        }
+
+        items.forEach(item => {
+            const row = document.createElement("button");
+            row.type = "button";
+
+            row.className = "kh-bell-item" +
+                (item.daDoc ? "" : " unread");
+
+            const iconData = iconFor(item.loai);
+
+            const iconBox = document.createElement("span");
+            iconBox.className =
+                "kh-bell-icon " + iconData.css;
+
+            const icon = document.createElement("i");
+            icon.className = "bi " + iconData.icon;
+            iconBox.appendChild(icon);
+
+            const info = document.createElement("span");
+            info.className = "kh-bell-info";
+
+            info.appendChild(createText(
+                "span",
+                "kh-bell-text d-block",
+                item.noiDung
+            ));
+
+            const date = createText(
+                "span",
+                "kh-bell-date",
+                formatDate(item.ngayGui) + " · Xem vé"
+            );
+
+            info.appendChild(date);
+
+            row.append(iconBox, info);
+
+            if (!item.daDoc) {
+                const dot = document.createElement("span");
+                dot.className = "kh-bell-dot";
+                row.appendChild(dot);
+            }
+
+            row.addEventListener("click", () => {
+                openItem(item);
+            });
+
+            list.appendChild(row);
+        });
+    }
+
+    async function loadNotifications() {
+        if (loading) return;
+        loading = true;
+
+        try {
+            const response = await fetch(
+                baseUrl + "/danh-sach",
+                {
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Không lấy được danh sách thông báo."
+                );
+            }
+
+            const result = await response.json();
+
+            items = result.danhSach || [];
+            unread = result.soChuaDoc || 0;
+
+            showCount();
+            render();
+        }
+        catch (error) {
+            console.error(error);
+
+            subtitle.textContent =
+                "Không thể tải thông báo";
+
+            if (!panel.hidden) {
+                list.replaceChildren();
+
+                list.appendChild(createText(
+                    "div",
+                    "kh-bell-empty",
+                    "Có lỗi khi tải thông báo. Hãy thử lại."
+                ));
+            }
+        }
+        finally {
+            loading = false;
+        }
+    }
+
+    button.addEventListener("click", async () => {
+        const opening = panel.hidden;
+
+        panel.hidden = !opening;
+        button.setAttribute(
+            "aria-expanded",
+            String(opening)
+        );
+
+        if (opening) {
+            await loadNotifications();
+        }
+    });
+
+    readAll.addEventListener("click", async () => {
+        try {
+            await post(baseUrl + "/da-doc-tat-ca");
+
+            items.forEach(item => {
+                item.daDoc = true;
+            });
+
+            unread = 0;
+            showCount();
+            render();
+        }
+        catch (error) {
+            console.error(error);
+        }
+    });
+
+    document.addEventListener("click", event => {
+        if (panel.hidden) return;
+
+        if (!root.contains(event.target)) {
+            panel.hidden = true;
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !panel.hidden) {
+            panel.hidden = true;
+            button.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+            button.focus();
+        }
+    });
+
+    // Lấy thông báo khi khách vào trang.
+    loadNotifications();
+
+    // Kiểm tra định kỳ khi trang đang mở.
+    setInterval(() => {
+        if (document.visibilityState === "visible") {
+            loadNotifications();
+        }
+    }, 60000);
+})();
+</script>
+

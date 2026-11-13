@@ -1,539 +1,1261 @@
 
 @model List<VeSuKienWeb.Models.BanToChuc.DoanhThuSuKienItemVM>
+@using System.Text.Json
 
 @{
-    Layout = "_LayoutBanToChuc";
+    Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
     ViewData["Title"] = "Doanh thu theo sự kiện";
 
-    decimal tongThanhToan = Model.Sum(x => x.TongThanhToan);
-    decimal tongHoan = Model.Sum(x => x.TongHoan);
-    decimal tongThucNhan = tongThanhToan - tongHoan;
+    var ds = Model ??
+        new List<VeSuKienWeb.Models.BanToChuc.DoanhThuSuKienItemVM>();
 
-    int tongSuKien = Model.Count;
-    int tongVe = Model.Sum(x => x.SoVeDaBan);
+    var gross = ds.Sum(x => x.TongThanhToan);
+    var refund = ds.Sum(x => x.TongHoan);
+    var net = gross - refund;
+    var refundRate = gross > 0 ? refund / gross * 100m : 0m;
+
+    var events = ds.Select(x => new {
+        id = x.SuKienId,
+        name = x.TenSuKien,
+        start = x.ThoiGianBatDau.ToString("dd/MM/yyyy HH:mm"),
+        end = x.ThoiGianKetThuc.ToString("dd/MM/yyyy HH:mm"),
+        gross = x.TongThanhToan,
+        refund = x.TongHoan,
+        net = x.DoanhThuThucNhan,
+        rate = x.TyLeHoan,
+        tickets = x.SoVeDaBan,
+        checkedIn = x.SoVeDaCheckIn,
+        canceled = x.SoVeDaHuy,
+        issued = x.TongSoVePhatHanh,
+        average = x.DoanhThuBinhQuanVe,
+        months = x.TheoThang.Select(m => new {
+            name = m.Thang,
+            gross = m.ThanhToan,
+            refund = m.HoanTien,
+            net = m.DoanhThuThuan
+        }).ToList(),
+        types = x.TheoLoaiVe.Select(t => new {
+            name = t.TenLoaiVe,
+            amount = t.DoanhThuGop,
+            tickets = t.SoVeThanhToan
+        }).ToList()
+    }).ToList();
 }
 
 <style>
-    .dt-page {
-        width: 100%;
-        color: #172033;
-        padding-bottom: 32px;
+    .fx, .fx *, .fx-modal, .fx-modal * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
-
-    .dt-header {
+    .fx {
+        color: #52415c;
+        font-size: 12px;
+        padding-bottom: 30px;
+        min-width: 0;
+    }
+    .fx-header, .fx-heading, .fx-panel-head {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 16px;
-        margin-bottom: 24px;
+        justify-content: space-between;
+        gap: 12px;
     }
-
-    .dt-title {
-        font-size: 28px;
+    .fx-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        margin-bottom: 19px;
+    }
+    .fx-eyebrow {
+        color: #a875ba;
+        font-size: 11px;
         font-weight: 750;
-        margin: 0 0 6px;
-        color: #172033;
+        letter-spacing: .6px;
+        margin-bottom: 5px;
     }
-
-    .dt-subtitle {
-        color: #788397;
-        font-size: 14px;
+    .fx-title {
+        color: #46344f;
+        font-size: 21px;
+        font-weight: 800;
         margin: 0;
-        line-height: 1.6;
     }
-
-    .dt-back {
+    .fx-subtitle {
+        color: #97879e;
+        font-size: 12px;
+        line-height: 1.7;
+        margin: 7px 0 0;
+    }
+    .fx-button, .fx-select, .fx-search {
+        min-height: 38px;
+        padding: 8px 12px;
+        border: 1px solid #e8dbea;
+        background: white;
+        color: #765f81;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 9px;
+    }
+    .fx-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 11px 16px;
-        border: 1px solid #d9e1ef;
-        background: #fff;
-        border-radius: 9px;
-        color: #475569;
-        font-size: 13px;
+        gap: 7px;
+        cursor: pointer;
         text-decoration: none;
-        white-space: nowrap;
     }
-
-    .dt-back:hover {
-        border-color: #2563eb;
-        color: #2563eb;
+    .fx-button:hover {
+        background: #faf2fc;
+        color: #a667b4;
     }
-
-    .dt-stats {
+    .fx-select {
+        max-width: 160px;
+        font-size: 11px;
+    }
+    .fx-section { margin-bottom: 20px; }
+    .fx-heading { flex-wrap: wrap; margin-bottom: 11px; }
+    .fx-heading h2 {
+        font-size: 14px;
+        font-weight: 800;
+        color: #4b3855;
+        margin: 0;
+    }
+    .fx-heading h2 span {
+        font-size: 11px;
+        margin-right: 8px;
+        color: #a675b8;
+    }
+    .fx-muted { font-size: 11px; color: #9d8ba5; }
+    .fx-kpis {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
-        margin-bottom: 20px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 11px;
     }
-
-    .dt-stat {
-        background: #fff;
-        border: 1px solid #e4eaf2;
-        border-radius: 13px;
-        padding: 22px;
-        box-shadow: 0 3px 12px rgba(20, 40, 80, .035);
+    .fx-kpi {
         min-width: 0;
+        background: white;
+        border: 1px solid #eddfed;
+        border-top: 3px solid var(--accent);
+        border-radius: 13px;
+        padding: 15px;
+        box-shadow: 0 4px 16px rgba(86,54,103,.04);
     }
-
-    .dt-stat-head {
+    .fx-purple { --accent:#9b79d0; --soft:#f2ecfc; }
+    .fx-teal { --accent:#45b4a1; --soft:#e9f8f5; }
+    .fx-orange { --accent:#edaa61; --soft:#fff4e7; }
+    .fx-pink { --accent:#df86aa; --soft:#fff0f6; }
+    .fx-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .fx-kpi-label {
+        font-size: 11px;
+        font-weight: 650;
+        color: #8e7c98;
+    }
+    .fx-kpi-icon {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        color: var(--accent);
+        background: var(--soft);
+        border-radius: 9px;
+        font-size: 16px;
+    }
+    .fx-kpi-value {
+        font-size: clamp(17px, 1.7vw, 22px);
+        font-weight: 800;
+        color: #493651;
+        margin: 9px 0 4px;
+        overflow-wrap: anywhere;
+        font-variant-numeric: tabular-nums;
+    }
+    .fx-kpi-note {
+        font-size: 10.5px;
+        color: #a090a7;
+        line-height: 1.7;
+    }
+    .fx-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .fx-chip {
+        padding: 8px 12px;
+        border: 1px solid #ebdded;
+        border-radius: 9px;
+        background: #fcf8fd;
+        color: #8d7797;
+        font-size: 11px;
+    }
+    .fx-chip strong { color: #60476b; }
+    .fx-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 13px;
+    }
+    .fx-panel {
+        min-width: 0;
+        background: white;
+        border: 1px solid #eddfed;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(86,54,103,.04);
+    }
+    .fx-panel-head {
+        align-items: flex-start;
+        padding: 15px 16px 12px;
+        border-bottom: 1px solid #f3eaf3;
+    }
+    .fx-panel-head h3 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 750;
+        color: #533e5e;
+    }
+    .fx-panel-head p {
+        margin: 5px 0 0;
+        color: #9b8ca3;
+        font-size: 11px;
+        line-height: 1.65;
+    }
+    .fx-tag {
+        padding: 6px 9px;
+        flex-shrink: 0;
+        background: #f7eef9;
+        border-radius: 7px;
+        color: #a36fb1;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    .fx-chart {
+        position: relative;
+        height: 238px;
+        padding: 12px 14px 10px;
+    }
+    .fx-chart canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .fx-chart-foot {
+        padding: 0 16px 13px;
+        color: #9888a0;
+        font-size: 10.5px;
+        line-height: 1.7;
+    }
+    .fx-table-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
         gap: 10px;
-        margin-bottom: 18px;
+        padding: 13px 16px;
     }
-
-    .dt-stat-label {
-        color: #64748b;
+    .fx-table-head h3 {
         font-size: 13px;
-        font-weight: 600;
+        color: #533e5e;
+        font-weight: 750;
+        margin: 0;
     }
-
-    .dt-stat-icon {
+    .fx-search { width: 235px; max-width: 100%; outline: none; }
+    .fx-search:focus, .fx-select:focus {
+        border-color: #b68aca;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(155,121,208,.12);
+    }
+    .fx-table-wrap { width: 100%; overflow-x: auto; }
+    .fx-table {
+        width: 100%;
+        min-width: 820px;
+        border-collapse: collapse;
+    }
+    .fx-table th {
+        background: #fcf8fd;
+        color: #907b9b;
+        font-size: 10.5px;
+        font-weight: 750;
+        white-space: nowrap;
+        text-align: left;
+        padding: 12px 13px;
+        border-bottom: 1px solid #f0e5f0;
+    }
+    .fx-table td {
+        padding: 12px 13px;
+        font-size: 11.5px;
+        color: #70607b;
+        border-bottom: 1px solid #f2ebf2;
+        vertical-align: middle;
+    }
+    .fx-row { cursor: pointer; }
+    .fx-row:hover, .fx-row:focus-visible {
+        background: #fbf3fc;
+        outline: none;
+    }
+    .fx-row-name { color: #584363; font-size: 12px; font-weight: 750; }
+    .fx-money { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .fx-net { color: #9866b4 !important; font-weight: 800; }
+    .fx-table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 11px 16px;
+        border-top: 1px solid #f0e7f0;
+    }
+    .fx-pages { display: flex; gap: 5px; }
+    .fx-pages button {
+        min-width: 30px;
+        min-height: 30px;
+        padding: 5px 8px;
+        border: 1px solid #e8dbea;
+        border-radius: 7px;
+        background: #fff;
+        color: #7d648b;
+        font-size: 11px;
+        cursor: pointer;
+    }
+    .fx-pages button.active {
+        color: #fff;
+        background: #9b79d0;
+        border-color: #9b79d0;
+    }
+    .fx-pages button:disabled { opacity: .4; cursor: default; }
+    .fx-empty {
+        text-align: center;
+        color: #9d8ba5;
+        font-size: 12px;
+        padding: 25px;
+    }
+    .fx-note {
+        color: #9888a0;
+        font-size: 11px;
+        line-height: 1.8;
+        margin-top: 12px;
+    }
+    .fx-modal[hidden] { display: none !important; }
+    .fx-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 12000;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 38px;
-        height: 38px;
-        background: #eef4ff;
-        color: #2563eb;
-        border-radius: 10px;
-        font-size: 18px;
-        flex-shrink: 0;
+        padding: 18px;
+        background: rgba(40,25,49,.55);
+        backdrop-filter: blur(3px);
     }
-
-    .dt-stat-icon.refund {
-        color: #d97706;
-        background: #fff6e8;
-    }
-
-    .dt-stat-icon.net {
-        color: #059669;
-        background: #e9f9f2;
-    }
-
-    .dt-stat-value {
-        font-size: clamp(19px, 2.1vw, 27px);
-        font-weight: 800;
-        letter-spacing: -.6px;
-        overflow-wrap: anywhere;
-        line-height: 1.3;
-    }
-
-    .dt-stat-note {
-        color: #94a3b8;
-        margin-top: 8px;
-        font-size: 12px;
-    }
-
-    .dt-blue { color: #2563eb; }
-    .dt-orange { color: #d97706; }
-    .dt-green { color: #059669; }
-
-    .dt-overview {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .dt-pill {
-        background: #fff;
-        border: 1px solid #e4eaf2;
-        color: #64748b;
-        border-radius: 9px;
-        padding: 11px 15px;
-        font-size: 13px;
-    }
-
-    .dt-pill strong {
-        color: #1e293b;
-        margin-left: 7px;
-    }
-
-    .dt-panel {
-        background: #fff;
-        border: 1px solid #e4eaf2;
-        border-radius: 13px;
+    .fx-dialog {
+        width: 100%;
+        max-width: 570px;
+        max-height: 88vh;
         overflow: hidden;
-        box-shadow: 0 3px 12px rgba(20, 40, 80, .035);
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #ead9ee;
+        box-shadow: 0 20px 65px rgba(45,25,58,.22);
     }
-
-    .dt-panel-header {
-        padding: 22px;
+    .fx-dialog-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        background: #fbf5fc;
+        padding: 17px 19px;
+        border-bottom: 1px solid #eee1f0;
+    }
+    .fx-dialog-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #503b5b;
+    }
+    .fx-dialog-sub {
+        color: #9c89a5;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+    .fx-close {
+        height: 32px;
+        width: 32px;
+        border-radius: 9px;
+        border: 1px solid #e9dbea;
+        color: #866c92;
+        background: white;
+        cursor: pointer;
+    }
+    .fx-dialog-body { overflow-y: auto; padding: 18px 19px; }
+    .fx-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+    .fx-detail-card {
+        padding: 12px;
+        border: 1px solid #efdfef;
+        border-radius: 10px;
+        background: #fcf9fd;
+    }
+    .fx-detail-card span {
+        display: block;
+        color: #90809a;
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+    .fx-detail-card strong {
+        font-size: 16px;
+        color: #51405e;
+        overflow-wrap: anywhere;
+    }
+    .fx-detail-title {
+        margin: 18px 0 7px;
+        color: #614b6e;
+        font-size: 12px;
+        font-weight: 800;
+    }
+    .fx-detail-row {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 14px;
-        border-bottom: 1px solid #edf0f5;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid #f2ebf3;
+        font-size: 11.5px;
     }
-
-    .dt-panel-title {
-        font-size: 17px;
-        font-weight: 750;
-        margin: 0 0 5px;
+    .fx-detail-row span { color: #8f7c99; }
+    .fx-detail-row strong { color: #56415f; text-align: right; }
+    .fx-dialog-note {
+        background: #faf2fb;
+        border-radius: 9px;
+        padding: 12px;
+        font-size: 11px;
+        line-height: 1.8;
+        color: #927b9f;
+        margin-top: 15px;
     }
-
-    .dt-panel-desc {
-        margin: 0;
-        color: #94a3b8;
-        font-size: 12px;
+    .fx-dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 19px;
+        border-top: 1px solid #f1e8f2;
     }
-
-    .dt-search {
-        padding: 10px 13px;
-        width: 240px;
-        max-width: 100%;
-        border: 1px solid #dbe3ef;
-        border-radius: 8px;
-        outline: none;
-        font-size: 13px;
-        background: #fff;
+    @@media(max-width:1150px) {
+        .fx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-
-    .dt-search:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+    @@media(max-width:900px) {
+        .fx-grid { grid-template-columns: 1fr; }
     }
-
-    .dt-table-wrap {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .dt-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-        min-width: 830px;
-    }
-
-    .dt-table thead {
-        background: #f8fafc;
-    }
-
-    .dt-table th {
-        text-align: left;
-        padding: 15px 14px;
-        font-size: 12px;
-        font-weight: 700;
-        color: #64748b;
-        white-space: nowrap;
-        border-bottom: 1px solid #e8edf5;
-    }
-
-    .dt-table td {
-        padding: 17px 14px;
-        border-bottom: 1px solid #eef2f7;
-        vertical-align: middle;
-        color: #475569;
-    }
-
-    .dt-table tbody tr:hover {
-        background: #fbfcff;
-    }
-
-    .dt-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .dt-event-name {
-        font-weight: 700;
-        color: #1e293b;
-        line-height: 1.55;
-        min-width: 190px;
-    }
-
-    .dt-money {
-        font-weight: 650;
-        white-space: nowrap;
-    }
-
-    .dt-net {
-        color: #059669 !important;
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    .dt-detail {
-        display: inline-block;
-        text-decoration: none;
-        color: #2563eb;
-        border: 1px solid #bad0ff;
-        border-radius: 7px;
-        padding: 8px 12px;
-        background: #fff;
-        white-space: nowrap;
-        font-size: 12px;
-        font-weight: 650;
-    }
-
-    .dt-detail:hover {
-        color: #fff;
-        background: #2563eb;
-        border-color: #2563eb;
-    }
-
-    .dt-empty {
-        text-align: center;
-        padding: 46px 20px !important;
-        color: #94a3b8 !important;
-    }
-
-    .dt-footer {
-        padding: 16px 22px;
-        border-top: 1px solid #edf0f5;
-        color: #94a3b8;
-        font-size: 12px;
-    }
-
-    @@media(max-width: 1000px) {
-        .dt-stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .dt-stat:last-child {
-            grid-column: 1 / -1;
-        }
-    }
-
-    @@media(max-width: 640px) {
-        .dt-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .dt-stats {
-            grid-template-columns: 1fr;
-        }
-
-        .dt-stat:last-child {
-            grid-column: auto;
-        }
-
-        .dt-panel-header {
-            align-items: stretch;
-        }
-
-        .dt-search {
-            width: 100%;
-        }
-
-        .dt-title {
-            font-size: 23px;
-        }
+    @@media(max-width:600px) {
+        .fx-header { flex-direction: column; }
+        .fx-kpi { padding: 12px; }
+        .fx-chart { height: 225px; }
+        .fx-table-head { align-items: stretch; flex-direction: column; }
+        .fx-search { width: 100%; }
     }
 </style>
 
-<div class="dt-page">
-
-    <div class="dt-header">
+<div class="fx">
+    <header class="fx-header">
         <div>
-            <h1 class="dt-title">Doanh thu theo sự kiện</h1>
-            <p class="dt-subtitle">
-                Theo dõi doanh thu bán vé, khoản hoàn tiền
-                và số tiền thực nhận của từng sự kiện.
+            <div class="fx-eyebrow">BAN TỔ CHỨC / FINANCIAL ANALYTICS</div>
+            <h1 class="fx-title">Doanh thu theo sự kiện</h1>
+            <p class="fx-subtitle">
+                Phân tích hiệu quả tài chính, doanh thu theo loại vé
+                và khoản hoàn tiền của từng sự kiện.
             </p>
         </div>
+        <button type="button" class="fx-button"
+                onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Làm mới
+        </button>
+    </header>
 
-        <a asp-controller="BanToChuc"
-           asp-action="ThongKeTongQuan"
-           class="dt-back">
-            ← Thống kê tổng quan
-        </a>
-    </div>
-
-    <div class="dt-stats">
-
-        <div class="dt-stat">
-            <div class="dt-stat-head">
-                <span class="dt-stat-label">Tổng thanh toán</span>
-                <span class="dt-stat-icon">
-                    <i class="bi bi-wallet2"></i>
-                </span>
+    <section class="fx-section">
+        <div class="fx-heading">
+            <h2><span>01</span> Tổng quan tài chính</h2>
+            <span class="fx-muted">Dữ liệu BTC · Toàn bộ lịch sử</span>
+        </div>
+        <div class="fx-kpis">
+            <div class="fx-kpi fx-purple">
+                <div class="fx-kpi-head">
+                    <span class="fx-kpi-label">Doanh thu gộp</span>
+                    <span class="fx-kpi-icon"><i class="bi bi-wallet2"></i></span>
+                </div>
+                <div class="fx-kpi-value">@gross.ToString("N0") đ</div>
+                <div class="fx-kpi-note">Giao dịch thành công</div>
             </div>
-            <div class="dt-stat-value dt-blue">
-                @tongThanhToan.ToString("N0") đ
+            <div class="fx-kpi fx-orange">
+                <div class="fx-kpi-head">
+                    <span class="fx-kpi-label">Tiền hoàn</span>
+                    <span class="fx-kpi-icon">
+                        <i class="bi bi-arrow-return-left"></i>
+                    </span>
+                </div>
+                <div class="fx-kpi-value">@refund.ToString("N0") đ</div>
+                <div class="fx-kpi-note">Hoàn tiền mô phỏng</div>
             </div>
-            <div class="dt-stat-note">
-                Tổng giao dịch thanh toán thành công
+            <div class="fx-kpi fx-teal">
+                <div class="fx-kpi-head">
+                    <span class="fx-kpi-label">Doanh thu thuần</span>
+                    <span class="fx-kpi-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </span>
+                </div>
+                <div class="fx-kpi-value">@net.ToString("N0") đ</div>
+                <div class="fx-kpi-note">Gộp trừ tiền hoàn</div>
+            </div>
+            <div class="fx-kpi fx-pink">
+                <div class="fx-kpi-head">
+                    <span class="fx-kpi-label">Tỷ lệ hoàn tiền</span>
+                    <span class="fx-kpi-icon"><i class="bi bi-percent"></i></span>
+                </div>
+                <div class="fx-kpi-value">@refundRate.ToString("N1")%</div>
+                <div class="fx-kpi-note">Tiền hoàn / doanh thu gộp</div>
             </div>
         </div>
+        <div class="fx-chips">
+            <span class="fx-chip">
+                Số sự kiện: <strong>@ds.Count</strong>
+            </span>
+            <span class="fx-chip">
+                Vé còn hiệu lực:
+                <strong>@ds.Sum(x => x.SoVeDaBan).ToString("N0")</strong>
+            </span>
+        </div>
+    </section>
 
-        <div class="dt-stat">
-            <div class="dt-stat-head">
-                <span class="dt-stat-label">Tổng tiền đã hoàn</span>
-                <span class="dt-stat-icon refund">
-                    <i class="bi bi-arrow-counterclockwise"></i>
-                </span>
-            </div>
-            <div class="dt-stat-value dt-orange">
-                @tongHoan.ToString("N0") đ
-            </div>
-            <div class="dt-stat-note">
-                Khoản hoàn tiền đã ghi nhận mô phỏng
-            </div>
+    <section class="fx-section">
+        <div class="fx-heading">
+            <h2><span>02</span> Phân tích doanh thu</h2>
+            <span class="fx-muted">4 biểu đồ · Rê chuột để xem số liệu</span>
         </div>
 
-        <div class="dt-stat">
-            <div class="dt-stat-head">
-                <span class="dt-stat-label">Doanh thu thực nhận</span>
-                <span class="dt-stat-icon net">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </span>
-            </div>
-            <div class="dt-stat-value dt-green">
-                @tongThucNhan.ToString("N0") đ
-            </div>
-            <div class="dt-stat-note">
-                Tổng thanh toán trừ tổng tiền hoàn
-            </div>
+        <div class="fx-grid">
+            <article class="fx-panel">
+                <div class="fx-panel-head">
+                    <div>
+                        <h3>Xếp hạng doanh thu sự kiện</h3>
+                        <p>Top 6 sự kiện theo doanh thu thuần.</p>
+                    </div>
+                    <span class="fx-tag">Cột ngang</span>
+                </div>
+                <div class="fx-chart">
+                    <canvas id="fxRanking"></canvas>
+                </div>
+                <div class="fx-chart-foot">
+                    Bấm cột để mở phân tích tài chính của sự kiện.
+                </div>
+            </article>
+
+            <article class="fx-panel">
+                <div class="fx-panel-head">
+                    <div>
+                        <h3>Xu hướng doanh thu</h3>
+                        <p>Doanh thu gộp và thuần trong 12 tháng.</p>
+                    </div>
+                    <select id="fxEventFilter" class="fx-select"
+                            aria-label="Lọc xu hướng theo sự kiện">
+                        <option value="">Tất cả sự kiện</option>
+                        @foreach (var e in ds)
+                        {
+                            <option value="@e.SuKienId">@e.TenSuKien</option>
+                        }
+                    </select>
+                </div>
+                <div class="fx-chart">
+                    <canvas id="fxTrend"></canvas>
+                </div>
+                <div class="fx-chart-foot">
+                    Tooltip hiển thị tiền hoàn cùng doanh thu.
+                </div>
+            </article>
+
+            <article class="fx-panel">
+                <div class="fx-panel-head">
+                    <div>
+                        <h3>Doanh thu gộp theo loại vé</h3>
+                        <p>VIP, Thường và các loại vé đã thanh toán.</p>
+                    </div>
+                    <span class="fx-tag">Cột</span>
+                </div>
+                <div class="fx-chart">
+                    <canvas id="fxTicketTypes"></canvas>
+                </div>
+                <div class="fx-chart-foot">
+                    Cộng từ thanh toán thành công theo từng loại vé.
+                </div>
+            </article>
+
+            <article class="fx-panel">
+                <div class="fx-panel-head">
+                    <div>
+                        <h3>Tỷ lệ hoàn tiền theo sự kiện</h3>
+                        <p>Top sự kiện có tỷ lệ hoàn cao nhất.</p>
+                    </div>
+                    <span class="fx-tag">Cột ngang</span>
+                </div>
+                <div class="fx-chart">
+                    <canvas id="fxRefundRates"></canvas>
+                </div>
+                <div class="fx-chart-foot">
+                    Chỉ tính sự kiện đã phát sinh doanh thu gộp.
+                    Bấm cột để xem chi tiết.
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="fx-section">
+        <div class="fx-heading">
+            <h2><span>03</span> Phân tích tài chính từng sự kiện</h2>
+            <span class="fx-muted">
+                Bấm vào dòng hoặc cột biểu đồ để xem sâu
+            </span>
         </div>
 
-    </div>
-
-    <div class="dt-overview">
-        <div class="dt-pill">
-            Tổng sự kiện
-            <strong>@tongSuKien</strong>
-        </div>
-
-        <div class="dt-pill">
-            Vé còn hiệu lực
-            <strong>@tongVe</strong>
-        </div>
-    </div>
-
-    <div class="dt-panel">
-
-        <div class="dt-panel-header">
-            <div>
-                <h2 class="dt-panel-title">
-                    Chi tiết doanh thu từng sự kiện
-                </h2>
-                <p class="dt-panel-desc">
-                    Danh sách sự kiện do bạn tổ chức
-                </p>
+        <div class="fx-panel">
+            <div class="fx-table-head">
+                <h3>Danh sách doanh thu</h3>
+                <input type="search" id="fxSearch" class="fx-search"
+                       placeholder="Tìm tên sự kiện..."
+                       autocomplete="off"/>
             </div>
-
-            <input class="dt-search"
-                   type="text"
-                   id="dtSearch"
-                   placeholder="Tìm tên sự kiện..."
-                   oninput="dtFilterEvents()" />
-        </div>
-
-        <div class="dt-table-wrap">
-            <table class="dt-table" id="dtRevenueTable">
-                <thead>
-                    <tr>
-                        <th>Sự kiện</th>
-                        <th>Ngày tổ chức</th>
-                        <th>Vé hiệu lực</th>
-                        <th>Đã thanh toán</th>
-                        <th>Đã hoàn</th>
-                        <th>Thực nhận</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @foreach (var item in Model)
-                    {
-                        <tr class="dt-event-row">
-                            <td>
-                                <div class="dt-event-name">
-                                    @item.TenSuKien
-                                </div>
-                            </td>
-
-                            <td>
-                                @item.ThoiGianBatDau.ToString("dd/MM/yyyy")
-                            </td>
-
-                            <td>@item.SoVeDaBan</td>
-
-                            <td class="dt-money">
-                                @item.TongThanhToan.ToString("N0") đ
-                            </td>
-
-                            <td class="dt-money dt-orange">
-                                @item.TongHoan.ToString("N0") đ
-                            </td>
-
-                            <td class="dt-net">
-                                @item.DoanhThuThucNhan.ToString("N0") đ
-                            </td>
-
-                            <td>
-                                <a asp-controller="BanToChuc"
-                                   asp-action="ChiTiet"
-                                   asp-route-id="@item.SuKienId"
-                                   class="dt-detail">
-                                    Xem chi tiết
-                                </a>
-                            </td>
-                        </tr>
-                    }
-
-                    @if (!Model.Any())
-                    {
+            <div class="fx-table-wrap">
+                <table class="fx-table">
+                    <thead>
                         <tr>
-                            <td colspan="7" class="dt-empty">
-                                Chưa có sự kiện nào để thống kê.
-                            </td>
+                            <th>Sự kiện</th>
+                            <th>Ngày tổ chức</th>
+                            <th>Vé hiệu lực</th>
+                            <th>Check-in</th>
+                            <th>Doanh thu gộp</th>
+                            <th>Tiền hoàn</th>
+                            <th>Doanh thu thuần</th>
                         </tr>
-                    }
-
-                    <tr id="dtNoSearchResult" style="display:none">
-                        <td colspan="7" class="dt-empty">
-                            Không tìm thấy sự kiện phù hợp.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in ds)
+                        {
+                            <tr class="fx-row" data-id="@e.SuKienId"
+                                tabindex="0" role="button"
+                                aria-label="Phân tích tài chính @e.TenSuKien">
+                                <td class="fx-row-name">@e.TenSuKien</td>
+                                <td>@e.ThoiGianBatDau.ToString("dd/MM/yyyy")</td>
+                                <td>@e.SoVeDaBan.ToString("N0")</td>
+                                <td>@e.SoVeDaCheckIn.ToString("N0")</td>
+                                <td class="fx-money">
+                                    @e.TongThanhToan.ToString("N0") đ
+                                </td>
+                                <td class="fx-money">
+                                    @e.TongHoan.ToString("N0") đ
+                                </td>
+                                <td class="fx-money fx-net">
+                                    @e.DoanhThuThucNhan.ToString("N0") đ
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="fx-empty" id="fxEmpty" hidden>
+                Không tìm thấy sự kiện phù hợp.
+            </div>
+            <div class="fx-table-footer">
+                <span class="fx-muted" id="fxPageInfo"></span>
+                <div class="fx-pages" id="fxPages"></div>
+            </div>
         </div>
-
-        <div class="dt-footer">
-            Doanh thu thực nhận = Thanh toán thành công − Tiền hoàn.
-            Dữ liệu hoàn tiền hiện tại là mô phỏng.
+        <div class="fx-note">
+            <i class="bi bi-info-circle"></i>
+            Doanh thu thuần là doanh thu gộp trừ hoàn tiền mô phỏng,
+            chưa trừ chi phí tổ chức và không phải lợi nhuận thực tế.
+            Biểu đồ theo tháng chỉ thể hiện 12 tháng gần nhất.
         </div>
-
-    </div>
-
+    </section>
 </div>
 
+<div class="fx-modal" id="fxModal" hidden>
+    <div class="fx-dialog" role="dialog" aria-modal="true"
+         aria-labelledby="fxModalTitle">
+        <div class="fx-dialog-head">
+            <div>
+                <div class="fx-eyebrow">DEEP DIVE · EVENT FINANCE</div>
+                <h2 class="fx-dialog-title" id="fxModalTitle">
+                    Phân tích sự kiện
+                </h2>
+                <div class="fx-dialog-sub" id="fxModalDate"></div>
+            </div>
+            <button type="button" class="fx-close" id="fxClose"
+                    aria-label="Đóng cửa sổ">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="fx-dialog-body">
+            <div class="fx-detail-grid">
+                <div class="fx-detail-card">
+                    <span>Doanh thu thuần</span>
+                    <strong id="fxDetailNet">—</strong>
+                </div>
+                <div class="fx-detail-card">
+                    <span>Tỷ lệ hoàn tiền</span>
+                    <strong id="fxDetailRate">—</strong>
+                </div>
+                <div class="fx-detail-card">
+                    <span>Vé còn hiệu lực</span>
+                    <strong id="fxDetailTickets">—</strong>
+                </div>
+                <div class="fx-detail-card">
+                    <span>Lượt check-in</span>
+                    <strong id="fxDetailCheckIn">—</strong>
+                </div>
+            </div>
+
+            <h3 class="fx-detail-title">Phân tích dòng tiền</h3>
+            <div class="fx-detail-row">
+                <span>Doanh thu gộp</span>
+                <strong id="fxDetailGross">—</strong>
+            </div>
+            <div class="fx-detail-row">
+                <span>Hoàn tiền mô phỏng</span>
+                <strong id="fxDetailRefund">—</strong>
+            </div>
+            <div class="fx-detail-row">
+                <span>Doanh thu thuần / vé hiệu lực</span>
+                <strong id="fxDetailAvg">—</strong>
+            </div>
+
+            <h3 class="fx-detail-title">Hiệu quả bán vé</h3>
+            <div class="fx-detail-row">
+                <span>Số vé phát hành theo cấu hình</span>
+                <strong id="fxDetailIssued">—</strong>
+            </div>
+            <div class="fx-detail-row">
+                <span>Số vé đã hủy</span>
+                <strong id="fxDetailCanceled">—</strong>
+            </div>
+            <div class="fx-detail-row">
+                <span>Vé hiệu lực / vé phát hành</span>
+                <strong id="fxDetailSellRate">—</strong>
+            </div>
+
+            <div class="fx-dialog-note">
+                Số liệu thuộc đúng sự kiện đang chọn.
+                Doanh thu tính từ giao dịch thanh toán thành công,
+                không lấy giá vé hiện tại nhân số lượng.
+            </div>
+        </div>
+        <div class="fx-dialog-footer">
+            <button type="button" class="fx-button"
+                    id="fxDismiss">Đóng</button>
+            <a id="fxDetailLink" href="#" class="fx-button">
+                Chi tiết sự kiện
+                <i class="bi bi-arrow-up-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    function dtFilterEvents() {
-        const input = document.getElementById("dtSearch");
-        const rows = document.querySelectorAll(".dt-event-row");
-        const empty = document.getElementById("dtNoSearchResult");
+(function () {
+    "use strict";
 
-        const keyword = (input.value || "")
-            .toLocaleLowerCase("vi-VN")
-            .trim();
+    const events = @Html.Raw(JsonSerializer.Serialize(events));
+    const el = id => document.getElementById(id);
 
-        let visibleCount = 0;
+    const money = v => new Intl.NumberFormat("vi-VN", {
+        maximumFractionDigits: 0
+    }).format(v || 0) + " đ";
+
+    const number = v => new Intl.NumberFormat("vi-VN")
+        .format(v || 0);
+
+    const percent = v => new Intl.NumberFormat("vi-VN", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+    }).format(v || 0) + "%";
+
+    const compact = v => new Intl.NumberFormat("vi-VN", {
+        notation: "compact",
+        maximumFractionDigits: 1
+    }).format(v);
+
+    function put(id, value) {
+        const node = el(id);
+        if (node) node.textContent = value;
+    }
+
+    // Popup drill-through.
+    const modal = el("fxModal");
+    let focusBeforeModal = null;
+
+    function openDetail(id) {
+        const e = events.find(x => x.id === Number(id));
+        if (!e) return;
+
+        focusBeforeModal = document.activeElement;
+
+        put("fxModalTitle", e.name);
+        put("fxModalDate", e.start + " — " + e.end);
+        put("fxDetailNet", money(e.net));
+        put("fxDetailRate", percent(e.rate));
+        put("fxDetailTickets", number(e.tickets));
+        put("fxDetailCheckIn", number(e.checkedIn));
+        put("fxDetailGross", money(e.gross));
+        put("fxDetailRefund", money(e.refund));
+        put("fxDetailAvg", money(e.average));
+        put("fxDetailIssued", number(e.issued));
+        put("fxDetailCanceled", number(e.canceled));
+        put("fxDetailSellRate", e.issued > 0
+            ? percent(e.tickets / e.issued * 100)
+            : "Chưa có cấu hình");
+
+        el("fxDetailLink").href =
+            '@Url.Action("ChiTiet", "BanToChuc")' +
+            "?id=" + encodeURIComponent(e.id);
+
+        modal.hidden = false;
+        document.body.style.overflow = "hidden";
+        el("fxClose").focus();
+    }
+
+    function closeDetail() {
+        if (modal.hidden) return;
+        modal.hidden = true;
+        document.body.style.overflow = "";
+        if (focusBeforeModal?.focus) focusBeforeModal.focus();
+    }
+
+    el("fxClose").addEventListener("click", closeDetail);
+    el("fxDismiss").addEventListener("click", closeDetail);
+    modal.addEventListener("click", e => {
+        if (e.target === modal) closeDetail();
+    });
+    document.addEventListener("keydown", e => {
+        if (modal.hidden) return;
+        if (e.key === "Escape") {
+            closeDetail();
+            return;
+        }
+        if (e.key === "Tab") {
+            const first = el("fxClose");
+            const last = el("fxDetailLink");
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    // Tìm kiếm và phân trang.
+    const rows = Array.from(document.querySelectorAll(".fx-row"));
+    const pageSize = 8;
+    let page = 1;
+
+    function matches() {
+        const query = el("fxSearch").value.trim()
+            .toLocaleLowerCase("vi-VN");
+        return rows.filter(row => row.querySelector(".fx-row-name")
+            .textContent.toLocaleLowerCase("vi-VN").includes(query));
+    }
+
+    function pageButton(text, target, active, disabled) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = text;
+        button.className = active ? "active" : "";
+        button.disabled = disabled;
+        if (active) button.setAttribute("aria-current", "page");
+        button.addEventListener("click", () => {
+            page = target;
+            renderTable();
+        });
+        return button;
+    }
+
+    function renderTable() {
+        const filtered = matches();
+        const pages = Math.max(1,
+            Math.ceil(filtered.length / pageSize));
+        page = Math.min(page, pages);
 
         rows.forEach(row => {
-            const name = row.querySelector(".dt-event-name")
-                .textContent
-                .toLocaleLowerCase("vi-VN");
-
-            const show = name.includes(keyword);
-            row.style.display = show ? "" : "none";
-
-            if (show) visibleCount++;
+            row.hidden = true;
+            row.style.display = "none";
         });
 
-        if (empty) {
-            empty.style.display =
-                rows.length > 0 && visibleCount === 0
-                    ? ""
-                    : "none";
+        const start = (page - 1) * pageSize;
+        const end = Math.min(start + pageSize, filtered.length);
+        filtered.slice(start, end).forEach(row => {
+            row.hidden = false;
+            row.style.display = "";
+        });
+
+        el("fxEmpty").hidden = filtered.length > 0;
+        put("fxPageInfo", filtered.length
+            ? `Hiển thị ${start + 1}–${end} / ${filtered.length} sự kiện`
+            : "Không có sự kiện");
+
+        const target = el("fxPages");
+        target.replaceChildren();
+        if (pages <= 1) return;
+
+        target.appendChild(pageButton(
+            "Trước", Math.max(1, page - 1), false, page === 1
+        ));
+        for (let i = 1; i <= pages; i++) {
+            target.appendChild(pageButton(
+                String(i), i, page === i, false, false
+            ));
         }
+        target.appendChild(pageButton(
+            "Sau", Math.min(pages, page + 1), false, page === pages
+        ));
     }
+
+    el("fxSearch").addEventListener("input", () => {
+        page = 1;
+        renderTable();
+    });
+
+    rows.forEach(row => {
+        row.addEventListener("click", () => openDetail(row.dataset.id));
+        row.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openDetail(row.dataset.id);
+            }
+        });
+    });
+    renderTable();
+
+    if (typeof Chart === "undefined") {
+        console.error("Chart.js chưa được tải.");
+        return;
+    }
+
+    const palette = [
+        "#9b79d0", "#45b4a1", "#edaa61",
+        "#df86aa", "#79a6db", "#b49bbd"
+    ];
+
+    Chart.defaults.font.family = "'Be Vietnam Pro', sans-serif";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = "#8c7c96";
+
+    const common = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: "#493653",
+                titleFont: { size: 12 },
+                bodyFont: { size: 11 },
+                padding: 11,
+                cornerRadius: 9
+            }
+        }
+    };
+
+    function moneyAxis() {
+        return {
+            beginAtZero: false,
+            grid: { color: "#f1eaf3" },
+            ticks: { callback: compact }
+        };
+    }
+
+    function clickable(canvas, chartItems, selector) {
+        return {
+            onHover: (event, elements) => {
+                if (event.native?.target) {
+                    event.native.target.style.cursor =
+                        elements.length ? "pointer" : "default";
+                }
+            },
+            onClick: (event, elements) => {
+                if (!elements.length) return;
+                const item = chartItems[elements[0].index];
+                if (item) openDetail(selector(item));
+            }
+        };
+    }
+
+    // Chart 1: Xếp hạng doanh thu thuần.
+    const ranking = [...events]
+        .sort((a, b) => b.net - a.net)
+        .slice(0, 6);
+
+    new Chart(el("fxRanking"), {
+        type: "bar",
+        data: {
+            labels: ranking.map(x => x.name),
+            datasets: [{
+                label: "Doanh thu thuần",
+                data: ranking.map(x => x.net),
+                backgroundColor: ranking.map((_, i) =>
+                    palette[i % palette.length]),
+                borderRadius: 6,
+                maxBarThickness: 25
+            }]
+        },
+        options: {
+            ...common,
+            ...clickable(null, ranking, x => x.id),
+            indexAxis: "y",
+            plugins: {
+                ...common.plugins,
+                tooltip: {
+                    ...common.plugins.tooltip,
+                    callbacks: {
+                        title: items => ranking[items[0].dataIndex].name,
+                        label: item => "Doanh thu thuần: " + money(item.raw),
+                        afterLabel: () => "Bấm để xem chi tiết"
+                    }
+                }
+            },
+            scales: {
+                x: moneyAxis(),
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        callback: function (v) {
+                            const label = this.getLabelForValue(v);
+                            return label.length > 18
+                                ? label.slice(0, 18) + "…"
+                                : label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart 2: Xu hướng theo tháng, lọc được sự kiện.
+    let activeMonths = [];
+
+    const trend = new Chart(el("fxTrend"), {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "Doanh thu thuần",
+                    data: [],
+                    borderColor: palette[0],
+                    backgroundColor: "rgba(155,121,208,.10)",
+                    borderWidth: 2.5,
+                    tension: .3,
+                    fill: true,
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5
+                },
+                {
+                    label: "Doanh thu gộp",
+                    data: [],
+                    borderColor: palette[1],
+                    borderWidth: 2,
+                    tension: .3,
+                    fill: false,
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5
+                }
+            ]
+        },
+        options: {
+            ...common,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+                ...common.plugins,
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 7,
+                        padding: 11
+                    }
+                },
+                tooltip: {
+                    ...common.plugins.tooltip,
+                    callbacks: {
+                        label: item => item.dataset.label + ": " +
+                            money(item.raw),
+                        afterBody: items => {
+                            if (!items.length) return [];
+                            const m = activeMonths[items[0].dataIndex];
+                            return m ? ["Tiền hoàn: " + money(m.refund)] : [];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: moneyAxis()
+            }
+        }
+    });
+
+    function updateTrend() {
+        const selected = el("fxEventFilter").value;
+        const source = selected
+            ? events.filter(e => e.id === Number(selected))
+            : events;
+
+        const labels = events.length ? events[0].months : [];
+
+        activeMonths = labels.map((m, index) => {
+            let totalGross = 0;
+            let totalRefund = 0;
+
+            source.forEach(e => {
+                const x = e.months[index];
+                if (x) {
+                    totalGross += x.gross;
+                    totalRefund += x.refund;
+                }
+            });
+
+            return {
+                name: m.name,
+                gross: totalGross,
+                refund: totalRefund,
+                net: totalGross - totalRefund
+            };
+        });
+
+        trend.data.labels = activeMonths.map(x => x.name);
+        trend.data.datasets[0].data = activeMonths.map(x => x.net);
+        trend.data.datasets[1].data = activeMonths.map(x => x.gross);
+        trend.update();
+    }
+
+    el("fxEventFilter").addEventListener("change", updateTrend);
+    updateTrend();
+
+    // Chart 3: Doanh thu gộp theo loại vé.
+    const ticketMap = new Map();
+
+    events.forEach(event => {
+        event.types.forEach(t => {
+            const old = ticketMap.get(t.name) || {
+                name: t.name, amount: 0, tickets: 0
+            };
+            old.amount += t.amount;
+            old.tickets += t.tickets;
+            ticketMap.set(t.name, old);
+        });
+    });
+
+    const ticketTypes = [...ticketMap.values()]
+        .sort((a, b) => b.amount - a.amount);
+
+    new Chart(el("fxTicketTypes"), {
+        type: "bar",
+        data: {
+            labels: ticketTypes.map(x => x.name),
+            datasets: [{
+                label: "Doanh thu gộp",
+                data: ticketTypes.map(x => x.amount),
+                backgroundColor: ticketTypes.map((_, i) =>
+                    palette[i % palette.length]),
+                borderRadius: 6,
+                maxBarThickness: 40
+            }]
+        },
+        options: {
+            ...common,
+            plugins: {
+                ...common.plugins,
+                tooltip: {
+                    ...common.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => "Doanh thu gộp: " + money(ctx.raw),
+                        afterLabel: ctx => {
+                            const t = ticketTypes[ctx.dataIndex];
+                            return "Số vé có thanh toán: " +
+                                number(t.tickets);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: moneyAxis()
+            }
+        }
+    });
+
+    // Chart 4: Tỷ lệ hoàn tiền theo sự kiện.
+    const refundEvents = [...events]
+        .filter(x => x.gross > 0)
+        .sort((a, b) => b.rate - a.rate)
+        .slice(0, 6);
+
+    new Chart(el("fxRefundRates"), {
+        type: "bar",
+        data: {
+            labels: refundEvents.map(x => x.name),
+            datasets: [{
+                label: "Tỷ lệ hoàn",
+                data: refundEvents.map(x => x.rate),
+                backgroundColor: refundEvents.map((_, i) =>
+                    palette[(i + 2) % palette.length]),
+                borderRadius: 6,
+                maxBarThickness: 25
+            }]
+        },
+        options: {
+            ...common,
+            ...clickable(null, refundEvents, x => x.id),
+            indexAxis: "y",
+            plugins: {
+                ...common.plugins,
+                tooltip: {
+                    ...common.plugins.tooltip,
+                    callbacks: {
+                        title: items => refundEvents[items[0].dataIndex].name,
+                        label: item => "Tỷ lệ hoàn: " + percent(item.raw),
+                        afterLabel: item => {
+                            const e = refundEvents[item.dataIndex];
+                            return [
+                                "Tiền hoàn: " + money(e.refund),
+                                "Doanh thu gộp: " + money(e.gross),
+                                "Bấm để xem chi tiết"
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: { color: "#f1eaf3" },
+                    ticks: {
+                        callback: v => number(v) + "%"
+                    }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        callback: function (v) {
+                            const label = this.getLabelForValue(v);
+                            return label.length > 18
+                                ? label.slice(0, 18) + "…"
+                                : label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+})();
 </script>

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
 body {
     background-color: #f5f7fb;
 }
@@ -649,4 +651,67 @@ body.event-theme-body .home-page-pro .event-type {
     }
 }
 
+}
+/* ==========================================
+   FONT CHỮ THỐNG NHẤT TOÀN WEBSITE
+   ========================================== */
+
+:root {
+    --website-font: "Be Vietnam Pro", sans-serif;
+}
+
+html,
+body {
+    font-family: var(--website-font) !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+p, span, a, label, li,
+button, input, textarea, select,
+table, th, td {
+    font-family: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: var(--website-font) !important;
+}
+
+/* Trang Chi tiết vé */
+.ticket-detail-page {
+    font-family: var(--website-font) !important;
+}
+
+.ticket-detail-page h1,
+.ticket-detail-page h2 {
+    font-weight: 800;
+}
+
+.ticket-info-label,
+.ticket-location-address,
+.ticket-event-type {
+    font-weight: 500;
+}
+
+.ticket-info-value,
+.ticket-location-name,
+.ticket-seat-table td,
+.ticket-total-label {
+    font-weight: 600;
+}
+
+.ticket-code-value,
+.ticket-seat-table .seat-position {
+    font-weight: 700;
+}
+
+.ticket-section-heading,
+.ticket-seat-title {
+    font-weight: 700;
+}
+
+.ticket-total-price {
+    font-weight: 800;
 }

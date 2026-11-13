@@ -1,3 +1,4 @@
+
 @model List<VeSuKienWeb.Models.SuKien>
 
 @{
@@ -6,199 +7,1322 @@
 
     string? trangThaiDuyet = ViewBag.TrangThaiDuyet as string;
     string? thoiGian = ViewBag.ThoiGian as string;
+
+    var dsSuKien = Model ?? new List<VeSuKienWeb.Models.SuKien>();
+    var hienTai = DateTime.Now;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="mb-0">Sự kiện của tôi</h2>
-        <div class="text-muted small">
-            Quản lý các sự kiện bạn đã tạo và trạng thái duyệt từ Admin.
+<style>
+    /* =========================================
+       SU KIEN CUA TOI - BAN TO CHUC
+       ========================================= */
+
+    .btc-events-page,
+    .btc-events-page * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .btc-events-page {
+        width: 100%;
+        padding-bottom: 32px;
+        color: #352a3d;
+    }
+
+    /* BO LOC */
+
+    .btc-events-filter {
+        padding: 16px 18px;
+        margin-bottom: 17px;
+        background: rgba(255, 255, 255, .94);
+        border: 1px solid #eedfed;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(110, 72, 125, .04);
+    }
+
+    .btc-filter-form {
+        display: flex;
+        align-items: end;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .btc-filter-field {
+        flex: 1 1 180px;
+        min-width: 0;
+    }
+
+    .btc-filter-label {
+        display: block;
+        margin-bottom: 7px;
+        color: #76667e;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .btc-filter-select {
+        width: 100%;
+        min-height: 40px;
+        padding: 9px 12px;
+        border: 1px solid #e9deeb;
+        border-radius: 10px;
+        outline: none;
+        background: #fcfafd;
+        color: #483850;
+        font-size: 11.5px;
+        font-weight: 500;
+        transition: .2s;
+    }
+
+    .btc-filter-select:focus {
+        border-color: #ba80c6;
+        box-shadow: 0 0 0 3px rgba(186, 128, 198, .12);
+    }
+
+    .btc-filter-actions {
+        display: flex;
+        gap: 8px;
+        flex: 0 0 auto;
+    }
+
+    .btc-btn-filter,
+    .btc-btn-reset {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 40px;
+        padding: 9px 15px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .2s;
+    }
+
+    .btc-btn-filter {
+        color: #fff;
+        background: #b977c4;
+        border: 1px solid #b977c4;
+    }
+
+    .btc-btn-filter:hover {
+        color: #fff;
+        background: #a765b5;
+    }
+
+    .btc-btn-reset {
+        color: #806d88;
+        background: #fff;
+        border: 1px solid #e7dbe9;
+    }
+
+    .btc-btn-reset:hover {
+        color: #a25aac;
+        background: #f8eff9;
+    }
+
+    /* SO LUONG */
+
+    .btc-events-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 2px 13px;
+    }
+
+    .btc-events-count {
+        font-size: 11.5px;
+        color: #84748d;
+    }
+
+    .btc-events-count strong {
+        color: #9d58ac;
+        font-weight: 700;
+    }
+
+    /* GRID */
+
+.btc-events-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    align-items: stretch;
+}
+
+    /* CARD */
+
+    .btc-event-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: #fff;
+        border: 1px solid #ecdeeb;
+        border-radius: 16px;
+        box-shadow: 0 5px 18px rgba(108, 72, 119, .055);
+        transition:
+            transform .22s ease,
+            border-color .22s ease,
+            box-shadow .22s ease;
+    }
+
+    .btc-event-card[hidden] {
+        display: none !important;
+    }
+
+    .btc-event-card:hover {
+        transform: translateY(-3px);
+        border-color: #dcbde2;
+        box-shadow: 0 11px 26px rgba(108, 72, 119, .11);
+    }
+
+    /*
+       LINK PHU TOAN BO THE
+       Bam vao the => Chi tiet
+       Menu thao tac nam ben tren link
+    */
+
+    .btc-event-card-link {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: 16px;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btc-event-card-link:focus-visible {
+        outline: 3px solid #b977c4;
+        outline-offset: 3px;
+    }
+
+    /* ANH SU KIEN */
+
+.btc-event-cover {
+    position: relative;
+    height: 185px;
+    width: 100%;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 15px 15px 0 0;
+    background: linear-gradient(
+        135deg,
+        #eddef3,
+        #f8e9f2 58%,
+        #fceee4
+    );
+}
+
+.btc-event-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+    .btc-event-card:hover .btc-event-cover img {
+        transform: scale(1.035);
+    }
+
+    .btc-event-cover-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: #c395cd;
+        font-size: 40px;
+    }
+
+    /* TRANG THAI DUYET */
+
+    .btc-event-status {
+        position: absolute;
+        top: 11px;
+        right: 11px;
+        max-width: calc(100% - 22px);
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.2;
+        box-shadow: 0 2px 10px rgba(31, 18, 40, .08);
+    }
+
+    .btc-status-approved {
+        background: #e5f7eb;
+        color: #28774d;
+    }
+
+    .btc-status-pending {
+        background: #fff4d8;
+        color: #926319;
+    }
+
+    .btc-status-rejected {
+        background: #ffedf0;
+        color: #b54e65;
+    }
+
+    .btc-status-hidden {
+        background: #f1eff4;
+        color: #706979;
+    }
+
+    /* NOI DUNG */
+
+    .btc-event-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        padding: 14px 15px 13px;
+    }
+
+    .btc-event-category {
+        display: inline-block;
+        align-self: flex-start;
+        max-width: 100%;
+        margin-bottom: 9px;
+        padding: 5px 9px;
+        border-radius: 7px;
+        background: #f6edf8;
+        color: #a064ad;
+        font-size: 10px;
+        font-weight: 600;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .btc-event-title {
+        min-height: 42px;
+        margin: 0 0 11px;
+        color: #34283d;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.6;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+
+    /* THONG TIN NGAN */
+
+    .btc-event-info {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        margin-bottom: 12px;
+    }
+
+    .btc-event-info-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        color: #7b7081;
+        font-size: 10.5px;
+        line-height: 1.65;
+    }
+
+    .btc-event-info-row i {
+        flex: 0 0 15px;
+        width: 15px;
+        margin-top: 1px;
+        color: #b17bbb;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .btc-event-info-row span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* GIA VE */
+
+    .btc-event-price {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 12px;
+        margin-top: auto;
+        border-top: 1px solid #f2ebf2;
+    }
+
+    .btc-event-price-label {
+        font-size: 10.5px;
+        color: #897b91;
+    }
+
+    .btc-event-price-value {
+        color: #a45caf;
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    /* FOOTER */
+
+    .btc-event-footer {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 51px;
+        padding: 9px 15px;
+        background: #fdfafd;
+        border-top: 1px solid #f2eaf2;
+        border-radius: 0 0 15px 15px;
+    }
+
+    .btc-event-view-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #a069ad;
+        font-size: 10.5px;
+        font-weight: 600;
+        pointer-events: none;
+    }
+
+    .btc-event-view-hint i {
+        font-size: 13px;
+    }
+
+    /* DROPDOWN THAO TAC */
+
+    .btc-event-dropdown {
+        position: relative;
+        z-index: 3;
+    }
+
+    .btc-event-menu-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 33px;
+        padding: 7px 11px;
+        border-radius: 9px;
+        border: 1px solid #e6d5e9;
+        background: #fff;
+        color: #93669d;
+        font-size: 10.5px;
+        font-weight: 600;
+        transition: .2s ease;
+    }
+
+    .btc-event-menu-button:hover,
+    .btc-event-menu-button:focus {
+        border-color: #d9b6df;
+        background: #f5eaf7;
+        color: #9d58ac;
+    }
+
+    .btc-events-page .btc-action-menu {
+        z-index: 1050;
+        min-width: 205px;
+        padding: 6px;
+        border: 1px solid #eddfed;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(77, 50, 89, .13);
+    }
+
+    .btc-events-page .btc-action-menu .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px;
+        border-radius: 7px;
+        color: #5b4a63;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: normal;
+    }
+
+    .btc-events-page .btc-action-menu .dropdown-item i {
+        flex: 0 0 17px;
+        width: 17px;
+        color: #aa78b3;
+        text-align: center;
+    }
+
+    .btc-events-page .btc-action-menu .dropdown-item:hover {
+        background: #f7eef9;
+        color: #9f5eac;
+    }
+
+    .btc-events-page .btc-action-menu .dropdown-divider {
+        border-color: #f0e7f0;
+        margin: 5px 0;
+    }
+
+    .btc-events-page .btc-action-menu .btc-action-delete {
+        color: #bb4965;
+    }
+
+    .btc-events-page .btc-action-menu .btc-action-delete i {
+        color: #bb4965;
+    }
+
+    .btc-events-page .btc-action-menu .btc-action-delete:hover {
+        background: #fff0f3;
+        color: #ae3d5b;
+    }
+
+    /* THONG BAO */
+
+    .btc-events-message {
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border: 1px solid #d8ecdf;
+        border-radius: 11px;
+        background: #f0faf4;
+        color: #367b4c;
+        font-size: 11.5px;
+    }
+
+    /* KHONG CO SU KIEN */
+
+    .btc-events-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        min-height: 220px;
+        padding: 30px 20px;
+        border: 1px dashed #dec8e4;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, .85);
+        text-align: center;
+    }
+
+    .btc-events-empty i {
+        margin-bottom: 12px;
+        color: #bf90ca;
+        font-size: 35px;
+    }
+
+    .btc-events-empty h3 {
+        margin: 0 0 8px;
+        color: #675073;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .btc-events-empty p {
+        margin: 0;
+        color: #918199;
+        font-size: 11.5px;
+        line-height: 1.7;
+    }
+
+    /* PHAN TRANG */
+
+    .btc-pagination-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 24px;
+        padding: 4px 0 10px;
+    }
+
+    .btc-pagination-list {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .btc-page-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 9px;
+        border: 1px solid #ead9eb;
+        border-radius: 9px;
+        background: #fff;
+        color: #856b90;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .btc-page-button:hover:not(:disabled) {
+        background: #f5e9f7;
+        border-color: #d8b9de;
+        color: #a15aae;
+    }
+
+    .btc-page-button.active {
+        background: #b977c4;
+        border-color: #b977c4;
+        color: #fff;
+        box-shadow: 0 3px 9px rgba(174, 103, 187, .15);
+    }
+
+    .btc-page-button:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    .btc-page-ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 25px;
+        height: 34px;
+        color: #927d99;
+        font-size: 12px;
+    }
+
+    .btc-pagination-info {
+        width: 100%;
+        color: #9a8aa1;
+        font-size: 10.5px;
+        text-align: center;
+        margin-top: 3px;
+    }
+/* MENU THAO TAC XO LEN TREN */
+
+.btc-event-card:has(.btc-event-dropdown.show),
+.btc-event-card:has(.btc-event-menu-button[aria-expanded="true"]) {
+    z-index: 100;
+}
+
+.btc-event-dropdown {
+    position: relative;
+    z-index: 101;
+}
+
+.btc-events-page .btc-action-menu {
+    z-index: 1020;
+    margin-bottom: 8px !important;
+}
+    /* RESPONSIVE */
+
+@@media (max-width: 1150px) {
+    .btc-events-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@@media (max-width: 850px) {
+    .btc-events-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@@media (max-width: 560px) {
+    .btc-events-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+    @@media (max-width: 768px) {
+        .btc-events-filter {
+            padding: 14px;
+        }
+
+        .btc-filter-field {
+            flex-basis: calc(50% - 6px);
+        }
+
+        .btc-filter-actions {
+            width: 100%;
+        }
+
+        .btc-btn-filter,
+        .btc-btn-reset {
+            flex: 1;
+        }
+
+        .btc-events-grid {
+            gap: 13px;
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .btc-events-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .btc-filter-field {
+            flex-basis: 100%;
+        }
+
+        .btc-event-cover {
+            height: 195px;
+        }
+
+        .btc-event-title {
+            min-height: 0;
+        }
+    }
+</style>
+
+<div class="btc-events-page">
+
+    @if (TempData["ThongBao"] != null)
+    {
+        <div class="btc-events-message" role="status">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["ThongBao"]
         </div>
-    </div>
+    }
 
-    <div class="d-flex gap-2">
-        <a asp-action="YeuCauHuyVe" class="btn btn-outline-secondary">
-            Yêu cầu hủy vé
-        </a>
+    <!-- BO LOC -->
 
-        <a asp-action="TaoSuKien" class="btn btn-primary">
-            + Tạo sự kiện mới
-        </a>
-    </div>
-</div>
+    <section class="btc-events-filter">
 
-@if (TempData["ThongBao"] != null)
-{
-    <div class="alert alert-success">@TempData["ThongBao"]</div>
-}
+        <form asp-controller="BanToChuc"
+              asp-action="Index"
+              method="get"
+              class="btc-filter-form">
 
-<!-- BỘ LỌC -->
-<div class="card mb-3 shadow-sm">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label">Trạng thái duyệt</label>
-                <select name="trangThaiDuyet" class="form-select">
-                    <option value="">Tất cả</option>
-                    <option value="ChoDuyet" selected="@(trangThaiDuyet == "ChoDuyet")">Chờ duyệt</option>
-                    <option value="DaDuyet" selected="@(trangThaiDuyet == "DaDuyet")">Đã duyệt</option>
-                    <option value="TuChoi" selected="@(trangThaiDuyet == "TuChoi")">Từ chối</option>
+            <div class="btc-filter-field">
+
+                <label for="btcApprovalFilter"
+                       class="btc-filter-label">
+                    Trạng thái duyệt
+                </label>
+
+                <select id="btcApprovalFilter"
+                        name="trangThaiDuyet"
+                        class="btc-filter-select">
+
+                    <option value="">Tất cả trạng thái</option>
+
+                    <option value="ChoDuyet"
+                            selected="@(trangThaiDuyet == "ChoDuyet")">
+                        Chờ duyệt
+                    </option>
+
+                    <option value="DaDuyet"
+                            selected="@(trangThaiDuyet == "DaDuyet")">
+                        Đã duyệt
+                    </option>
+
+                    <option value="TuChoi"
+                            selected="@(trangThaiDuyet == "TuChoi")">
+                        Từ chối
+                    </option>
+
                 </select>
+
             </div>
 
-            <div class="col-md-4">
-                <label class="form-label">Thời gian</label>
-                <select name="thoiGian" class="form-select">
-                    <option value="">Tất cả</option>
-                    <option value="SapDienRa" selected="@(thoiGian == "SapDienRa")">Sắp diễn ra</option>
-                    <option value="DaDienRa" selected="@(thoiGian == "DaDienRa")">Đã diễn ra</option>
+            <div class="btc-filter-field">
+
+                <label for="btcTimeFilter"
+                       class="btc-filter-label">
+                    Thời gian
+                </label>
+
+                <select id="btcTimeFilter"
+                        name="thoiGian"
+                        class="btc-filter-select">
+
+                    <option value="">Tất cả thời gian</option>
+
+                    <option value="SapDienRa"
+                            selected="@(thoiGian == "SapDienRa")">
+                        Sắp diễn ra
+                    </option>
+
+                    <option value="DaDienRa"
+                            selected="@(thoiGian == "DaDienRa")">
+                        Đã diễn ra
+                    </option>
+
                 </select>
+
             </div>
 
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary mt-auto">Lọc</button>
-                <a asp-action="Index" class="btn btn-outline-secondary mt-auto">Xóa lọc</a>
+            <div class="btc-filter-actions">
+
+                <button type="submit"
+                        class="btc-btn-filter">
+                    <i class="bi bi-funnel"></i>
+                    Lọc
+                </button>
+
+                <a asp-controller="BanToChuc"
+                   asp-action="Index"
+                   class="btc-btn-reset">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Xóa lọc
+                </a>
+
             </div>
+
         </form>
+
+    </section>
+
+    <!-- SO LUONG SU KIEN -->
+
+    <div class="btc-events-summary">
+
+        <div class="btc-events-count"
+             id="btcEventsCount">
+            Hiển thị
+            <strong>@dsSuKien.Count</strong>
+            sự kiện
+        </div>
+
     </div>
-</div>
 
-@if (Model != null && Model.Any())
-{
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        @foreach (var sk in Model)
-        {
-            var thoiGianStr = $"{sk.ThoiGianBatDau:HH:mm dd/MM/yyyy} - {sk.ThoiGianKetThuc:HH:mm}";
-            string trangThaiClass;
-            string trangThaiText;
+    <!-- DANH SACH -->
 
-            switch (sk.TrangThaiDuyet)
+    @if (dsSuKien.Any())
+    {
+        <div class="btc-events-grid" id="btcEventsGrid">
+
+            @foreach (var sk in dsSuKien)
             {
-                case "DaDuyet":
-                    trangThaiClass = "bg-success";
-                    trangThaiText = "Đã duyệt";
-                    break;
-                case "TuChoi":
-                    trangThaiClass = "bg-danger";
-                    trangThaiText = "Từ chối";
-                    break;
-                case "An":
-                    trangThaiClass = "bg-secondary";
-                    trangThaiText = "Đã ẩn";
-                    break;
-                default:
-                    trangThaiClass = "bg-warning text-dark";
-                    trangThaiText = "Chờ duyệt";
-                    break;
-            }
+                string trangThaiClass;
+                string trangThaiText;
 
-            bool daDienRa = sk.ThoiGianKetThuc < DateTime.Now;
+                switch (sk.TrangThaiDuyet)
+                {
+                    case "DaDuyet":
+                        trangThaiClass = "btc-status-approved";
+                        trangThaiText = "Đã duyệt";
+                        break;
 
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body d-flex flex-column">
+                    case "TuChoi":
+                        trangThaiClass = "btc-status-rejected";
+                        trangThaiText = "Từ chối";
+                        break;
 
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h5 class="card-title mb-0">@sk.TenSuKien</h5>
+                    case "An":
+                        trangThaiClass = "btc-status-hidden";
+                        trangThaiText = "Đã ẩn";
+                        break;
 
-                                @if (sk.LoaiSuKien != null)
-                                {
-                                    <span class="badge bg-light text-dark border mt-1">
-                                        @sk.LoaiSuKien.TenLoai
-                                    </span>
-                                }
-                            </div>
+                    default:
+                        trangThaiClass = "btc-status-pending";
+                        trangThaiText = "Chờ duyệt";
+                        break;
+                }
 
-                            <div class="text-end">
-                                <span class="badge @trangThaiClass">@trangThaiText</span>
-                                <div class="small text-muted mt-1">
-                                    @(daDienRa ? "Đã diễn ra" : "Sắp diễn ra")
-                                </div>
-                            </div>
-                        </div>
+                bool daKetThuc = sk.ThoiGianKetThuc <= hienTai;
 
-                        <p class="text-muted small mb-1">
-                            <i class="bi bi-clock"></i> @thoiGianStr
-                        </p>
+                bool dangDienRa =
+                    sk.ThoiGianBatDau <= hienTai &&
+                    sk.ThoiGianKetThuc > hienTai;
 
-                        <p class="card-text small flex-grow-1">
-                            @{
-                                var moTa = sk.MoTaChiTiet ?? "";
-                            }
-                            @(moTa.Length > 120 ? moTa.Substring(0, 120) + "..." : moTa)
-                        </p>
+                string tinhTrangThoiGian =
+                    daKetThuc
+                        ? "Đã kết thúc"
+                        : dangDienRa
+                            ? "Đang diễn ra"
+                            : "Sắp diễn ra";
 
-                        @if (sk.GiaVeMacDinh.HasValue)
+                string tenLoai =
+                    sk.LoaiSuKien?.TenLoai ?? "Sự kiện";
+
+                string? anhSuKien = sk.AnhSuKien;
+
+                bool coAnh =
+                    !string.IsNullOrWhiteSpace(anhSuKien);
+
+                bool coGiaVe =
+                    sk.GiaVeMacDinh.HasValue;
+
+                <article class="btc-event-card"
+                         hidden>
+
+                    <!-- ANH SU KIEN -->
+
+                    <div class="btc-event-cover">
+
+                        @if (coAnh)
                         {
-                            <p class="fw-semibold mb-2">
-                                Giá vé mặc định: @sk.GiaVeMacDinh.Value.ToString("N0") đ
-                            </p>
+                            <img src="@Url.Content(anhSuKien!)"
+                                 alt="Ảnh sự kiện @sk.TenSuKien"
+                                 loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="btc-event-cover-empty">
+                                <i class="bi bi-calendar2-event"></i>
+                            </div>
                         }
 
-                        <div class="mt-auto d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">
-                                Đăng ngày @sk.NgayDang.ToString("dd/MM/yyyy")
-                            </span>
+                        <span class="btc-event-status @trangThaiClass">
+                            @trangThaiText
+                        </span>
 
-                            <div class="text-end">
+                    </div>
 
-                                <a asp-action="ChiTiet"
-                                   asp-route-id="@sk.SuKienId"
-                                   class="btn btn-outline-primary btn-sm mb-1">
-                                    Xem chi tiết & thống kê
-                                </a>
+                    <!-- NOI DUNG THE -->
 
-                                <!-- BUTTON GROUP: QUẢN LÝ -->
-                                @if (sk.TrangThaiDuyet == "DaDuyet")
-                                {
-                                    <div class="btn-group btn-group-sm">
-                                        <a asp-action="QuanLyVe"
-                                           asp-route-id="@sk.SuKienId"
-                                           class="btn btn-outline-secondary">
-                                            Quản lý vé
-                                        </a>
+                    <div class="btc-event-body">
 
-                                        <a asp-action="DanhSachVe"
-                                           asp-route-id="@sk.SuKienId"
-                                           class="btn btn-outline-secondary">
-                                            DS vé / tham gia
-                                        </a>
+                        <span class="btc-event-category">
+                            @tenLoai
+                        </span>
 
-                                        <a asp-action="GuiThongBao"
-                                           asp-route-id="@sk.SuKienId"
-                                           class="btn btn-outline-secondary">
-                                            Thông báo
-                                        </a>
-                                    </div>
-                                }
+                        <h3 class="btc-event-title"
+                            title="@sk.TenSuKien">
+                            @sk.TenSuKien
+                        </h3>
 
-                                <!-- NÚT XÓA / ẨN SỰ KIỆN -->
-                                <form asp-action="XoaSuKien"
-                                      asp-route-id="@sk.SuKienId"
-                                      method="post"
-                                      class="d-inline"
-                                      onsubmit="return confirm('Bạn có chắc muốn xóa/ẩn sự kiện này không?');">
+                        <div class="btc-event-info">
 
-                                    <button type="submit"
-                                            class="btn btn-danger btn-sm mt-1">
-                                        Xóa / Ẩn
-                                    </button>
-                                </form>
+                            <div class="btc-event-info-row">
+
+                                <i class="bi bi-calendar3"></i>
+
+                                <span>
+                                    @sk.ThoiGianBatDau.ToString("dd/MM/yyyy")
+                                    ·
+                                    @sk.ThoiGianBatDau.ToString("HH:mm")
+                                    –
+                                    @sk.ThoiGianKetThuc.ToString(
+                                        sk.ThoiGianBatDau.Date ==
+                                        sk.ThoiGianKetThuc.Date
+                                            ? "HH:mm"
+                                            : "dd/MM/yyyy HH:mm"
+                                    )
+                                </span>
 
                             </div>
+
+                            <div class="btc-event-info-row">
+
+                                <i class="bi bi-clock-history"></i>
+
+                                <span>
+                                    @tinhTrangThoiGian
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        @if (coGiaVe)
+                        {
+                            <div class="btc-event-price">
+
+                                <span class="btc-event-price-label">
+                                    Giá vé
+                                </span>
+
+                                <span class="btc-event-price-value">
+                                    @sk.GiaVeMacDinh!.Value.ToString("N0") đ
+                                </span>
+
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="margin-top:auto;"></div>
+                        }
+
+                    </div>
+
+                    <!-- FOOTER -->
+
+                    <div class="btc-event-footer">
+
+                        <span class="btc-event-view-hint">
+                            <i class="bi bi-eye"></i>
+                            Xem chi tiết
+                        </span>
+
+                        <div class="dropup btc-event-dropdown">
+
+                            <button type="button"
+                                    class="btc-event-menu-button dropdown-toggle"
+                                    data-bs-toggle="dropdown"
+                                    data-bs-boundary="viewport"
+                                    aria-expanded="false">
+
+                                <i class="bi bi-three-dots"></i>
+                                Thao tác
+
+                            </button>
+
+                
+<ul class="dropdown-menu dropdown-menu-end btc-action-menu">
+
+    @if (sk.TrangThaiDuyet == "DaDuyet")
+    {
+        <li>
+            <a class="dropdown-item"
+               asp-controller="BanToChuc"
+               asp-action="DanhSachVe"
+               asp-route-id="@sk.SuKienId">
+
+                <i class="bi bi-people"></i>
+                Danh sách vé / tham gia
+
+            </a>
+        </li>
+
+        <li>
+            <hr class="dropdown-divider" />
+        </li>
+    }
+
+    <li>
+        <form asp-controller="BanToChuc"
+              asp-action="XoaSuKien"
+              asp-route-id="@sk.SuKienId"
+              method="post"
+              onsubmit="return confirm('Bạn có chắc muốn xóa/ẩn sự kiện này không?');">
+
+            @Html.AntiForgeryToken()
+
+            <button type="submit"
+                    class="dropdown-item btc-action-delete">
+
+                <i class="bi bi-trash3"></i>
+                Xóa / Ẩn sự kiện
+
+            </button>
+
+        </form>
+    </li>
+
+</ul>
+
+
                         </div>
 
                     </div>
-                </div>
+
+                    <!-- LINK BAO PHU TOAN BO THE -->
+
+                    <a asp-controller="BanToChuc"
+                       asp-action="ChiTiet"
+                       asp-route-id="@sk.SuKienId"
+                       class="btc-event-card-link"
+                       aria-label="Xem chi tiết sự kiện @sk.TenSuKien">
+                    </a>
+
+                </article>
+            }
+
+        </div>
+
+        <!-- PHAN TRANG -->
+
+        <nav class="btc-pagination-wrap"
+             id="btcPaginationWrap"
+             aria-label="Phân trang sự kiện"
+             hidden>
+
+            <div class="btc-pagination-list"
+                 id="btcPaginationList">
             </div>
+
+            <div class="btc-pagination-info"
+                 id="btcPaginationInfo"
+                 aria-live="polite">
+            </div>
+
+        </nav>
+    }
+    else
+    {
+        <div class="btc-events-empty">
+
+            <i class="bi bi-calendar2-x"></i>
+
+            <h3>Không có sự kiện nào</h3>
+
+            <p>
+                Chưa có sự kiện phù hợp với bộ lọc
+                hoặc bạn chưa tạo sự kiện nào.
+            </p>
+
+        </div>
+    }
+
+</div>
+
+<script>
+    (function () {
+
+        const PAGE_SIZE = 8;
+
+        const grid = document.getElementById(
+            "btcEventsGrid"
+        );
+
+        if (!grid) return;
+
+        const cards = Array.from(
+            grid.querySelectorAll(".btc-event-card")
+        );
+
+        const paginationWrap = document.getElementById(
+            "btcPaginationWrap"
+        );
+
+        const paginationList = document.getElementById(
+            "btcPaginationList"
+        );
+
+        const paginationInfo = document.getElementById(
+            "btcPaginationInfo"
+        );
+
+        const eventsCount = document.getElementById(
+            "btcEventsCount"
+        );
+
+        const totalItems = cards.length;
+
+        const totalPages = Math.ceil(
+            totalItems / PAGE_SIZE
+        );
+
+        let currentPage = 1;
+
+        // TAO NUT PHAN TRANG
+
+        function createPageButton(
+            label,
+            page,
+            disabled,
+            active,
+            ariaLabel
+        ) {
+            const button = document.createElement(
+                "button"
+            );
+
+            button.type = "button";
+            button.className = "btc-page-button";
+
+            if (active) {
+                button.classList.add("active");
+                button.setAttribute(
+                    "aria-current",
+                    "page"
+                );
+            }
+
+            button.textContent = label;
+            button.disabled = !!disabled;
+
+            button.setAttribute(
+                "aria-label",
+                ariaLabel || label
+            );
+
+            if (!disabled && !active) {
+                button.addEventListener(
+                    "click",
+                    function () {
+                        showPage(page, true);
+                    }
+                );
+            }
+
+            return button;
         }
-    </div>
-}
-else
-{
-    <div class="alert alert-light border">
-        <div class="fw-semibold">Bạn chưa có sự kiện nào.</div>
-        <div class="small text-muted">Hãy tạo sự kiện đầu tiên để gửi Admin duyệt.</div>
-    </div>
-}
+
+        function createEllipsis() {
+            const span = document.createElement(
+                "span"
+            );
+
+            span.className = "btc-page-ellipsis";
+            span.textContent = "...";
+
+            return span;
+        }
+
+        // VE THANH PHAN TRANG
+
+        function renderPagination() {
+
+            paginationList.innerHTML = "";
+
+            if (totalPages <= 1) {
+                paginationWrap.hidden = true;
+                return;
+            }
+
+            paginationWrap.hidden = false;
+
+            // NUT TRUOC
+
+            paginationList.appendChild(
+                createPageButton(
+                    "‹",
+                    currentPage - 1,
+                    currentPage === 1,
+                    false,
+                    "Trang trước"
+                )
+            );
+
+            // DANH SACH CAC TRANG CAN HIEN
+
+            const visiblePages = [];
+
+            for (
+                let page = 1;
+                page <= totalPages;
+                page++
+            ) {
+                if (
+                    page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - currentPage) <= 1
+                ) {
+                    visiblePages.push(page);
+                }
+            }
+
+            let previousPage = 0;
+
+            visiblePages.forEach(function (page) {
+
+                if (previousPage > 0) {
+
+                    const gap = page - previousPage;
+
+                    if (gap === 2) {
+
+                        const middlePage =
+                            previousPage + 1;
+
+                        paginationList.appendChild(
+                            createPageButton(
+                                String(middlePage),
+                                middlePage,
+                                false,
+                                middlePage === currentPage,
+                                "Trang " + middlePage
+                            )
+                        );
+
+                    } else if (gap > 2) {
+
+                        paginationList.appendChild(
+                            createEllipsis()
+                        );
+                    }
+                }
+
+                paginationList.appendChild(
+                    createPageButton(
+                        String(page),
+                        page,
+                        false,
+                        page === currentPage,
+                        "Trang " + page
+                    )
+                );
+
+                previousPage = page;
+            });
+
+            // NUT SAU
+
+            paginationList.appendChild(
+                createPageButton(
+                    "›",
+                    currentPage + 1,
+                    currentPage === totalPages,
+                    false,
+                    "Trang sau"
+                )
+            );
+        }
+
+        // HIEN THI 8 THE MOI TRANG
+
+        function showPage(page, shouldScroll) {
+
+            if (
+                page < 1 ||
+                page > totalPages
+            ) {
+                return;
+            }
+
+            currentPage = page;
+
+            const startIndex =
+                (currentPage - 1) * PAGE_SIZE;
+
+            const endIndex = Math.min(
+                startIndex + PAGE_SIZE,
+                totalItems
+            );
+
+            cards.forEach(function (card, index) {
+
+                const visible =
+                    index >= startIndex &&
+                    index < endIndex;
+
+                card.hidden = !visible;
+            });
+
+            if (eventsCount) {
+                eventsCount.innerHTML =
+                    'Hiển thị <strong>' +
+                    (startIndex + 1) +
+                    '–' +
+                    endIndex +
+                    '</strong> / ' +
+                    totalItems +
+                    ' sự kiện';
+            }
+
+            if (paginationInfo) {
+                paginationInfo.textContent =
+                    "Trang " +
+                    currentPage +
+                    " / " +
+                    totalPages;
+            }
+
+            renderPagination();
+
+            if (shouldScroll) {
+                const top =
+                    grid.getBoundingClientRect().top +
+                    window.scrollY - 100;
+
+                window.scrollTo({
+                    top: Math.max(0, top),
+                    behavior: "smooth"
+                });
+            }
+        }
+
+        // KHOI TAO
+
+        if (totalPages > 0) {
+            showPage(1, false);
+        }
+
+    })();
+</script>

@@ -1,13 +1,4 @@
-@functions{
-    string HinhThucText(string value)
-    {
-        return value switch
-        {
-            "HuyVe" => "Hủy vé",
-            _ => value
-        };
-    }
-}
+
 @model List<VeSuKienWeb.Models.BanToChuc.YeuCauHoanHuyItemBtcVM>
 
 @{
@@ -16,602 +7,1538 @@
 
     string? trangThai = ViewBag.TrangThai as string;
 
-    string TrangThaiText(string status) => status switch
+    var danhSach = Model ??
+        new List<VeSuKienWeb.Models.BanToChuc.YeuCauHoanHuyItemBtcVM>();
+
+    string TrangThaiText(string value) => value switch
     {
         "ChoDuyet" => "Chờ duyệt",
         "DaHuy" => "Đã hủy",
         "TuChoi" => "Từ chối",
-        _ => status
+        _ => value
     };
 
-    string TrangThaiClass(string status) => status switch
+    string TrangThaiClass(string value) => value switch
     {
-        "ChoDuyet" => "badge-wait",
-        "DaHuy" => "badge-ok",
-        "TuChoi" => "badge-no",
-        _ => "badge-default"
+        "ChoDuyet" => "btc-status-pending",
+        "DaHuy" => "btc-status-approved",
+        "TuChoi" => "btc-status-rejected",
+        _ => "btc-status-default"
     };
 }
 
 <style>
-    .refund-page {
-        background: #f6f8fb;
-        min-height: calc(100vh - 70px);
-        padding: 18px 0 34px;
+    .btc-cancel-page,
+    .btc-cancel-page * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
 
-    .page-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 14px;
-        margin-bottom: 16px;
-    }
-
-    .page-head h2 {
-        color: #0f172a;
-        font-size: 28px;
-        font-weight: 850;
-        margin: 0;
-    }
-
-    .page-head p {
-        color: #64748b;
-        font-size: 14px;
-        margin: 3px 0 0;
-    }
-
-    .btn-back {
-        border-radius: 999px;
-        font-weight: 700;
-        padding: 8px 15px;
-        white-space: nowrap;
-    }
-
-    .filter-card {
-        background: #fff;
-        border: 1px solid #dbe4f0;
-        border-radius: 18px;
-        padding: 14px 16px;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
-        margin-bottom: 14px;
-    }
-
-    .filter-label {
-        color: #475569;
-        font-size: 13px;
-        font-weight: 750;
-        margin-bottom: 6px;
-    }
-
-    .filter-card .form-select {
-        border-radius: 12px;
-        font-size: 14px;
-    }
-
-    .filter-actions .btn {
-        border-radius: 999px;
-        font-size: 13.5px;
-        font-weight: 750;
-        padding: 7px 15px;
-    }
-
-    .refund-table-card {
-        background: #fff;
-        border: 1px solid #dbe4f0;
-        border-radius: 20px;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
-        overflow: hidden;
-    }
-
-    .table-top {
-        padding: 15px 18px;
-        border-bottom: 1px solid #edf2f7;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .table-title {
-        color: #0f172a;
-        font-size: 18px;
-        font-weight: 850;
-        margin: 0;
-    }
-
-    .table-count {
-        background: #eff6ff;
-        color: #1d4ed8;
-        border: 1px solid #bfdbfe;
-        border-radius: 999px;
-        padding: 5px 11px;
-        font-size: 12.5px;
-        font-weight: 800;
-    }
-
-    .refund-table {
+    .btc-cancel-page {
         width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
+        min-width: 0;
+        padding-bottom: 30px;
+        color: #44354c;
     }
 
-    .refund-table th {
-        background: #f8fafc;
-        color: #0f172a;
+    .btc-cancel-filter {
+        padding: 16px 18px;
+        margin-bottom: 17px;
+        background: #fff;
+        border: 1px solid #eddfed;
+        border-radius: 16px;
+        box-shadow: 0 5px 20px rgba(112,74,128,.04);
+    }
+
+    .btc-cancel-filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px;
+    }
+
+    .btc-cancel-filter-field {
+        width: 275px;
+        max-width: 100%;
+    }
+
+    .btc-cancel-filter label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 11px;
+        font-weight: 650;
+        color: #796882;
+    }
+
+    .btc-cancel-filter select {
+        width: 100%;
+        min-height: 40px;
+        padding: 9px 12px;
+        border: 1px solid #e9daeb;
+        border-radius: 10px;
+        background: #fcfafd;
+        color: #4b3c53;
+        font-size: 12px;
+        outline: none;
+    }
+
+    .btc-cancel-filter select:focus {
+        border-color: #b983c4;
+        box-shadow: 0 0 0 3px rgba(185,131,196,.12);
+    }
+
+    .btc-filter-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btc-filter-submit,
+    .btc-filter-reset {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        min-height: 40px;
+        padding: 9px 15px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 650;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .2s;
+    }
+
+    .btc-filter-submit {
+        border: 1px solid #b977c4;
+        background: #b977c4;
+        color: #fff;
+    }
+
+    .btc-filter-submit:hover {
+        background: #a662b4;
+        color: #fff;
+    }
+
+    .btc-filter-reset {
+        background: #fff;
+        border: 1px solid #e9ddeb;
+        color: #816c89;
+    }
+
+    .btc-filter-reset:hover {
+        background: #f9f0fb;
+        color: #9a5aa8;
+    }
+
+    .btc-cancel-panel {
+        min-width: 0;
+        background: #fff;
+        border: 1px solid #ecdfec;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(112,74,128,.05);
+    }
+
+    .btc-panel-head {
+        padding: 17px 19px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid #f1e8f1;
+    }
+
+    .btc-panel-title {
+        margin: 0;
+        color: #493651;
         font-size: 13px;
-        font-weight: 850;
-        padding: 14px 16px;
-        border-bottom: 1px solid #dbe4f0;
+        font-weight: 750;
+    }
+
+    .btc-panel-count {
+        padding: 6px 10px;
+        border-radius: 9px;
+        background: #f7eef9;
+        color: #9b60a8;
+        font-size: 10px;
+        font-weight: 700;
         white-space: nowrap;
     }
 
-    .refund-table td {
-        color: #334155;
-        font-size: 13.5px;
-        padding: 14px 16px;
-        border-bottom: 1px solid #edf2f7;
+    .btc-table-scroll {
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    .btc-cancel-table {
+        width: 100%;
+        min-width: 990px;
+        border-collapse: collapse;
+    }
+
+    .btc-cancel-table th {
+        padding: 13px 12px;
+        text-align: left;
+        border-bottom: 1px solid #efe4ef;
+        background: #fbf7fc;
+        color: #786381;
+        font-size: 10.5px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .btc-cancel-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #f2ecf2;
+        font-size: 11px;
+        line-height: 1.65;
+        color: #706176;
         vertical-align: middle;
     }
 
-    .refund-table tr:last-child td {
-        border-bottom: none;
+    .btc-cancel-table tbody tr:last-child td {
+        border-bottom: 0;
     }
 
-    .refund-table tbody tr:hover {
-        background: #f8fafc;
+    .btc-cancel-row {
+        cursor: pointer;
+        transition: background .18s ease;
     }
 
-/* Chia cột theo đúng 9 cột của bảng */
-.col-ticket   { width: 11%; }
-.col-event    { width: 19%; }
-.col-customer { width: 10%; }
-.col-seat     { width: 14%; }
-.col-type     { width: 8%; }
-.col-reason   { width: 12%; }
-.col-date     { width: 11%; }
-.col-status   { width: 8%; }
-.col-action   { width: 7%; }
-
-
-.ticket-code {
-    color: #475569;
-    font-weight: 500;
-    word-break: break-word;
-    font-size: 13px;
-}
-
-    .event-name {
-        color: #0f172a;
-        font-weight: 850;
-        line-height: 1.35;
+    .btc-cancel-row:hover,
+    .btc-cancel-row:focus-visible {
+        background: #fcf5fd;
+        outline: none;
     }
 
-    .customer-name {
+    .btc-cancel-row:focus-visible {
+        box-shadow: inset 0 0 0 2px #c38dce;
+    }
+
+    .btc-code {
+        font-weight: 650;
+        color: #9866a5;
+        overflow-wrap: anywhere;
+    }
+
+    .btc-event-name {
+        min-width: 135px;
+        max-width: 210px;
+        font-size: 11px;
         font-weight: 700;
-        color: #334155;
+        color: #46334f;
     }
 
-    .reason-text {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
+    .btc-customer-name {
+        min-width: 110px;
+        font-weight: 650;
+        color: #5c4964;
+    }
+
+    .btc-reason {
+        max-width: 180px;
+        color: #87798e;
         overflow: hidden;
-        line-height: 1.4;
-        color: #475569;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
     }
 
-    .date-text {
-        line-height: 1.35;
-        color: #475569;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        border-radius: 999px;
-        padding: 6px 11px;
-        font-size: 12.5px;
-        font-weight: 850;
-        white-space: nowrap;
-    }
-
-    .badge-wait {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
-    .badge-ok {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .badge-no {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .badge-default {
-        background: #e0e7ff;
-        color: #3730a3;
-    }
-
-    .action-wrap {
+    .btc-seat-preview {
         display: flex;
-        gap: 6px;
         flex-wrap: wrap;
+        gap: 5px;
+        max-width: 185px;
     }
 
-    .action-wrap .btn {
-        border-radius: 999px;
-        font-size: 12.5px;
-        font-weight: 800;
-        padding: 6px 11px;
+    .btc-seat-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 8px;
+        border: 1px solid #ead9ef;
+        border-radius: 7px;
+        background: #f8effa;
+        color: #9665a3;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.45;
     }
 
-    .processed {
-        color: #64748b;
-        font-size: 13px;
+    .btc-muted {
+        color: #a194a8;
+        font-size: 10.5px;
+    }
+
+    .btc-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 10px;
         font-weight: 700;
         white-space: nowrap;
     }
 
-    .empty-box {
-        padding: 34px 18px;
+    .btc-status-pending {
+        background: #fff4db;
+        color: #996a1e;
+    }
+
+    .btc-status-approved {
+        background: #e6f7eb;
+        color: #28794d;
+    }
+
+    .btc-status-rejected {
+        background: #ffedf1;
+        color: #b54e68;
+    }
+
+    .btc-status-default {
+        background: #f1eff4;
+        color: #766b7d;
+    }
+
+    .btc-date {
+        white-space: nowrap;
+        color: #887b90;
+        font-size: 10.5px;
+    }
+
+    .btc-row-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 127px;
+    }
+
+    .btc-row-actions form {
+        margin: 0;
+    }
+
+    .btc-accept,
+    .btc-reject {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        min-height: 32px;
+        padding: 7px 9px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 650;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: .2s;
+    }
+
+    .btc-accept {
+        background: #eaf8ee;
+        color: #2b754c;
+        border: 1px solid #c8e8d1;
+    }
+
+    .btc-accept:hover {
+        background: #d9f2e1;
+    }
+
+    .btc-reject {
+        background: #fff;
+        color: #b5526b;
+        border: 1px solid #efcbd4;
+    }
+
+    .btc-reject:hover {
+        background: #fff0f3;
+    }
+
+    .btc-done {
+        color: #98899e;
+        font-size: 10.5px;
+        font-weight: 600;
+    }
+
+    .btc-message {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 13px 15px;
+        margin-bottom: 16px;
+        border-radius: 11px;
+        background: #fbf3fd;
+        border: 1px solid #e9d9ee;
+        color: #865c92;
+        font-size: 11px;
+    }
+
+    .btc-empty {
         text-align: center;
-        color: #64748b;
+        padding: 48px 20px;
+        color: #93839a;
     }
 
-    .empty-box h5 {
-        color: #0f172a;
-        font-weight: 850;
-        margin-bottom: 5px;
+    .btc-empty i {
+        display: block;
+        font-size: 34px;
+        margin-bottom: 10px;
+        color: #bf94c9;
     }
 
-    .alert-custom {
-        border-radius: 15px;
-        border: 1px solid #bbf7d0;
-        background: #f0fdf4;
-        color: #166534;
-        font-weight: 700;
-        padding: 11px 15px;
-        margin-bottom: 14px;
+    .btc-empty strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #634d6c;
+        font-size: 13px;
     }
 
-    @@media (max-width: 992px) {
-        .page-head {
-            flex-direction: column;
-            align-items: flex-start;
+    /* PHAN TRANG */
+
+    .btc-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 15px 18px;
+        border-top: 1px solid #f0e6f0;
+    }
+
+    .btc-pagination-info {
+        font-size: 10.5px;
+        color: #8b7a91;
+    }
+
+    .btc-pagination-buttons {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .btc-page-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #eaddeb;
+        border-radius: 8px;
+        background: #fff;
+        color: #806c88;
+        font-size: 10.5px;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .btc-page-btn:hover:not(:disabled) {
+        background: #faf0fc;
+        border-color: #dbb5e3;
+        color: #a25eb0;
+    }
+
+    .btc-page-btn.active {
+        background: #b977c4;
+        border-color: #b977c4;
+        color: #fff;
+    }
+
+    .btc-page-btn:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+    }
+
+    /* CUA SO CHI TIET */
+
+    .btc-detail-overlay[hidden] {
+        display: none !important;
+    }
+
+    .btc-detail-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 11000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 18px;
+        background: rgba(35,24,42,.54);
+        backdrop-filter: blur(3px);
+    }
+
+    .btc-detail-modal {
+        width: 100%;
+        max-width: 660px;
+        max-height: min(88vh, 850px);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #ead9ef;
+        border-radius: 19px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 25px 75px rgba(35,20,42,.22);
+        animation: btcModalIn .2s ease;
+    }
+
+    @@keyframes btcModalIn {
+        from {
+            opacity: 0;
+            transform: translateY(12px) scale(.985);
         }
 
-        .refund-table thead {
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .btc-detail-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 21px 23px 18px;
+        border-bottom: 1px solid #f1e5f1;
+        background: linear-gradient(135deg, #fdf6ff, #fff9fc);
+    }
+
+    .btc-detail-eyebrow {
+        display: block;
+        margin-bottom: 7px;
+        color: #a66cb1;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .btc-detail-heading {
+        margin: 0;
+        color: #483150;
+        font-size: 18px;
+        font-weight: 750;
+        line-height: 1.45;
+    }
+
+    .btc-detail-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        border: 1px solid #ebddeb;
+        border-radius: 10px;
+        background: #fff;
+        color: #84668d;
+        cursor: pointer;
+    }
+
+    .btc-detail-close:hover {
+        background: #f9eefa;
+        color: #a35caf;
+    }
+
+    .btc-detail-body {
+        overflow-y: auto;
+        padding: 21px 23px;
+    }
+
+    .btc-detail-status-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .btc-detail-id {
+        font-size: 11px;
+        font-weight: 650;
+        color: #9a6ca5;
+    }
+
+    .btc-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 20px;
+    }
+
+    .btc-detail-field {
+        min-width: 0;
+    }
+
+    .btc-detail-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .btc-detail-label {
+        display: block;
+        margin-bottom: 7px;
+        color: #9c8b9f;
+        font-size: 10.5px;
+        font-weight: 650;
+    }
+
+    .btc-detail-value {
+        color: #4c3a53;
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.8;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+    }
+
+    .btc-detail-reason {
+        padding: 13px 15px;
+        border: 1px solid #efe3f0;
+        border-radius: 11px;
+        background: #fcf8fd;
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.85;
+    }
+
+    .btc-detail-divider {
+        height: 1px;
+        margin: 21px 0;
+        background: #f1e8f1;
+    }
+
+    .btc-detail-section-title {
+        margin: 0 0 12px;
+        color: #503c58;
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .btc-detail-seat-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .btc-detail-seat {
+        padding: 7px 10px;
+        border: 1px solid #e8d4ec;
+        border-radius: 9px;
+        background: #f9effb;
+        color: #9661a3;
+        font-size: 10.5px;
+        font-weight: 650;
+    }
+
+    .btc-detail-foot {
+        display: flex;
+        justify-content: flex-end;
+        padding: 14px 23px;
+        border-top: 1px solid #f1e6f1;
+        background: #fff;
+    }
+
+    .btc-detail-dismiss {
+        padding: 9px 21px;
+        border: 1px solid #e7d5ea;
+        border-radius: 9px;
+        background: #faf3fb;
+        color: #865b90;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btc-detail-dismiss:hover {
+        background: #f2e5f5;
+    }
+
+    @@media (max-width: 768px) {
+        .btc-cancel-filter {
+            padding: 14px;
+        }
+
+        .btc-cancel-filter-field {
+            width: 100%;
+        }
+
+        .btc-filter-actions {
+            width: 100%;
+        }
+
+        .btc-filter-submit,
+        .btc-filter-reset {
+            flex: 1;
+        }
+
+        .btc-table-scroll {
+            overflow-x: visible;
+        }
+
+        .btc-cancel-table {
+            min-width: 0;
+        }
+
+        .btc-cancel-table thead {
             display: none;
         }
 
-        .refund-table,
-        .refund-table tbody,
-        .refund-table tr,
-        .refund-table td {
+        .btc-cancel-table,
+        .btc-cancel-table tbody,
+        .btc-cancel-table tr,
+        .btc-cancel-table td {
             display: block;
             width: 100%;
         }
 
-        .refund-table tr {
-            padding: 14px 16px;
-            border-bottom: 1px solid #edf2f7;
+        .btc-cancel-table tr {
+            padding: 13px 16px;
+            border-bottom: 1px solid #f0e5f0;
         }
 
-        .refund-table td {
-            border-bottom: none;
-            padding: 5px 0;
+        .btc-cancel-table td {
+            padding: 6px 0;
+            border: 0;
+            max-width: none;
         }
 
-        .refund-table td::before {
+        .btc-cancel-table td::before {
             content: attr(data-label);
             display: block;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 750;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            font-size: 9.5px;
+            font-weight: 650;
+            color: #a38bac;
         }
 
-        .reason-text {
-            -webkit-line-clamp: unset;
+        .btc-reason,
+        .btc-seat-preview {
+            max-width: none;
         }
 
-        .action-wrap {
-            margin-top: 6px;
+        .btc-row-actions {
+            flex-direction: row;
         }
-        
-.col-seat {
-    min-width: 155px;
-    width: 18%;
-}
 
-.yc-seat-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-}
+        .btc-row-actions form {
+            flex: 1;
+        }
 
-.yc-seat-badge {
-    display: inline-flex;
-    padding: 5px 9px;
-    background: #edf4ff;
-    border: 1px solid #cfe0ff;
-    color: #2563eb;
-    border-radius: 7px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.4;
-    white-space: nowrap;
-}
+        .btc-pagination {
+            justify-content: center;
+            text-align: center;
+        }
 
-.yc-muted {
-    color: #94a3b8;
-    font-size: 12px;
-}
+        .btc-pagination-info {
+            width: 100%;
+        }
 
+        .btc-detail-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
 
-/* ===== SỬA BẢNG YÊU CẦU HỦY VÉ ===== */
+        .btc-detail-head,
+        .btc-detail-body {
+            padding: 17px;
+        }
 
-.refund-page {
-    width: 100%;
-    min-width: 0;
-}
+        .btc-detail-foot {
+            padding: 13px 17px;
+        }
 
-.refund-table-card {
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-}
-
-.refund-table-scroll {
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-}
-
-.refund-table {
-    width: 100%;
-    min-width: 1160px;
-    table-layout: auto;
-    border-collapse: collapse;
-}
-
-.refund-table th,
-.refund-table td {
-    padding: 15px 12px;
-    vertical-align: middle;
-    overflow-wrap: normal;
-    word-break: normal;
-}
-
-.refund-table th {
-    white-space: nowrap;
-}
-
-.refund-table .col-event,
-.refund-table .event-name {
-    min-width: 190px;
-}
-
-.refund-table .col-seat,
-.refund-table .yc-seat-list {
-    min-width: 130px;
-}
-
-.refund-table .col-action {
-    min-width: 115px;
-}
-
-.yc-seat-list {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 7px;
-}
-
-.yc-seat-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 7px;
-    border: 1px solid #cfe0ff;
-    background: #edf4ff;
-    color: #2563eb;
-    font-size: 12px;
-    font-weight: 650;
-    line-height: 1.4;
-    white-space: nowrap;
-}
-
-.refund-table td[data-label="Yêu cầu"] {
-    white-space: nowrap;
-}
-
-.ticket-code {
-    white-space: normal;
-    overflow-wrap: normal;
-}
-
-@@media (max-width: 992px) {
-    .refund-table {
-        min-width: 0;
-        width: 100%;
-    }
-
-    .refund-table td {
-        overflow-wrap: anywhere;
-    }
-
-    .refund-table .col-seat,
-    .refund-table .yc-seat-list {
-        min-width: 0;
-    }
-
-
+        .btc-detail-heading {
+            font-size: 16px;
+        }
     }
 </style>
 
-<div class="refund-page">
-    <div class="page-head">
-        <div>
-            <h2>Yêu cầu hủy vé</h2>
-            <p>Xem, lọc và xử lý các yêu cầu hủy vé từ khách hàng.</p>
-        </div>
-
-        <a asp-action="Index" class="btn btn-outline-secondary btn-back">
-            Quay lại sự kiện của tôi
-        </a>
-    </div>
+<div class="btc-cancel-page">
 
     @if (TempData["ThongBao"] != null)
     {
-        <div class="alert-custom">
+        <div class="btc-message" role="status">
+            <i class="bi bi-info-circle"></i>
             @TempData["ThongBao"]
         </div>
     }
 
-    <div class="filter-card">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="filter-label">Trạng thái yêu cầu</label>
-                <select name="trangThai" class="form-select">
-                    <option value="">Tất cả yêu cầu</option>
-                    <option value="ChoDuyet" selected="@(trangThai == "ChoDuyet")">Chờ duyệt</option>
-                    <option value="DaHuy" selected="@(trangThai == "DaHuy")">Đã hủy</option>
-                    <option value="TuChoi" selected="@(trangThai == "TuChoi")">Từ chối</option>
+    <!-- BO LOC TRANG THAI -->
+
+    <section class="btc-cancel-filter">
+        <form asp-controller="BanToChuc"
+              asp-action="YeuCauHuyVe"
+              method="get"
+              class="btc-cancel-filter-form">
+
+            <div class="btc-cancel-filter-field">
+                <label for="btcStatusFilter">
+                    Trạng thái yêu cầu
+                </label>
+
+                <select id="btcStatusFilter"
+                        name="trangThai">
+
+                    <option value="">
+                        Tất cả yêu cầu
+                    </option>
+
+                    <option value="ChoDuyet"
+                            selected="@(trangThai == "ChoDuyet")">
+                        Chờ duyệt
+                    </option>
+
+                    <option value="DaHuy"
+                            selected="@(trangThai == "DaHuy")">
+                        Đã hủy
+                    </option>
+
+                    <option value="TuChoi"
+                            selected="@(trangThai == "TuChoi")">
+                        Từ chối
+                    </option>
                 </select>
             </div>
 
-            <div class="col-md-5 filter-actions d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
+            <div class="btc-filter-actions">
+                <button type="submit"
+                        class="btc-filter-submit">
+                    <i class="bi bi-funnel"></i>
                     Lọc
                 </button>
 
-                <a asp-action="YeuCauHuyVe" class="btn btn-outline-secondary">
+                <a asp-controller="BanToChuc"
+                   asp-action="YeuCauHuyVe"
+                   class="btc-filter-reset">
+                    <i class="bi bi-arrow-counterclockwise"></i>
                     Xóa lọc
                 </a>
             </div>
         </form>
-    </div>
+    </section>
 
-    <div class="refund-table-card">
-        <div class="table-top">
-            <h5 class="table-title">Danh sách yêu cầu</h5>
-            <span class="table-count">@(Model?.Count ?? 0) yêu cầu</span>
+    <!-- BANG YEU CAU -->
+
+    <section class="btc-cancel-panel"
+             id="btcCancelPanel">
+
+        <div class="btc-panel-head">
+            <h2 class="btc-panel-title">
+                Danh sách yêu cầu
+            </h2>
+
+            <span class="btc-panel-count">
+                @danhSach.Count yêu cầu
+            </span>
         </div>
 
-        @if (Model != null && Model.Any())
+        @if (danhSach.Any())
         {
-            <div class="refund-table-scroll">
-            <table class="refund-table">
-                <thead>
-                    <tr>
-        <th class="col-ticket">Mã đơn</th>
-        <th class="col-event">Sự kiện</th>
-        <th class="col-customer">Khách hàng</th>
-        <th class="col-seat">Ghế đã đặt</th>
-        <th class="col-type">Yêu cầu</th>
-        <th class="col-reason">Lý do</th>
-        <th class="col-date">Ngày yêu cầu</th>
-        <th class="col-status">Trạng thái</th>
-        <th class="col-action">Thao tác</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @foreach (var item in Model)
-                    {
+            <div class="btc-table-scroll">
+                <table class="btc-cancel-table">
+                    <thead>
                         <tr>
-                            <td data-label="Mã vé">
-                                <span class="ticket-code">@item.MaVe</span>
-                            </td>
-
-                            <td data-label="Sự kiện">
-                                <div class="event-name">@item.TenSuKien</div>
-                            </td>
-
-                            <td data-label="Khách hàng">
-                                <div class="customer-name">@item.HoTenKhach</div>
-                            </td>
-
-<td data-label="Ghế đã đặt" class="col-seat">
-    @if (item.DanhSachGhe != null &&
-         item.DanhSachGhe.Any())
-    {
-        <div class="yc-seat-list">
-            @foreach (var ghe in item.DanhSachGhe)
-            {
-                <span class="yc-seat-badge">@ghe</span>
-            }
-        </div>
-    }
-    else
-    {
-        <span class="yc-muted">Không có ghế</span>
-    }
-</td>
-
-<td data-label="Yêu cầu">
-    @HinhThucText(item.HinhThuc)
-</td>
-
-                            <td data-label="Lý do">
-                                <div class="reason-text">@item.LyDo</div>
-                            </td>
-
-                            <td data-label="Ngày yêu cầu">
-                                <div class="date-text">
-                                    @item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")
-                                </div>
-                            </td>
-
-                            <td data-label="Trạng thái">
-                                <span class="status-badge @TrangThaiClass(item.TrangThai)">
-                                    @TrangThaiText(item.TrangThai)
-                                </span>
-                            </td>
-
-                            <td data-label="Thao tác">
-                                @if (item.TrangThai == "ChoDuyet")
-                                {
-                                    <div class="action-wrap">
-                                        <form asp-action="ChapNhanYeuCauHuyVe" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@item.YeuCauId" />
-                                            <button type="submit" class="btn btn-success">
-                                                Chấp nhận hủy
-                                            </button>
-                                        </form>
-
-                                        <form asp-action="TuChoiYeuCauHuyVe" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@item.YeuCauId" />
-                                            <button type="submit" class="btn btn-outline-danger">
-                                                Từ chối
-                                            </button>
-                                        </form>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="processed">Đã xử lý</span>
-                                }
-                            </td>
+                            <th>Mã đơn / vé</th>
+                            <th>Sự kiện</th>
+                            <th>Khách hàng</th>
+                            <th>Ghế đã đặt</th>
+                            <th>Lý do</th>
+                            <th>Ngày yêu cầu</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody id="btcCancelTableBody">
+                        @foreach (var item in danhSach)
+                        {
+                            <tr class="btc-cancel-row"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Xem chi tiết yêu cầu @item.MaVe"
+                                data-request-id="@item.YeuCauId"
+                                data-code="@item.MaVe"
+                                data-event="@item.TenSuKien"
+                                data-customer="@item.HoTenKhach"
+                                data-type="@item.HinhThuc"
+                                data-reason="@item.LyDo"
+                                data-date="@item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")"
+                                data-status="@item.TrangThai"
+                                data-status-text="@TrangThaiText(item.TrangThai)">
+
+                                <td data-label="Mã đơn / vé">
+                                    <span class="btc-code">
+                                        @item.MaVe
+                                    </span>
+                                </td>
+
+                                <td data-label="Sự kiện">
+                                    <div class="btc-event-name">
+                                        @item.TenSuKien
+                                    </div>
+                                </td>
+
+                                <td data-label="Khách hàng">
+                                    <div class="btc-customer-name">
+                                        @item.HoTenKhach
+                                    </div>
+                                </td>
+
+                                <td data-label="Ghế đã đặt">
+                                    <div class="btc-seat-preview">
+                                        @if (item.DanhSachGhe != null &&
+                                             item.DanhSachGhe.Any())
+                                        {
+                                            @foreach (var ghe in item.DanhSachGhe.Take(2))
+                                            {
+                                                <span class="btc-seat-tag">
+                                                    @ghe
+                                                </span>
+                                            }
+
+                                            @if (item.DanhSachGhe.Count > 2)
+                                            {
+                                                <span class="btc-seat-tag">
+                                                    +@(item.DanhSachGhe.Count - 2) ghế
+                                                </span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="btc-muted">
+                                                Không có ghế
+                                            </span>
+                                        }
+                                    </div>
+
+                                    <!-- DU LIEU GHE CHO POPUP -->
+                                    <div class="btc-row-seat-data"
+                                         hidden>
+                                        @if (item.DanhSachGhe != null)
+                                        {
+                                            @foreach (var ghe in item.DanhSachGhe)
+                                            {
+                                                <span class="btc-source-seat">
+                                                    @ghe
+                                                </span>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+
+                                <td data-label="Lý do">
+                                    <div class="btc-reason">
+                                        @item.LyDo
+                                    </div>
+                                </td>
+
+                                <td data-label="Ngày yêu cầu">
+                                    <div class="btc-date">
+                                        @item.NgayYeuCau.ToString("dd/MM/yyyy")
+                                        <div>
+                                            @item.NgayYeuCau.ToString("HH:mm")
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td data-label="Trạng thái">
+                                    <span class="btc-status @TrangThaiClass(item.TrangThai)">
+                                        @if (item.TrangThai == "ChoDuyet")
+                                        {
+                                            <i class="bi bi-hourglass-split"></i>
+                                        }
+                                        else if (item.TrangThai == "DaHuy")
+                                        {
+                                            <i class="bi bi-check-circle"></i>
+                                        }
+                                        else if (item.TrangThai == "TuChoi")
+                                        {
+                                            <i class="bi bi-x-circle"></i>
+                                        }
+
+                                        @TrangThaiText(item.TrangThai)
+                                    </span>
+                                </td>
+
+                                <td data-label="Thao tác">
+                                    @if (item.TrangThai == "ChoDuyet")
+                                    {
+                                        <div class="btc-row-actions">
+
+                                            <form asp-controller="BanToChuc"
+                                                  asp-action="ChapNhanYeuCauHuyVe"
+                                                  method="post"
+                                                  onsubmit="return confirm('Xác nhận chấp nhận hủy? Nếu đơn đủ điều kiện, hệ thống sẽ hủy vé, giải phóng ghế và ghi nhận hoàn tiền mô phỏng.');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden"
+                                                       name="id"
+                                                       value="@item.YeuCauId" />
+
+                                                <button type="submit"
+                                                        class="btc-accept">
+                                                    <i class="bi bi-check-lg"></i>
+                                                    Chấp nhận hủy
+                                                </button>
+                                            </form>
+
+                                            <form asp-controller="BanToChuc"
+                                                  asp-action="TuChoiYeuCauHuyVe"
+                                                  method="post"
+                                                  onsubmit="return confirm('Bạn chắc chắn muốn từ chối yêu cầu này?');">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden"
+                                                       name="id"
+                                                       value="@item.YeuCauId" />
+
+                                                <button type="submit"
+                                                        class="btc-reject">
+                                                    <i class="bi bi-x-lg"></i>
+                                                    Từ chối
+                                                </button>
+                                            </form>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="btc-done">
+                                            <i class="bi bi-check2-circle"></i>
+                                            Đã xử lý
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PHAN TRANG -->
+            <div class="btc-pagination"
+                 id="btcCancelPagination">
+
+                <div class="btc-pagination-info"
+                     id="btcPaginationInfo">
+                </div>
+
+                <div class="btc-pagination-buttons"
+                     id="btcPaginationButtons">
+                </div>
             </div>
         }
         else
         {
-            <div class="empty-box">
-                <h5>Chưa có yêu cầu nào</h5>
-                <div>Hiện chưa có yêu cầu hủy vé phù hợp với bộ lọc.</div>
+            <div class="btc-empty">
+                <i class="bi bi-inbox"></i>
+                <strong>Chưa có yêu cầu nào</strong>
+                <div>
+                    Không có yêu cầu hủy vé phù hợp
+                    với bộ lọc hiện tại.
+                </div>
             </div>
         }
-    </div>
+
+    </section>
 </div>
+
+<!-- POPUP CHI TIET YEU CAU -->
+<div class="btc-detail-overlay"
+     id="btcRequestModal"
+     hidden>
+
+    <section class="btc-detail-modal"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="btcModalTitle"
+             tabindex="-1">
+
+        <div class="btc-detail-head">
+
+            <div>
+                <span class="btc-detail-eyebrow">
+                    Thông tin yêu cầu hủy vé
+                </span>
+
+                <h2 class="btc-detail-heading"
+                    id="btcModalTitle">
+                    Chi tiết yêu cầu
+                </h2>
+            </div>
+
+            <button type="button"
+                    class="btc-detail-close"
+                    id="btcModalClose"
+                    aria-label="Đóng cửa sổ">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+        </div>
+
+        <div class="btc-detail-body">
+
+            <div class="btc-detail-status-line">
+
+                <span class="btc-detail-id"
+                      id="btcModalId">
+                </span>
+
+                <span class="btc-status"
+                      id="btcModalStatus">
+                </span>
+
+            </div>
+
+            <div class="btc-detail-grid">
+
+                <div class="btc-detail-field full">
+                    <span class="btc-detail-label">
+                        Mã đơn / vé
+                    </span>
+                    <div class="btc-detail-value"
+                         id="btcModalCode"></div>
+                </div>
+
+                <div class="btc-detail-field full">
+                    <span class="btc-detail-label">
+                        Tên sự kiện
+                    </span>
+                    <div class="btc-detail-value"
+                         id="btcModalEvent"></div>
+                </div>
+
+                <div class="btc-detail-field">
+                    <span class="btc-detail-label">
+                        Khách hàng
+                    </span>
+                    <div class="btc-detail-value"
+                         id="btcModalCustomer"></div>
+                </div>
+
+                <div class="btc-detail-field">
+                    <span class="btc-detail-label">
+                        Hình thức yêu cầu
+                    </span>
+                    <div class="btc-detail-value"
+                         id="btcModalType"></div>
+                </div>
+
+                <div class="btc-detail-field full">
+                    <span class="btc-detail-label">
+                        Ngày gửi yêu cầu
+                    </span>
+                    <div class="btc-detail-value"
+                         id="btcModalDate"></div>
+                </div>
+
+                <div class="btc-detail-field full">
+                    <span class="btc-detail-label">
+                        Lý do hủy vé
+                    </span>
+                    <div class="btc-detail-value btc-detail-reason"
+                         id="btcModalReason"></div>
+                </div>
+
+            </div>
+
+            <div class="btc-detail-divider"></div>
+
+            <h3 class="btc-detail-section-title">
+                <i class="bi bi-ticket-perforated me-1"></i>
+                Danh sách vé và ghế
+            </h3>
+
+            <div class="btc-detail-seat-list"
+                 id="btcModalSeats">
+            </div>
+
+        </div>
+
+        <div class="btc-detail-foot">
+            <button type="button"
+                    class="btc-detail-dismiss"
+                    id="btcModalDismiss">
+                Đóng
+            </button>
+        </div>
+
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            "use strict";
+
+            const pageSize = 8;
+
+            const tableBody = document.getElementById(
+                "btcCancelTableBody"
+            );
+
+            const pagination = document.getElementById(
+                "btcCancelPagination"
+            );
+
+            const paginationInfo = document.getElementById(
+                "btcPaginationInfo"
+            );
+
+            const paginationButtons = document.getElementById(
+                "btcPaginationButtons"
+            );
+
+            const panel = document.getElementById(
+                "btcCancelPanel"
+            );
+
+            const modal = document.getElementById(
+                "btcRequestModal"
+            );
+
+            const dialog = modal?.querySelector(
+                ".btc-detail-modal"
+            );
+
+            if (!modal) return;
+
+            const rows = tableBody
+                ? Array.from(
+                    tableBody.querySelectorAll(".btc-cancel-row")
+                )
+                : [];
+
+            let currentPage = 1;
+            let previousFocus = null;
+
+            const get = id => document.getElementById(id);
+
+            // ---------------------------------------
+            // PHAN TRANG
+            // ---------------------------------------
+
+            const totalPages = Math.ceil(
+                rows.length / pageSize
+            );
+
+            function createPageButton(
+                label,
+                page,
+                disabled,
+                active
+            ) {
+                const button = document.createElement("button");
+
+                button.type = "button";
+                button.className =
+                    "btc-page-btn" +
+                    (active ? " active" : "");
+
+                button.textContent = label;
+                button.disabled = disabled;
+
+                if (active) {
+                    button.setAttribute(
+                        "aria-current",
+                        "page"
+                    );
+                }
+
+                button.addEventListener("click", function () {
+                    if (disabled || page === currentPage) {
+                        return;
+                    }
+
+                    currentPage = page;
+                    renderPagination();
+
+                    panel?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                });
+
+                return button;
+            }
+
+            function renderPagination() {
+                if (!pagination || !paginationButtons) {
+                    return;
+                }
+
+                if (rows.length <= pageSize) {
+                    rows.forEach(row => {
+                        row.hidden = false;
+                    });
+
+                    pagination.hidden = true;
+                    return;
+                }
+
+                pagination.hidden = false;
+
+                const startIndex =
+                    (currentPage - 1) * pageSize;
+
+                const endIndex =
+                    Math.min(startIndex + pageSize, rows.length);
+
+                rows.forEach((row, index) => {
+                    row.hidden =
+                        index < startIndex ||
+                        index >= endIndex;
+                });
+
+                if (paginationInfo) {
+                    paginationInfo.textContent =
+                        `Hiển thị ${startIndex + 1}–${endIndex} ` +
+                        `trong ${rows.length} yêu cầu`;
+                }
+
+                paginationButtons.replaceChildren();
+
+                paginationButtons.appendChild(
+                    createPageButton(
+                        "Trước",
+                        Math.max(1, currentPage - 1),
+                        currentPage === 1,
+                        false
+                    )
+                );
+
+                for (let page = 1; page <= totalPages; page++) {
+                    paginationButtons.appendChild(
+                        createPageButton(
+                            String(page),
+                            page,
+                            false,
+                            page === currentPage
+                        )
+                    );
+                }
+
+                paginationButtons.appendChild(
+                    createPageButton(
+                        "Sau",
+                        Math.min(totalPages, currentPage + 1),
+                        currentPage === totalPages,
+                        false
+                    )
+                );
+            }
+
+            // ---------------------------------------
+            // POPUP CHI TIET
+            // ---------------------------------------
+
+            function setText(id, value) {
+                const element = get(id);
+
+                if (element) {
+                    element.textContent = value || "—";
+                }
+            }
+
+            function openDetail(row) {
+                const data = row.dataset;
+
+                previousFocus = document.activeElement;
+
+                setText(
+                    "btcModalId",
+                    `Yêu cầu #${data.requestId}`
+                );
+
+                setText("btcModalCode", data.code);
+                setText("btcModalEvent", data.event);
+                setText("btcModalCustomer", data.customer);
+
+                setText(
+                    "btcModalType",
+                    data.type === "HuyVe"
+                        ? "Hủy vé"
+                        : data.type
+                );
+
+                setText("btcModalDate", data.date);
+                setText("btcModalReason", data.reason);
+
+                const status = get("btcModalStatus");
+
+                if (status) {
+                    status.className = "btc-status";
+
+                    if (data.status === "ChoDuyet") {
+                        status.classList.add(
+                            "btc-status-pending"
+                        );
+                    } else if (data.status === "DaHuy") {
+                        status.classList.add(
+                            "btc-status-approved"
+                        );
+                    } else if (data.status === "TuChoi") {
+                        status.classList.add(
+                            "btc-status-rejected"
+                        );
+                    } else {
+                        status.classList.add(
+                            "btc-status-default"
+                        );
+                    }
+
+                    status.textContent =
+                        data.statusText || data.status;
+                }
+
+                const seatContainer = get("btcModalSeats");
+                const seatSources = row.querySelectorAll(
+                    ".btc-source-seat"
+                );
+
+                if (seatContainer) {
+                    seatContainer.replaceChildren();
+
+                    if (!seatSources.length) {
+                        const empty = document.createElement("span");
+
+                        empty.className = "btc-muted";
+                        empty.textContent =
+                            "Không có thông tin ghế.";
+
+                        seatContainer.appendChild(empty);
+                    } else {
+                        seatSources.forEach(source => {
+                            const seat = document.createElement("span");
+
+                            seat.className = "btc-detail-seat";
+                            seat.textContent =
+                                source.textContent.trim();
+
+                            seatContainer.appendChild(seat);
+                        });
+                    }
+                }
+
+                modal.hidden = false;
+
+                document.body.style.overflow = "hidden";
+
+                const closeButton = get("btcModalClose");
+
+                if (closeButton) {
+                    closeButton.focus();
+                } else {
+                    dialog?.focus();
+                }
+            }
+
+            function closeDetail() {
+                if (modal.hidden) return;
+
+                modal.hidden = true;
+                document.body.style.overflow = "";
+
+                if (
+                    previousFocus &&
+                    typeof previousFocus.focus === "function"
+                ) {
+                    previousFocus.focus();
+                }
+            }
+
+            rows.forEach(row => {
+                row.addEventListener("click", function (event) {
+                    // Nhan nut xu ly khong mo popup.
+                    if (
+                        event.target.closest(
+                            "button, form, input, a, select"
+                        )
+                    ) {
+                        return;
+                    }
+
+                    openDetail(row);
+                });
+
+                row.addEventListener("keydown", function (event) {
+                    if (
+                        event.target !== row ||
+                        (
+                            event.key !== "Enter" &&
+                            event.key !== " "
+                        )
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    openDetail(row);
+                });
+            });
+
+            get("btcModalClose")?.addEventListener(
+                "click",
+                closeDetail
+            );
+
+            get("btcModalDismiss")?.addEventListener(
+                "click",
+                closeDetail
+            );
+
+            modal.addEventListener("click", function (event) {
+                if (event.target === modal) {
+                    closeDetail();
+                }
+            });
+
+            document.addEventListener("keydown", function (event) {
+                if (modal.hidden) return;
+
+                if (event.key === "Escape") {
+                    event.preventDefault();
+                    closeDetail();
+                    return;
+                }
+
+                if (event.key === "Tab") {
+                    const focusable = Array.from(
+                        modal.querySelectorAll(
+                            "button:not([disabled]), " +
+                            "a[href], input:not([disabled]), " +
+                            "select:not([disabled]), " +
+                            "textarea:not([disabled]), " +
+                            "[tabindex]:not([tabindex='-1'])"
+                        )
+                    ).filter(element => {
+                        return element.getClientRects().length > 0;
+                    });
+
+                    if (!focusable.length) return;
+
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+
+                    if (
+                        event.shiftKey &&
+                        document.activeElement === first
+                    ) {
+                        event.preventDefault();
+                        last.focus();
+                    } else if (
+                        !event.shiftKey &&
+                        document.activeElement === last
+                    ) {
+                        event.preventDefault();
+                        first.focus();
+                    }
+                }
+            });
+
+            // Khoi tao phan trang.
+            renderPagination();
+        })();
+    </script>
+}

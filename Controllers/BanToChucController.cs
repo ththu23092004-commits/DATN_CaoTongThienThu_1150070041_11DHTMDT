@@ -1363,44 +1363,71 @@ if (soDo != null && diaDiem != null)
         // ========== DANH SÁCH NGƯỜI MUA VÉ / THAM GIA ===============
         // ============================================================
 
-        public async Task<IActionResult> DanhSachVe(int id)
+public async Task<IActionResult> DanhSachVe(int id)
+{
+    var toChucId = await GetOrCreateToChucIdAsync();
+
+    var sk = await _db.SuKien
+        .AsNoTracking()
+        .FirstOrDefaultAsync(s =>
+            s.SuKienId == id &&
+            s.ToChucId == toChucId);
+
+    if (sk == null)
+        return NotFound();
+
+    var danhSach = await (
+        from v in _db.Ve.AsNoTracking()
+        join nd in _db.NguoiDung.AsNoTracking()
+            on v.NguoiDungId equals nd.NguoiDungId
+        join lv in _db.LoaiVe.AsNoTracking()
+            on v.LoaiVeId equals lv.LoaiVeId
+        join tg in _db.ThamGiaSuKien.AsNoTracking()
+            on v.VeId equals tg.VeId into tgLeft
+        from tg in tgLeft.DefaultIfEmpty()
+        where v.SuKienId == id
+        select new DanhSachVeThamGiaItemBtcVM
         {
-            var toChucId = await GetOrCreateToChucIdAsync();
-
-            var sk = await _db.SuKien
-                .FirstOrDefaultAsync(s => s.SuKienId == id && s.ToChucId == toChucId);
-
-            if (sk == null) return NotFound();
-
-            var danhSach = await (
-                from v in _db.Ve
-                join nd in _db.NguoiDung on v.NguoiDungId equals nd.NguoiDungId
-                join lv in _db.LoaiVe on v.LoaiVeId equals lv.LoaiVeId
-                join tg in _db.ThamGiaSuKien on v.VeId equals tg.VeId into tgLeft
-                from tg in tgLeft.DefaultIfEmpty()
-                where v.SuKienId == id
-                select new DanhSachVeThamGiaItemBtcVM
-                {
-                    VeId = v.VeId,
-                    MaVe = v.MaVe,
-                    HoTenKhach = nd.HoTen,
-                    EmailKhach = nd.Email,
-                    TenLoaiVe = lv.TenLoai ?? string.Empty,
-                    TrangThaiVe = v.TrangThai,
-                    DaCheckIn = tg != null && tg.TrangThai == "DaCheckIn",
-                    ThoiGianCheckIn = tg != null ? tg.ThoiGianCheckIn : null
-                })
-                .ToListAsync();
-
-            var vm = new DanhSachVeThamGiaBtcVM
-            {
-                SuKienId = sk.SuKienId,
-                TenSuKien = sk.TenSuKien,
-                DanhSach = danhSach
-            };
-
-            return View(vm);
+            VeId = v.VeId,
+            MaVe = v.MaVe,
+            HoTenKhach = nd.HoTen,
+            EmailKhach = nd.Email,
+            TenLoaiVe = lv.TenLoai ?? string.Empty,
+            TrangThaiVe = v.TrangThai,
+            DaCheckIn = tg != null &&
+                        tg.TrangThai == "DaCheckIn",
+            ThoiGianCheckIn = tg != null
+                ? tg.ThoiGianCheckIn
+                : null
         }
+    ).ToListAsync();
+
+    // Lấy mã đơn hàng tương ứng với từng vé.
+    // Chỉ truy vấn vé của sự kiện thuộc BTC hiện tại.
+    var maDonHangTheoVe = await _db.Ve
+        .AsNoTracking()
+        .Where(v => v.SuKienId == id)
+        .Select(v => new
+        {
+            v.VeId,
+            v.DonHangId
+        })
+        .ToDictionaryAsync(
+            x => x.VeId,
+            x => x.DonHangId
+        );
+
+    ViewBag.MaDonHangTheoVe = maDonHangTheoVe;
+
+    var vm = new DanhSachVeThamGiaBtcVM
+    {
+        SuKienId = sk.SuKienId,
+        TenSuKien = sk.TenSuKien,
+        DanhSach = danhSach
+    };
+
+    return View(vm);
+}
 
 // ============================================================
 // ========== XỬ LÝ YÊU CẦU HỦY VÉ =====================
@@ -2026,198 +2053,522 @@ public async Task<IActionResult> TuChoiYeuCauHuyVe(int id)
             TempData["ThongBao"] = "Đã gửi thông báo tới những người đã đặt vé.";
             return RedirectToAction("ChiTiet", new { id = sk.SuKienId });
         }
+
+ 
 [HttpGet]
 public async Task<IActionResult> DoanhThuTheoSuKien()
 {
     int toChucId = await GetOrCreateToChucIdAsync();
 
-    // Danh sách tất cả sự kiện của BTC
     var suKiens = await _db.SuKien
         .AsNoTracking()
         .Where(s => s.ToChucId == toChucId)
         .OrderByDescending(s => s.ThoiGianBatDau)
-        .Select(s => new DoanhThuSuKienItemVM
+        .Select(s => new
         {
-            SuKienId = s.SuKienId,
-            TenSuKien = s.TenSuKien,
-            ThoiGianBatDau = s.ThoiGianBatDau
+            s.SuKienId,
+            s.TenSuKien,
+            s.ThoiGianBatDau,
+            s.ThoiGianKetThuc
         })
         .ToListAsync();
 
-    var suKienIds = suKiens
-        .Select(s => s.SuKienId)
-        .ToList();
+    var ids = suKiens.Select(s => s.SuKienId).ToList();
 
-    // Đếm vé còn hiệu lực
-    var veDaBan = await _db.Ve
+    if (ids.Count == 0)
+    {
+        return View(new List<DoanhThuSuKienItemVM>());
+    }
+
+    var ves = await _db.Ve
         .AsNoTracking()
-        .Where(v =>
-            suKienIds.Contains(v.SuKienId) &&
-            (v.TrangThai == "DaThanhToan" ||
-             v.TrangThai == "DaCheckIn"))
-        .GroupBy(v => v.SuKienId)
-        .Select(g => new
+        .Where(v => ids.Contains(v.SuKienId))
+        .Select(v => new
         {
-            SuKienId = g.Key,
-            SoVe = g.Count()
+            v.VeId,
+            v.SuKienId,
+            v.LoaiVeId,
+            v.DonHangId,
+            v.TrangThai
         })
         .ToListAsync();
 
-    // Tổng thanh toán thành công theo sự kiện
+    var loaiVes = await _db.LoaiVe
+        .AsNoTracking()
+        .Where(l => ids.Contains(l.SuKienId))
+        .Select(l => new
+        {
+            l.LoaiVeId,
+            l.SuKienId,
+            l.TenLoai,
+            l.SoLuong
+        })
+        .ToListAsync();
+
     var thanhToans = await (
-        from tt in _db.ThanhToan.AsNoTracking()
+        from t in _db.ThanhToan.AsNoTracking()
         join v in _db.Ve.AsNoTracking()
-            on tt.VeId equals v.VeId
-        where suKienIds.Contains(v.SuKienId)
-              && tt.TrangThai == "ThanhCong"
-        group tt by v.SuKienId into g
+            on t.VeId equals v.VeId
+        where ids.Contains(v.SuKienId)
+              && t.TrangThai == "ThanhCong"
         select new
         {
-            SuKienId = g.Key,
-            TongTien = g.Sum(x => x.SoTien)
+            t.VeId,
+            v.SuKienId,
+            v.LoaiVeId,
+            t.SoTien,
+            t.NgayThanhToan
         }
     ).ToListAsync();
 
-    // Mỗi đơn được tính hoàn tiền một lần,
-    // không nhân số tiền hoàn theo số vé.
-    var hoanTiens = await (
+    // Lấy khoản hoàn theo đơn, không nhân số tiền
+    // hoàn lên khi một đơn có nhiều vé.
+    var hoanRaw = await (
         from d in _db.DonHang.AsNoTracking()
         join v in _db.Ve.AsNoTracking()
             on d.DonHangId equals v.DonHangId
-        where suKienIds.Contains(v.SuKienId)
+        where ids.Contains(v.SuKienId)
               && d.TrangThaiHoan == "DaHoan"
         select new
         {
             d.DonHangId,
             v.SuKienId,
-            d.SoTienHoan
+            d.SoTienHoan,
+            d.NgayHoan
         }
     ).Distinct().ToListAsync();
 
-    var tongHoanTheoSuKien = hoanTiens
-        .GroupBy(x => x.SuKienId)
-        .ToDictionary(
-            g => g.Key,
-            g => g.Sum(x => x.SoTienHoan)
-        );
+    var hoanTiens = hoanRaw
+        .GroupBy(h => new { h.DonHangId, h.SuKienId })
+        .Select(g => g.First())
+        .ToList();
+
+    var thangHienTai = new DateTime(
+        DateTime.Today.Year,
+        DateTime.Today.Month, 1);
+
+    var thangDau = thangHienTai.AddMonths(-11);
+
+    var ketQua = new List<DoanhThuSuKienItemVM>();
 
     foreach (var sk in suKiens)
     {
-        sk.SoVeDaBan = veDaBan
-            .FirstOrDefault(x =>
-                x.SuKienId == sk.SuKienId)?.SoVe ?? 0;
+        var veSk = ves
+            .Where(v => v.SuKienId == sk.SuKienId)
+            .ToList();
 
-        sk.TongThanhToan = thanhToans
-            .FirstOrDefault(x =>
-                x.SuKienId == sk.SuKienId)?.TongTien ?? 0;
+        var ttSk = thanhToans
+            .Where(t => t.SuKienId == sk.SuKienId)
+            .ToList();
 
-        sk.TongHoan = tongHoanTheoSuKien
-            .GetValueOrDefault(sk.SuKienId);
+        var hoanSk = hoanTiens
+            .Where(h => h.SuKienId == sk.SuKienId)
+            .ToList();
+
+        var loaiSk = loaiVes
+            .Where(l => l.SuKienId == sk.SuKienId)
+            .ToList();
+
+        var item = new DoanhThuSuKienItemVM
+        {
+            SuKienId = sk.SuKienId,
+            TenSuKien = sk.TenSuKien,
+            ThoiGianBatDau = sk.ThoiGianBatDau,
+            ThoiGianKetThuc = sk.ThoiGianKetThuc,
+
+            SoVeDaBan = veSk.Count(v =>
+                v.TrangThai == "DaThanhToan" ||
+                v.TrangThai == "DaCheckIn"),
+
+            SoVeDaCheckIn = veSk.Count(v =>
+                v.TrangThai == "DaCheckIn"),
+
+            SoVeDaHuy = veSk.Count(v =>
+                v.TrangThai == "Huy"),
+
+            TongSoVePhatHanh = loaiSk.Sum(l => l.SoLuong),
+
+            TongThanhToan = ttSk.Sum(t => t.SoTien),
+            TongHoan = hoanSk.Sum(h => h.SoTienHoan)
+        };
+
+        for (int i = 0; i < 12; i++)
+        {
+            var dau = thangDau.AddMonths(i);
+            var cuoi = dau.AddMonths(1);
+
+            item.TheoThang.Add(new DoanhThuThangSuKienVM
+            {
+                Thang = dau.ToString("MM/yyyy"),
+
+                ThanhToan = ttSk
+                    .Where(t =>
+                        t.NgayThanhToan >= dau &&
+                        t.NgayThanhToan < cuoi)
+                    .Sum(t => t.SoTien),
+
+                HoanTien = hoanSk
+                    .Where(h =>
+                        h.NgayHoan.HasValue &&
+                        h.NgayHoan.Value >= dau &&
+                        h.NgayHoan.Value < cuoi)
+                    .Sum(h => h.SoTienHoan)
+            });
+        }
+
+        // Doanh thu gộp theo đúng loại vé của giao dịch.
+        // Không lấy giá niêm yết nhân số lượng.
+        item.TheoLoaiVe = ttSk
+            .GroupBy(t => t.LoaiVeId)
+            .Select(g =>
+            {
+                var loai = loaiSk.FirstOrDefault(
+                    l => l.LoaiVeId == g.Key);
+
+                return new DoanhThuLoaiVeVM
+                {
+                    TenLoaiVe = loai?.TenLoai ??
+                        "Loại vé không xác định",
+
+                    SoVeThanhToan = g
+                        .Select(t => t.VeId)
+                        .Distinct()
+                        .Count(),
+
+                    DoanhThuGop = g.Sum(t => t.SoTien)
+                };
+            })
+            .GroupBy(x => x.TenLoaiVe)
+            .Select(g => new DoanhThuLoaiVeVM
+            {
+                TenLoaiVe = g.Key,
+                SoVeThanhToan = g.Sum(x => x.SoVeThanhToan),
+                DoanhThuGop = g.Sum(x => x.DoanhThuGop)
+            })
+            .OrderByDescending(x => x.DoanhThuGop)
+            .ToList();
+
+        ketQua.Add(item);
     }
 
-    return View(suKiens);
+    ketQua = ketQua
+        .OrderByDescending(x => x.DoanhThuThucNhan)
+        .ThenByDescending(x => x.SoVeDaBan)
+        .ToList();
+
+    return View(ketQua);
 }
+
 // ============================================================
 // ========== THỐNG KÊ TỔNG QUAN (DOANH THU THEO SỰ KIỆN) ======
 // ============================================================
 // Action này để bạn gắn vào menu: asp-action="ThongKeTongQuan"
 // - Hiển thị doanh thu theo từng sự kiện của tổ chức
 // - Có thể lọc theo khoảng ngày thanh toán (tuNgay/denNgay)
+
 [HttpGet]
-public async Task<IActionResult> ThongKeTongQuan()
+public async Task<IActionResult> ThongKeTongQuan(int? suKienId)
 {
-    
+    int toChucId = await GetOrCreateToChucIdAsync();
+    DateTime now = DateTime.Now;
 
-
-    var toChucId = await GetOrCreateToChucIdAsync();
-
-    var suKienIds = await _db.SuKien
+    // 1. Chỉ lấy sự kiện thuộc BTC hiện tại.
+    var tatCaSuKien = await _db.SuKien
+        .AsNoTracking()
         .Where(s => s.ToChucId == toChucId)
+        .Select(s => new
+        {
+            s.SuKienId,
+            s.TenSuKien,
+            s.TrangThaiDuyet,
+            s.ThoiGianBatDau,
+            s.ThoiGianKetThuc
+        })
+        .ToListAsync();
+
+    if (suKienId.HasValue &&
+        !tatCaSuKien.Any(s =>
+            s.SuKienId == suKienId.Value))
+    {
+        return NotFound();
+    }
+
+    var suKiens = tatCaSuKien
+        .Where(s =>
+            !suKienId.HasValue ||
+            s.SuKienId == suKienId.Value)
+        .ToList();
+
+    var suKienIds = suKiens
         .Select(s => s.SuKienId)
+        .ToList();
+
+    // 2. Tất cả vé theo đúng danh sách sự kiện.
+    var ves = await _db.Ve
+        .AsNoTracking()
+        .Where(v => suKienIds.Contains(v.SuKienId))
+        .Select(v => new
+        {
+            v.VeId,
+            v.SuKienId,
+            v.DonHangId,
+            v.TrangThai
+        })
         .ToListAsync();
 
-    var veQuery = _db.Ve
-        .Include(v => v.SuKien)
-        .Include(v => v.ThanhToans)
-        .Where(v => suKienIds.Contains(v.SuKienId));
+    // 3. Thanh toán thành công theo thời điểm giao dịch.
+    // Mỗi vé chỉ tính một lần, kể cả khi có nhiều
+    // bản ghi thanh toán thành công cùng VeId.
+    var thanhToans = await (
+        from tt in _db.ThanhToan.AsNoTracking()
+        join ve in _db.Ve.AsNoTracking()
+            on tt.VeId equals ve.VeId
+        where suKienIds.Contains(ve.SuKienId) &&
+              tt.TrangThai == "ThanhCong"
+        select new
+        {
+            tt.VeId,
+            tt.NgayThanhToan
+        }
+    ).ToListAsync();
 
-    var veList = await veQuery.ToListAsync();
+    var veThanhToanTheoNgay = thanhToans
+        .GroupBy(t => t.VeId)
+        .Select(g => new
+        {
+            VeId = g.Key,
+            NgayThanhToan = g.Min(t => t.NgayThanhToan)
+        })
+        .ToList();
 
-    var thanhToanThanhCong = await _db.ThanhToan
-        .Include(t => t.Ve)
-.Where(t => t.Ve != null
-         && suKienIds.Contains(t.Ve.SuKienId)
-         && t.TrangThai == "ThanhCong")
-        .ToListAsync();
+    // 4. Lịch sử check-in: đếm theo thời điểm vào cổng.
+    var checkIns = await (
+        from tg in _db.ThamGiaSuKien.AsNoTracking()
+        join ve in _db.Ve.AsNoTracking()
+            on tg.VeId equals ve.VeId
+        where suKienIds.Contains(ve.SuKienId) &&
+              tg.TrangThai == "DaCheckIn" &&
+              tg.ThoiGianCheckIn != null
+        select new
+        {
+            tg.VeId,
+            tg.ThoiGianCheckIn
+        }
+    ).ToListAsync();
 
-    var yeuCauList = await _db.YeuCauHoanHuyVe
-        .Include(y => y.Ve)
-            .ThenInclude(v => v.SuKien)
-        .Where(y => suKienIds.Contains(y.Ve.SuKienId) && y.HinhThuc == "HuyVe")
-        .ToListAsync();
+    var checkInTheoNgay = checkIns
+        .GroupBy(t => t.VeId)
+        .Select(g => new
+        {
+            VeId = g.Key,
+            NgayCheckIn = g.Min(t => t.ThoiGianCheckIn!.Value)
+        })
+        .ToList();
 
+    // 5. Yêu cầu hủy của BTC.
+    var yeuCaus = await (
+        from yc in _db.YeuCauHoanHuyVe.AsNoTracking()
+        join v in _db.Ve.AsNoTracking()
+            on yc.VeId equals v.VeId
+        join sk in _db.SuKien.AsNoTracking()
+            on v.SuKienId equals sk.SuKienId
+        where suKienIds.Contains(v.SuKienId) &&
+              yc.HinhThuc == "HuyVe"
+        select new
+        {
+            yc.YeuCauId,
+            yc.NgayYeuCau,
+            yc.TrangThai,
+            yc.LyDo,
+            v.VeId,
+            v.DonHangId,
+            v.MaVe,
+            sk.TenSuKien
+        }
+    ).ToListAsync();
 
-    // Tổng tiền đã hoàn mô phỏng cho các đơn
-    // thuộc sự kiện của BTC hiện tại.
-    decimal tongTienHoan = await _db.DonHang
-        .Where(d =>
-            d.TrangThaiHoan == "DaHoan" &&
-            _db.Ve.Any(v =>
-                v.DonHangId == d.DonHangId &&
-                suKienIds.Contains(v.SuKienId)))
-        .SumAsync(d => d.SoTienHoan);
+    // Đếm đơn đang chờ duyệt, không nhân theo số vé.
+    int yeuCauChoDuyet = yeuCaus
+        .Where(y => y.TrangThai == "ChoDuyet")
+        .Select(y => y.DonHangId.HasValue
+            ? "DH_" + y.DonHangId.Value
+            : "VE_" + y.VeId)
+        .Distinct()
+        .Count();
 
-    decimal tongThanhToan = thanhToanThanhCong
-        .Sum(t => t.SoTien);
+    // 6. Xu hướng 12 tháng gần nhất.
+    var thangHienTai = new DateTime(
+        now.Year, now.Month, 1);
 
-    decimal doanhThuThucNhan =
-        tongThanhToan - tongTienHoan;
+    var thangDau = thangHienTai.AddMonths(-11);
 
+    var hoatDong = new List<HoatDongTheoThangVM>();
+
+    for (int i = 0; i < 12; i++)
+    {
+        var dauThang = thangDau.AddMonths(i);
+        var cuoiThang = dauThang.AddMonths(1);
+
+        hoatDong.Add(new HoatDongTheoThangVM
+        {
+            Thang = dauThang.ToString("MM/yyyy"),
+
+            VeThanhToan = veThanhToanTheoNgay.Count(t =>
+                t.NgayThanhToan >= dauThang &&
+                t.NgayThanhToan < cuoiThang),
+
+            LuotCheckIn = checkInTheoNgay.Count(t =>
+                t.NgayCheckIn >= dauThang &&
+                t.NgayCheckIn < cuoiThang)
+        });
+    }
+
+    // 7. Phân loại sự kiện theo trạng thái nghiệp vụ.
+    int choDuyet = suKiens.Count(s =>
+        s.TrangThaiDuyet == "ChoDuyet");
+
+    int tuChoi = suKiens.Count(s =>
+        s.TrangThaiDuyet == "TuChoi");
+
+    int daAn = suKiens.Count(s =>
+        s.TrangThaiDuyet == "An");
+
+    var daDuyet = suKiens
+        .Where(s => s.TrangThaiDuyet == "DaDuyet")
+        .ToList();
+
+    int sapDienRa = daDuyet.Count(s =>
+        s.ThoiGianBatDau > now);
+
+    int dangDienRa = daDuyet.Count(s =>
+        s.ThoiGianBatDau <= now &&
+        s.ThoiGianKetThuc > now);
+
+    int daKetThuc = daDuyet.Count(s =>
+        s.ThoiGianKetThuc <= now);
+
+    var trangThaiSuKien =
+        new List<TrangThaiSuKienTongQuanVM>
+        {
+            new()
+            {
+                TrangThai = "Sắp diễn ra",
+                SoLuong = sapDienRa
+            },
+            new()
+            {
+                TrangThai = "Đang diễn ra",
+                SoLuong = dangDienRa
+            },
+            new()
+            {
+                TrangThai = "Đã kết thúc",
+                SoLuong = daKetThuc
+            },
+            new()
+            {
+                TrangThai = "Chờ duyệt",
+                SoLuong = choDuyet
+            },
+            new()
+            {
+                TrangThai = "Từ chối",
+                SoLuong = tuChoi
+            },
+            new()
+            {
+                TrangThai = "Đã ẩn",
+                SoLuong = daAn
+            }
+        };
+
+    // 8. Những sự kiện sắp diễn ra trong 30 ngày.
+    var suKienSapToi = suKiens
+        .Where(s =>
+            s.TrangThaiDuyet == "DaDuyet" &&
+            s.ThoiGianBatDau > now &&
+            s.ThoiGianBatDau < now.AddDays(30))
+        .OrderBy(s => s.ThoiGianBatDau)
+        .Take(5)
+        .Select(s => new SuKienSapDienRaVM
+        {
+            SuKienId = s.SuKienId,
+            TenSuKien = s.TenSuKien,
+            ThoiGianBatDau = s.ThoiGianBatDau,
+            ThoiGianKetThuc = s.ThoiGianKetThuc,
+
+            SoVeHieuLuc = ves.Count(v =>
+                v.SuKienId == s.SuKienId &&
+                (v.TrangThai == "DaThanhToan" ||
+                 v.TrangThai == "DaCheckIn"))
+        })
+        .ToList();
+
+    // 9. Lấy các yêu cầu gần đây, mỗi đơn một dòng.
+    var yeuCauGanDay = yeuCaus
+        .GroupBy(y => y.DonHangId.HasValue
+            ? "DH_" + y.DonHangId.Value
+            : "VE_" + y.VeId)
+        .Select(g => g
+            .OrderByDescending(x =>
+                x.TrangThai == "ChoDuyet")
+            .ThenByDescending(x => x.NgayYeuCau)
+            .First())
+        .OrderByDescending(x => x.NgayYeuCau)
+        .Take(5)
+        .Select(y => new YeuCauHoanHuyGanDayVM
+        {
+            MaVe = y.DonHangId.HasValue
+                ? "Đơn #" + y.DonHangId.Value
+                : y.MaVe,
+            TenSuKien = y.TenSuKien,
+            LyDo = y.LyDo ?? "",
+            TrangThai = y.TrangThai,
+            NgayYeuCau = y.NgayYeuCau
+        })
+        .ToList();
 
     var vm = new ThongKeTongQuanDashboardVM
     {
-        TongSuKien = suKienIds.Count,
+        SuKienDangChon = suKienId,
 
-        TongVeDaBan = veList.Count(v =>
-            v.TrangThai == "DaThanhToan" || v.TrangThai == "DaCheckIn"),
-
-        TongDoanhThu = doanhThuThucNhan,
-
-        YeuCauChoDuyet = yeuCauList.Count(y => y.TrangThai == "ChoDuyet"),
-
-        DoanhThuTheoThang = thanhToanThanhCong
-            .GroupBy(t => new { t.NgayThanhToan.Year, t.NgayThanhToan.Month })
-            .OrderBy(g => g.Key.Year)
-            .ThenBy(g => g.Key.Month)
-            .Select(g => new DoanhThuTheoThangVM
+        DanhSachSuKien = tatCaSuKien
+            .OrderBy(s => s.TenSuKien)
+            .Select(s => new SuKienLocThongKeVM
             {
-                Thang = $"{g.Key.Month:00}/{g.Key.Year}",
-                DoanhThu = g.Sum(x => x.SoTien)
+                SuKienId = s.SuKienId,
+                TenSuKien = s.TenSuKien
             })
             .ToList(),
 
-        VeBanTheoSuKien = veList
-            .Where(v => v.TrangThai == "DaThanhToan" || v.TrangThai == "DaCheckIn")
-            .GroupBy(v => v.SuKien.TenSuKien)
-            .Select(g => new VeBanTheoSuKienVM
-            {
-                TenSuKien = g.Key,
-                SoVe = g.Count()
-            })
-            .OrderByDescending(x => x.SoVe)
-            .Take(7)
-            .ToList(),
+        TongSuKien = suKiens.Count,
 
-        TrangThaiVe = veList
+        TongVeDaBan = ves.Count(v =>
+            v.TrangThai == "DaThanhToan" ||
+            v.TrangThai == "DaCheckIn"),
+
+        TongVeDaHuy = ves.Count(v =>
+            v.TrangThai == "Huy"),
+
+        TongCheckIn = ves.Count(v =>
+            v.TrangThai == "DaCheckIn"),
+
+        YeuCauChoDuyet = yeuCauChoDuyet,
+
+        HoatDongTheoThang = hoatDong,
+        TrangThaiSuKien = trangThaiSuKien,
+
+        TrangThaiVe = ves
             .GroupBy(v => v.TrangThai)
             .Select(g => new TrangThaiVeVM
             {
                 TrangThai = g.Key,
                 SoLuong = g.Count()
             })
+            .OrderByDescending(x => x.SoLuong)
             .ToList(),
 
-        TrangThaiHoanHuy = yeuCauList
+        TrangThaiHoanHuy = yeuCaus
             .GroupBy(y => y.TrangThai)
             .Select(g => new TrangThaiHoanHuyVM
             {
@@ -2226,37 +2577,14 @@ public async Task<IActionResult> ThongKeTongQuan()
             })
             .ToList(),
 
-     TopSuKienBanChay = veList
-    .Where(v => v.TrangThai == "DaThanhToan" || v.TrangThai == "DaCheckIn")
-    .GroupBy(v => v.SuKien)
-    .Select(g => new SuKienBanChayVM
-    {
-        TenSuKien = g.Key.TenSuKien,
-        SoVeDaBan = g.Count(),
-        DoanhThu = thanhToanThanhCong
-            .Where(t => t.Ve != null && t.Ve.SuKienId == g.Key.SuKienId)
-            .Sum(t => t.SoTien)
-    })
-    .OrderByDescending(x => x.SoVeDaBan)
-    .Take(5)
-    .ToList(),
-
-        YeuCauGanDay = yeuCauList
-            .OrderByDescending(y => y.NgayYeuCau)
-            .Take(5)
-            .Select(y => new YeuCauHoanHuyGanDayVM
-            {
-                MaVe = y.Ve.MaVe,
-                TenSuKien = y.Ve.SuKien.TenSuKien,
-                LyDo = y.LyDo,
-                TrangThai = y.TrangThai,
-                NgayYeuCau = y.NgayYeuCau
-            })
-            .ToList()
+        SuKienSapDienRa = suKienSapToi,
+        YeuCauGanDay = yeuCauGanDay
     };
 
     return View(vm);
 }
+
+
 // ============================================================
 // ========== DANH SÁCH VÉ - TỔNG QUAN THEO SỰ KIỆN ============
 // ============================================================
@@ -2294,22 +2622,32 @@ public async Task<IActionResult> QuetMaQr()
 {
     int toChucId = await GetOrCreateToChucIdAsync();
 
-    var suKiens = await _db.SuKien
+    var now = DateTime.Now;
+    var dauNgay = now.Date;
+    var cuoiNgay = dauNgay.AddDays(1);
+
+    var suKienHomNay = await _db.SuKien
         .AsNoTracking()
-        .Where(s => s.ToChucId == toChucId)
-        .OrderByDescending(s => s.ThoiGianBatDau)
+        .Where(s =>
+            s.ToChucId == toChucId &&
+            s.TrangThaiDuyet == "DaDuyet" &&
+            s.ThoiGianBatDau < cuoiNgay &&
+            s.ThoiGianKetThuc > now)
+        .OrderBy(s => s.ThoiGianBatDau)
         .Select(s => new
         {
-            s.SuKienId,
-            s.TenSuKien
+            s.TenSuKien,
+            s.ThoiGianBatDau,
+            s.ThoiGianKetThuc
         })
         .ToListAsync();
 
-    ViewBag.DanhSachSuKien = new SelectList(
-        suKiens,
-        "SuKienId",
-        "TenSuKien"
-    );
+    ViewBag.SuKienHomNay = suKienHomNay
+        .Select(s =>
+            $"{s.TenSuKien} | " +
+            $"{s.ThoiGianBatDau:dd/MM/yyyy HH:mm} - " +
+            $"{s.ThoiGianKetThuc:dd/MM/yyyy HH:mm}")
+        .ToList();
 
     return View();
 }
@@ -2320,9 +2658,8 @@ public async Task<IActionResult> QuetMaQr()
         // ==========================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> XacNhanCheckInDonHang(
-            string? maQr,
-            int suKienId)
+public async Task<IActionResult> XacNhanCheckInDonHang(
+    string? maQr)
         {
             if (string.IsNullOrWhiteSpace(maQr) ||
                 maQr.Length > 256)
@@ -2373,8 +2710,7 @@ public async Task<IActionResult> QuetMaQr()
                 }
 
                 // 2. Chỉ BTC sở hữu sự kiện mới được check-in.
-                if (veGoc.SuKien.ToChucId != toChucId ||
-                    veGoc.SuKienId != suKienId)
+if (veGoc.SuKien.ToChucId != toChucId)
                 {
                     return BadRequest(new
                     {
@@ -2383,18 +2719,31 @@ public async Task<IActionResult> QuetMaQr()
                     });
                 }
 
-                // 3. Chỉ check-in trong thời gian cho phép.
-                var now = DateTime.Now;
 
-                if (now < veGoc.SuKien.ThoiGianBatDau.AddHours(-2) ||
-                    now >= veGoc.SuKien.ThoiGianKetThuc)
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Chưa đến giờ check-in hoặc sự kiện đã kết thúc."
-                    });
-                }
+// 3. Cho phép check-in từ 00:00 ngày bắt đầu sự kiện
+// đến trước thời điểm kết thúc sự kiện.
+
+var now = DateTime.Now;
+Console.WriteLine("===== KIEM TRA CHECK-IN =====");
+Console.WriteLine($"Server Now: {now:dd/MM/yyyy HH:mm:ss}");
+Console.WriteLine($"SuKien ID: {veGoc.SuKienId}");
+Console.WriteLine($"Bat dau: {veGoc.SuKien.ThoiGianBatDau:dd/MM/yyyy HH:mm:ss}");
+Console.WriteLine($"Ket thuc: {veGoc.SuKien.ThoiGianKetThuc:dd/MM/yyyy HH:mm:ss}");
+Console.WriteLine("============================");
+DateTime batDauCheckIn = veGoc.SuKien.ThoiGianBatDau.Date;
+DateTime ketThucCheckIn = veGoc.SuKien.ThoiGianKetThuc;
+
+if (now < batDauCheckIn || now >= ketThucCheckIn)
+{
+    return BadRequest(new
+    {
+        success = false,
+        message = now < batDauCheckIn
+            ? "Sự kiện chưa đến ngày tổ chức nên chưa thể check-in."
+            : "Sự kiện đã kết thúc, không thể check-in."
+    });
+}
+
 
                 // 4. Tìm tất cả vé cùng đơn.
                 IQueryable<Ve> queryVe = _db.Ve;
@@ -2418,10 +2767,10 @@ public async Task<IActionResult> QuetMaQr()
                     .OrderBy(v => v.VeId)
                     .ToListAsync();
 
-                if (danhSachVe.Count == 0 ||
-                    danhSachVe.Any(v =>
-                        v.SuKienId != suKienId ||
-                        v.NguoiDungId != veGoc.NguoiDungId))
+if (danhSachVe.Count == 0 ||
+    danhSachVe.Any(v =>
+        v.SuKienId != veGoc.SuKienId ||
+        v.NguoiDungId != veGoc.NguoiDungId))
                 {
                     return BadRequest(new
                     {

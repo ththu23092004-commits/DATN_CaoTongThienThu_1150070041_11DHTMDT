@@ -1,71 +1,779 @@
+
 @model VeSuKienWeb.Models.NguoiDung
 
 @{
-      Layout = "_AdminLayout";
-    ViewData["Title"] = "Tạo tài khoản ban tổ chức";
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Tạo tài khoản Ban tổ chức";
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-7 col-md-9">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-header bg-white border-0 p-4 text-center">
-                <h3 class="fw-bold text-primary mb-1">Tạo tài khoản ban tổ chức</h3>
-                <p class="text-muted mb-0">Tài khoản này dùng để đăng nhập và quản lý sự kiện.</p>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet" />
+
+<style>
+    .btc-create,
+    .btc-create * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .btc-create {
+        width: 100%;
+        max-width: 920px;
+        margin: 0 auto;
+        padding-bottom: 30px;
+        color: #594663;
+    }
+
+    .btc-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+        color: #9876a5;
+        font-size: 12px;
+        font-weight: 650;
+        text-decoration: none;
+    }
+
+    .btc-back:hover {
+        color: #794b90;
+        text-decoration: none;
+    }
+
+    .btc-card {
+        background: #fff;
+        border: 1px solid #eaddec;
+        border-radius: 17px;
+        overflow: hidden;
+        box-shadow: 0 10px 32px rgba(83, 47, 102, .06);
+    }
+
+    .btc-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 25px 28px;
+        border-bottom: 1px solid #f0e8f2;
+        background: linear-gradient(
+            115deg, #fdf9fe, #faf2fc
+        );
+    }
+
+    .btc-header-icon {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        border-radius: 14px;
+        background: #edddf3;
+        color: #9d6bb1;
+        font-size: 23px;
+    }
+
+    .btc-title {
+        margin: 0;
+        color: #503b5d;
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .btc-description {
+        margin: 7px 0 0;
+        color: #9b88a5;
+        font-size: 12px;
+        line-height: 1.8;
+    }
+
+    .btc-body {
+        padding: 26px 28px;
+    }
+
+    .btc-section-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin: 0 0 18px;
+        color: #604b6e;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .btc-section-title i {
+        color: #ab78bc;
+        font-size: 17px;
+    }
+
+    .btc-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .btc-field {
+        min-width: 0;
+    }
+
+    .btc-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .btc-label {
+        display: block;
+        margin-bottom: 9px;
+        color: #665271;
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .btc-required {
+        color: #cf718e;
+    }
+
+    .btc-input-wrap {
+        position: relative;
+    }
+
+    .btc-input-icon {
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        transform: translateY(-50%);
+        color: #ad94b9;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .btc-input {
+        display: block;
+        width: 100%;
+        min-height: 46px;
+        padding: 12px 42px 12px 42px;
+        border: 1px solid #e6d9e9;
+        border-radius: 10px;
+        outline: none;
+        background: #fefcfe;
+        color: #584563;
+        font-size: 12.5px;
+        transition: .18s ease;
+    }
+
+    .btc-input::placeholder {
+        color: #b3a3bb;
+    }
+
+    .btc-input:focus {
+        border-color: #b889c8;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(174,118,191,.1);
+    }
+
+    .btc-input.invalid {
+        border-color: #db8198;
+        background: #fffafb;
+    }
+
+    .btc-input.valid {
+        border-color: #a9d8c0;
+    }
+
+    .btc-eye {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        display: grid;
+        place-items: center;
+        width: 33px;
+        height: 33px;
+        padding: 0;
+        border: none;
+        border-radius: 7px;
+        background: transparent;
+        color: #a18baa;
+        cursor: pointer;
+    }
+
+    .btc-eye:hover {
+        background: #f3eaf6;
+        color: #8b5ca1;
+    }
+
+    .btc-validation {
+        display: block;
+        min-height: 17px;
+        margin-top: 6px;
+        color: #c66982;
+        font-size: 11px;
+        line-height: 1.65;
+    }
+
+    .btc-help {
+        margin-top: 7px;
+        color: #a18eaa;
+        font-size: 10.5px;
+        line-height: 1.7;
+    }
+
+    .btc-role-panel {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-top: 22px;
+        padding: 15px;
+        border: 1px solid #eadbed;
+        border-radius: 11px;
+        background: #fbf6fd;
+    }
+
+    .btc-role-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        background: #eedff4;
+        color: #9965ad;
+        font-size: 19px;
+    }
+
+    .btc-role-name {
+        color: #654e72;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .btc-role-desc {
+        margin-top: 4px;
+        color: #9c88a7;
+        font-size: 11px;
+        line-height: 1.7;
+    }
+
+    .btc-role-badge {
+        margin-left: auto;
+        padding: 7px 10px;
+        border-radius: 8px;
+        background: #f0e3f5;
+        color: #9766aa;
+        font-size: 11px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .btc-server-errors {
+        margin-bottom: 19px;
+        padding: 13px 15px;
+        border: 1px solid #f1d2dc;
+        border-radius: 10px;
+        background: #fff6f8;
+        color: #be627c;
+        font-size: 12px;
+        line-height: 1.8;
+    }
+
+    .btc-server-errors ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+    }
+
+    .btc-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 19px 28px;
+        border-top: 1px solid #f0e7f2;
+        background: #fefcfe;
+    }
+
+    .btc-footer-note {
+        color: #a290ab;
+        font-size: 11px;
+        line-height: 1.7;
+    }
+
+    .btc-footer-actions {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+    }
+
+    .btc-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 11px 17px;
+        border: 1px solid #e6d7e9;
+        border-radius: 10px;
+        background: white;
+        color: #82688e;
+        font-size: 12px;
+        font-weight: 750;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+    .btc-btn:hover {
+        background: #faf4fc;
+        color: #79548a;
+        text-decoration: none;
+    }
+
+    .btc-btn.primary {
+        border: none;
+        background: linear-gradient(115deg, #a36ab8, #c07db4);
+        box-shadow: 0 5px 14px rgba(164,105,185,.13);
+        color: #fff;
+    }
+
+    .btc-btn.primary:hover {
+        filter: brightness(.97);
+        transform: translateY(-1px);
+    }
+
+    .btc-btn.primary:disabled {
+        opacity: .7;
+        cursor: wait;
+        transform: none;
+    }
+
+    @@media (max-width: 650px) {
+        .btc-header {
+            padding: 19px;
+        }
+
+        .btc-body {
+            padding: 20px 18px;
+        }
+
+        .btc-form-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .btc-field.full {
+            grid-column: auto;
+        }
+
+        .btc-footer {
+            padding: 17px 18px;
+        }
+
+        .btc-footer-actions,
+        .btc-btn {
+            width: 100%;
+        }
+
+        .btc-role-panel {
+            flex-wrap: wrap;
+        }
+
+        .btc-role-badge {
+            margin-left: 0;
+        }
+    }
+</style>
+
+<div class="btc-create">
+
+    <a asp-controller="Admin"
+       asp-action="NguoiDung"
+       class="btc-back">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại Quản lý người dùng
+    </a>
+
+    <div class="btc-card">
+
+        <div class="btc-header">
+            <div class="btc-header-icon">
+                <i class="bi bi-person-plus"></i>
             </div>
 
-            <div class="card-body p-4">
-                <form asp-action="TaoBanToChuc" method="post">
-                    @Html.AntiForgeryToken()
+            <div>
+                <h1 class="btc-title">
+                    Tạo tài khoản Ban tổ chức
+                </h1>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Họ tên</label>
-                        <input asp-for="HoTen"
-                               class="form-control form-control-lg rounded-3"
-                               placeholder="Nhập họ tên ban tổ chức" />
-                        <span asp-validation-for="HoTen" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email</label>
-                        <input asp-for="Email"
-                               class="form-control form-control-lg rounded-3"
-                               placeholder="Nhập email đăng nhập" />
-                        <span asp-validation-for="Email" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Mật khẩu</label>
-                        <input asp-for="MatKhau"
-                               type="password"
-                               class="form-control form-control-lg rounded-3"
-                               placeholder="Nhập mật khẩu" />
-                        <span asp-validation-for="MatKhau" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Điện thoại</label>
-                        <input asp-for="DienThoai"
-                               class="form-control form-control-lg rounded-3"
-                               placeholder="Nhập số điện thoại liên hệ" />
-                    </div>
-
-                    <div class="alert alert-info rounded-3 small">
-                        Vai trò tài khoản sẽ được tự động gán là <strong>Ban tổ chức</strong>.
-                    </div>
-
-                    <div class="d-flex gap-2 justify-content-end">
-                        <a asp-action="NguoiDung"
-                           class="btn btn-light border rounded-pill px-4">
-                            Quay lại
-                        </a>
-
-                        <button type="submit"
-                                class="btn btn-primary rounded-pill px-4">
-                            Tạo tài khoản
-                        </button>
-                    </div>
-                </form>
+                <p class="btc-description">
+                    Nhập thông tin để cấp tài khoản quản lý
+                    sự kiện cho Ban tổ chức.
+                </p>
             </div>
         </div>
+
+        <form asp-controller="Admin"
+              asp-action="TaoBanToChuc"
+              method="post"
+              id="btcCreateForm"
+              novalidate>
+
+            @Html.AntiForgeryToken()
+
+            <div class="btc-body">
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="btc-server-errors"
+                         role="alert">
+                        <strong>
+                            <i class="bi bi-exclamation-circle me-1"></i>
+                            Không thể tạo tài khoản
+                        </strong>
+
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                <h2 class="btc-section-title">
+                    <i class="bi bi-person-vcard"></i>
+                    Thông tin tài khoản
+                </h2>
+
+                <div class="btc-form-grid">
+
+                    <!-- HO TEN -->
+                    <div class="btc-field full">
+                        <label asp-for="HoTen"
+                               class="btc-label">
+                            Họ và tên
+                            <span class="btc-required">*</span>
+                        </label>
+
+                        <div class="btc-input-wrap">
+                            <i class="bi bi-person btc-input-icon"></i>
+
+                            <input asp-for="HoTen"
+                                   id="btcName"
+                                   class="btc-input"
+                                   placeholder="Nhập họ và tên Ban tổ chức"
+                                   maxlength="150"
+                                   autocomplete="name" />
+                        </div>
+
+                        <span asp-validation-for="HoTen"
+                              id="btcNameError"
+                              class="btc-validation"></span>
+                    </div>
+
+                    <!-- EMAIL -->
+                    <div class="btc-field">
+                        <label asp-for="Email"
+                               class="btc-label">
+                            Email đăng nhập
+                            <span class="btc-required">*</span>
+                        </label>
+
+                        <div class="btc-input-wrap">
+                            <i class="bi bi-envelope btc-input-icon"></i>
+
+                            <input asp-for="Email"
+                                   type="email"
+                                   id="btcEmail"
+                                   class="btc-input"
+                                   placeholder="example@gmail.com"
+                                   maxlength="255"
+                                   autocomplete="off" />
+                        </div>
+
+                        <span asp-validation-for="Email"
+                              id="btcEmailError"
+                              class="btc-validation"></span>
+                    </div>
+
+                    <!-- DIEN THOAI -->
+                    <div class="btc-field">
+                        <label asp-for="DienThoai"
+                               class="btc-label">
+                            Số điện thoại
+                        </label>
+
+                        <div class="btc-input-wrap">
+                            <i class="bi bi-telephone btc-input-icon"></i>
+
+                            <input asp-for="DienThoai"
+                                   type="tel"
+                                   id="btcPhone"
+                                   class="btc-input"
+                                   placeholder="VD: 0912345678"
+                                   maxlength="10"
+                                   inputmode="numeric"
+                                   autocomplete="off" />
+                        </div>
+
+                        <span asp-validation-for="DienThoai"
+                              id="btcPhoneError"
+                              class="btc-validation"></span>
+
+                        <div class="btc-help">
+                            Nếu nhập, số điện thoại phải có 10 chữ số,
+                            bắt đầu bằng số 0.
+                        </div>
+                    </div>
+
+                    <!-- MAT KHAU -->
+                    <div class="btc-field full">
+                        <label asp-for="MatKhau"
+                               class="btc-label">
+                            Mật khẩu đăng nhập
+                            <span class="btc-required">*</span>
+                        </label>
+
+                        <div class="btc-input-wrap">
+                            <i class="bi bi-lock btc-input-icon"></i>
+
+                            <input asp-for="MatKhau"
+                                   type="password"
+                                   id="btcPassword"
+                                   class="btc-input"
+                                   placeholder="Nhập mật khẩu cho Ban tổ chức"
+                                   autocomplete="new-password" />
+
+                            <button type="button"
+                                    id="btcTogglePassword"
+                                    class="btc-eye"
+                                    aria-label="Hiển thị mật khẩu">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+
+                        <span asp-validation-for="MatKhau"
+                              id="btcPasswordError"
+                              class="btc-validation"></span>
+
+                        <div class="btc-help">
+                            Mật khẩu tối thiểu 6 ký tự.
+                            Mật khẩu sẽ được băm trước khi lưu.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btc-role-panel">
+                    <div class="btc-role-icon">
+                        <i class="bi bi-calendar-event"></i>
+                    </div>
+
+                    <div>
+                        <div class="btc-role-name">
+                            Vai trò được cấp
+                        </div>
+
+                        <div class="btc-role-desc">
+                            Tài khoản mới sẽ được tự động gán quyền
+                            Ban tổ chức và trạng thái Hoạt động.
+                        </div>
+                    </div>
+
+                    <span class="btc-role-badge">
+                        Ban tổ chức
+                    </span>
+                </div>
+            </div>
+
+            <div class="btc-footer">
+                <span class="btc-footer-note">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Thông tin được kiểm tra trước khi lưu.
+                </span>
+
+                <div class="btc-footer-actions">
+                    <a asp-controller="Admin"
+                       asp-action="NguoiDung"
+                       class="btc-btn">
+                        <i class="bi bi-x-lg"></i>
+                        Hủy bỏ
+                    </a>
+
+                    <button type="submit"
+                            class="btc-btn primary"
+                            id="btcSubmit">
+                        <i class="bi bi-person-check"></i>
+                        Tạo tài khoản
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
+
+<script>
+(function () {
+    "use strict";
+
+    const form = document.getElementById("btcCreateForm");
+
+    const fields = {
+        name: {
+            input: document.getElementById("btcName"),
+            error: document.getElementById("btcNameError")
+        },
+        email: {
+            input: document.getElementById("btcEmail"),
+            error: document.getElementById("btcEmailError")
+        },
+        phone: {
+            input: document.getElementById("btcPhone"),
+            error: document.getElementById("btcPhoneError")
+        },
+        password: {
+            input: document.getElementById("btcPassword"),
+            error: document.getElementById("btcPasswordError")
+        }
+    };
+
+    const submitButton = document.getElementById("btcSubmit");
+    const togglePassword = document.getElementById(
+        "btcTogglePassword"
+    );
+
+    let submitted = false;
+
+    function getError(key) {
+        const name = fields.name.input.value.trim();
+        const email = fields.email.input.value.trim();
+        const phone = fields.phone.input.value.trim();
+        const password = fields.password.input.value;
+
+        switch (key) {
+            case "name":
+                if (!name)
+                    return "Vui lòng nhập họ và tên.";
+
+                if (name.length > 150)
+                    return "Họ và tên không được vượt quá 150 ký tự.";
+
+                return "";
+
+            case "email":
+                if (!email)
+                    return "Vui lòng nhập email.";
+
+                if (email.length > 255 ||
+                    !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email))
+                    return "Vui lòng nhập địa chỉ email hợp lệ.";
+
+                return "";
+
+            case "phone":
+                if (phone && !/^0[0-9]{9}$/.test(phone))
+                    return "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0.";
+
+                return "";
+
+            case "password":
+                if (!password)
+                    return "Vui lòng nhập mật khẩu.";
+
+                if (password.length < 6)
+                    return "Mật khẩu phải có ít nhất 6 ký tự.";
+
+                return "";
+        }
+
+        return "";
+    }
+
+    function validateField(key) {
+        const field = fields[key];
+        const message = getError(key);
+
+        field.error.textContent = message;
+
+        field.input.classList.toggle(
+            "invalid",
+            Boolean(message)
+        );
+
+        field.input.classList.toggle(
+            "valid",
+            !message && Boolean(field.input.value.trim())
+        );
+
+        field.input.setAttribute(
+            "aria-invalid",
+            message ? "true" : "false"
+        );
+
+        return !message;
+    }
+
+    Object.keys(fields).forEach(key => {
+        const field = fields[key];
+
+        field.input.addEventListener("input", () => {
+            validateField(key);
+        });
+
+        field.input.addEventListener("blur", () => {
+            validateField(key);
+        });
+
+        // Giữ lỗi server trả về khi tải lại form.
+        if (field.error.textContent.trim()) {
+            field.input.classList.add("invalid");
+            field.input.setAttribute("aria-invalid", "true");
+        }
+    });
+
+    togglePassword.addEventListener("click", () => {
+        const password = fields.password.input;
+
+        const isVisible = password.type === "text";
+
+        password.type = isVisible ? "password" : "text";
+
+        togglePassword.innerHTML = isVisible
+            ? '<i class="bi bi-eye"></i>'
+            : '<i class="bi bi-eye-slash"></i>';
+
+        togglePassword.setAttribute(
+            "aria-label",
+            isVisible ? "Hiển thị mật khẩu" : "Ẩn mật khẩu"
+        );
+    });
+
+    form.addEventListener("submit", event => {
+        if (submitted) {
+            event.preventDefault();
+            return;
+        }
+
+        let valid = true;
+        let firstInvalid = null;
+
+        Object.keys(fields).forEach(key => {
+            const result = validateField(key);
+
+            if (!result) {
+                valid = false;
+
+                if (!firstInvalid) {
+                    firstInvalid = fields[key].input;
+                }
+            }
+        });
+
+        if (!valid) {
+            event.preventDefault();
+
+            if (firstInvalid) {
+                firstInvalid.focus();
+            }
+
+            return;
+        }
+
+        submitted = true;
+        submitButton.disabled = true;
+
+        submitButton.innerHTML =
+            '<i class="bi bi-hourglass-split"></i> Đang tạo tài khoản...';
+    });
+})();
+</script>

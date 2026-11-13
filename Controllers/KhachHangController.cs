@@ -979,6 +979,7 @@ DuocXemQr =
 
                 TenSuKien = first.SuKien.TenSuKien,
                 TenLoaiSuKien = tenLoai,
+                AnhSuKien = first.SuKien.AnhSuKien,
                 ThoiGianBatDau = first.SuKien.ThoiGianBatDau,
                 ThoiGianKetThuc = first.SuKien.ThoiGianKetThuc,
 
@@ -1109,6 +1110,7 @@ DuocXemQr =
 
         TenSuKien = first.SuKien.TenSuKien,
         TenLoaiSuKien = tenLoai,
+        AnhSuKien = first.SuKien.AnhSuKien,
         ThoiGianBatDau = first.SuKien.ThoiGianBatDau,
         ThoiGianKetThuc = first.SuKien.ThoiGianKetThuc,
 

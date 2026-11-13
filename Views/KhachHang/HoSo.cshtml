@@ -1,0 +1,884 @@
+
+@model VeSuKienWeb.Controllers.TaiKhoanCaNhanVM
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Tài khoản của tôi";
+
+    string tab = Context.Request.Query["tab"].ToString();
+
+    if (tab != "preferences")
+    {
+        tab = "profile";
+    }
+
+    string initials = string.IsNullOrWhiteSpace(Model.HoTen)
+        ? "K"
+        : Model.HoTen.Trim()[0].ToString().ToUpperInvariant();
+
+    int soChuDeDaChon = Model.ChuDes.Count(x => x.DaChon);
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>Tài khoản của tôi</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet" />
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            font-family: "Be Vietnam Pro", sans-serif;
+            font-size: 12px;
+            color: #604d6b;
+            background: #fff;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .acc-window {
+            display: grid;
+            grid-template-columns: 238px minmax(0, 1fr);
+            min-height: 100%;
+        }
+
+        /* SIDEBAR */
+
+        .acc-sidebar {
+            background: linear-gradient(
+                180deg,
+                #fcf8fe 0%,
+                #f8f1fa 100%
+            );
+            border-right: 1px solid #eee1f1;
+            padding: 24px 15px;
+        }
+
+        .acc-identity {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 6px 24px;
+            text-align: center;
+            border-bottom: 1px solid #eaddec;
+        }
+
+        .acc-avatar {
+            display: grid;
+            place-items: center;
+            width: 66px;
+            height: 66px;
+            border-radius: 20px;
+            background: linear-gradient(
+                135deg,
+                #ae7bc1,
+                #d28abd
+            );
+            color: #fff;
+            font-size: 24px;
+            font-weight: 800;
+            box-shadow: 0 8px 20px rgba(145, 86, 163, .13);
+        }
+
+        .acc-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: #5a4069;
+            overflow-wrap: anywhere;
+        }
+
+        .acc-email {
+            color: #a18dab;
+            font-size: 10px;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .acc-menu-title {
+            margin: 23px 10px 10px;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            color: #b39ebd;
+        }
+
+        .acc-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .acc-nav-button,
+        .acc-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-height: 43px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: #80698c;
+            background: transparent;
+            text-decoration: none;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .acc-nav-button i,
+        .acc-nav-link i {
+            width: 18px;
+            font-size: 16px;
+            color: #a078b2;
+        }
+
+        .acc-nav-button:hover,
+        .acc-nav-link:hover {
+            background: #f1e6f5;
+        }
+
+        .acc-nav-button.active {
+            color: #804f99;
+            background: #ead9f1;
+            border-color: #e1c8ea;
+        }
+
+        /* CONTENT */
+
+        .acc-main {
+            min-width: 0;
+            padding: 30px 38px 40px;
+        }
+
+        .acc-panel[hidden] {
+            display: none !important;
+        }
+
+        .acc-heading {
+            margin-bottom: 27px;
+        }
+
+        .acc-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            border-radius: 7px;
+            background: #f6edf9;
+            color: #9468a6;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .3px;
+        }
+
+        .acc-heading h1 {
+            margin: 12px 0 7px;
+            font-size: 21px;
+            font-weight: 800;
+            color: #573e66;
+        }
+
+        .acc-desc {
+            margin: 0;
+            color: #9c89a6;
+            font-size: 11px;
+            line-height: 1.85;
+        }
+
+        .acc-section-title {
+            margin: 0 0 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0e6f2;
+            color: #604a6c;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        /* FIELDS - ONE COLUMN */
+
+        .acc-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 19px;
+        }
+
+        .acc-field {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .acc-field label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 9px;
+            color: #786386;
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .acc-field label i {
+            width: 16px;
+            text-align: center;
+            color: #aa84b9;
+            font-size: 14px;
+        }
+
+        .acc-input {
+            display: block;
+            width: 100%;
+            height: 45px;
+            padding: 11px 14px;
+            border: 1px solid #e8dbea;
+            border-radius: 10px;
+            outline: none;
+            background: #fff;
+            color: #634e6f;
+            font-size: 11.5px;
+            line-height: 1.5;
+            transition:
+                border-color .2s ease,
+                box-shadow .2s ease;
+        }
+
+        .acc-input:focus {
+            border-color: #b783c6;
+            box-shadow: 0 0 0 3px rgba(178, 120, 193, .1);
+        }
+
+        .acc-input[readonly] {
+            background: #faf8fb;
+            color: #94849e;
+        }
+
+        .acc-help {
+            margin-top: 7px;
+            color: #a896af;
+            font-size: 9.5px;
+            line-height: 1.8;
+        }
+
+        .acc-role {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            width: 100%;
+            height: 45px;
+            padding: 10px 14px;
+            background: #faf8fb;
+            border: 1px solid #e8dbea;
+            border-radius: 10px;
+            color: #846596;
+            font-size: 11.5px;
+            font-weight: 650;
+        }
+
+        .acc-role i {
+            color: #aa7db9;
+        }
+
+        .acc-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 26px;
+        }
+
+        .acc-save {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            min-height: 43px;
+            padding: 11px 21px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(
+                110deg,
+                #a76bb9 0%,
+                #ca86bd 100%
+            );
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            transition: .2s ease;
+        }
+
+        .acc-save:hover {
+            filter: brightness(.96);
+            transform: translateY(-1px);
+        }
+
+        .acc-message {
+            margin-bottom: 19px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 650;
+            line-height: 1.7;
+        }
+
+        .acc-success {
+            background: #ecf8f0;
+            color: #478461;
+        }
+
+        .acc-error {
+            background: #fff0f3;
+            color: #b65f78;
+        }
+
+        /* PREFERENCES */
+
+        .acc-topics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 11px;
+        }
+
+        .acc-topic {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-height: 66px;
+            padding: 13px;
+            border: 1px solid #ebdfed;
+            border-radius: 11px;
+            background: white;
+            cursor: pointer;
+            transition: .15s ease;
+        }
+
+        .acc-topic:hover {
+            border-color: #d7b7e1;
+            background: #fdf9fe;
+        }
+
+        .acc-topic:has(input:checked) {
+            border-color: #c895d6;
+            background: #f6edfa;
+        }
+
+        .acc-topic input {
+            width: 17px;
+            height: 17px;
+            flex: 0 0 17px;
+            margin: 0;
+            accent-color: #a46cba;
+            cursor: pointer;
+        }
+
+        .acc-topic-icon {
+            display: grid;
+            place-items: center;
+            width: 35px;
+            height: 35px;
+            flex: 0 0 35px;
+            border-radius: 9px;
+            background: #f1e7f6;
+            color: #a174b4;
+            font-size: 16px;
+        }
+
+        .acc-topic-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #795f87;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .acc-count {
+            margin-top: 16px;
+            font-size: 10.5px;
+            color: #a08ca9;
+        }
+
+        .acc-notice {
+            margin-top: 18px;
+            padding: 14px;
+            background: #fbf8fc;
+            border: 1px solid #eee2f0;
+            border-radius: 10px;
+            color: #9784a2;
+            font-size: 10.5px;
+            line-height: 1.9;
+        }
+
+        /* RESPONSIVE */
+
+        @@media (max-width: 720px) {
+            .acc-window {
+                grid-template-columns: 1fr;
+            }
+
+            .acc-sidebar {
+                border-right: none;
+                border-bottom: 1px solid #eee1f1;
+                padding: 13px 15px;
+            }
+
+            .acc-identity {
+                flex-direction: row;
+                text-align: left;
+                padding: 5px 0 12px;
+                border-bottom: none;
+            }
+
+            .acc-avatar {
+                width: 45px;
+                height: 45px;
+                border-radius: 12px;
+                font-size: 17px;
+                flex-shrink: 0;
+            }
+
+            .acc-menu-title {
+                display: none;
+            }
+
+            .acc-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .acc-nav-button,
+            .acc-nav-link {
+                width: auto;
+                min-height: 36px;
+                padding: 8px 10px;
+            }
+
+            .acc-main {
+                padding: 22px 17px 30px;
+            }
+
+            .acc-heading h1 {
+                font-size: 19px;
+            }
+        }
+
+        @@media (max-width: 440px) {
+            .acc-topics {
+                grid-template-columns: 1fr;
+            }
+
+            .acc-fields {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="acc-window">
+
+        <!-- SIDEBAR -->
+        <aside class="acc-sidebar">
+
+            <div class="acc-identity">
+
+                <div class="acc-avatar">
+                    @initials
+                </div>
+
+                <div>
+                    <div class="acc-name">
+                        @Model.HoTen
+                    </div>
+
+                    <div class="acc-email">
+                        @Model.Email
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="acc-menu-title">
+                Quản lý tài khoản
+            </div>
+
+            <nav class="acc-nav">
+
+                <button type="button"
+                        class="acc-nav-button"
+                        data-acc-tab="profile">
+
+                    <i class="bi bi-person-vcard"></i>
+                    Cá nhân
+                </button>
+
+                <button type="button"
+                        class="acc-nav-button"
+                        data-acc-tab="preferences">
+
+                    <i class="bi bi-heart"></i>
+                    Sở thích
+                </button>
+
+                <a class="acc-nav-link"
+                   href="@Url.Action("VeCuaToi", "KhachHang")"
+                   target="_parent">
+
+                    <i class="bi bi-ticket-perforated"></i>
+                    Vé của tôi
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <!-- MAIN -->
+        <main class="acc-main">
+
+            <!-- TAB PROFILE -->
+            <section class="acc-panel"
+                     id="accProfile">
+
+                <div class="acc-heading">
+
+                    <span class="acc-kicker">
+                        <i class="bi bi-person-circle"></i>
+                        TÀI KHOẢN CÁ NHÂN
+                    </span>
+
+
+                </div>
+
+                @if (TempData["HoSoThanhCong"] != null)
+                {
+                    <div class="acc-message acc-success">
+                        <i class="bi bi-check-circle"></i>
+                        @TempData["HoSoThanhCong"]
+                    </div>
+                }
+
+                @if (TempData["HoSoLoi"] != null)
+                {
+                    <div class="acc-message acc-error">
+                        <i class="bi bi-exclamation-circle"></i>
+                        @TempData["HoSoLoi"]
+                    </div>
+                }
+
+                <h2 class="acc-section-title">
+                    Thông tin cá nhân
+                </h2>
+
+                <form action="@Url.Action("LuuHoSo", "TaiKhoanKhachHang")"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="acc-fields">
+
+                        <!-- HO TEN -->
+                        <div class="acc-field">
+
+                            <label for="accHoTen">
+                                <i class="bi bi-person"></i>
+                                Họ và tên
+                            </label>
+
+                            <input type="text"
+                                   id="accHoTen"
+                                   name="hoTen"
+                                   class="acc-input"
+                                   value="@Model.HoTen"
+                                   minlength="2"
+                                   maxlength="100"
+                                   autocomplete="name"
+                                   required />
+
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="acc-field">
+
+                            <label for="accEmail">
+                                <i class="bi bi-envelope"></i>
+                                Địa chỉ email
+                            </label>
+
+                            <input type="email"
+                                   id="accEmail"
+                                   class="acc-input"
+                                   value="@Model.Email"
+                                   readonly />
+
+                            <div class="acc-help">
+                                Email được sử dụng để đăng nhập tài khoản.
+                            </div>
+
+                        </div>
+
+                        <!-- PHONE -->
+                        <div class="acc-field">
+
+                            <label for="accPhone">
+                                <i class="bi bi-telephone"></i>
+                                Số điện thoại
+                            </label>
+
+                            <input type="tel"
+                                   id="accPhone"
+                                   name="dienThoai"
+                                   class="acc-input"
+                                   value="@Model.DienThoai"
+                                   maxlength="10"
+                                   inputmode="numeric"
+                                   pattern="0[0-9]{9}"
+                                   placeholder="Nhập số điện thoại"
+                                   autocomplete="tel" />
+
+                        </div>
+
+                        <!-- NGAY THAM GIA -->
+                        <div class="acc-field">
+
+                            <label for="accNgayTao">
+                                <i class="bi bi-calendar3"></i>
+                                Ngày tham gia
+                            </label>
+
+                            <input type="text"
+                                   id="accNgayTao"
+                                   class="acc-input"
+                                   value="@Model.NgayTao.ToString("dd/MM/yyyy")"
+                                   readonly />
+
+                        </div>
+
+
+
+                    </div>
+
+                    <div class="acc-actions">
+
+                        <button type="submit"
+                                class="acc-save">
+
+                            <i class="bi bi-check2-circle"></i>
+                            Lưu thay đổi
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </section>
+
+            <!-- TAB PREFERENCES -->
+            <section class="acc-panel"
+                     id="accPreferences"
+                     hidden>
+
+                <div class="acc-heading">
+
+                    <span class="acc-kicker">
+                        <i class="bi bi-stars"></i>
+                        CÁ NHÂN HÓA
+                    </span>
+
+                    <h1>Sở thích sự kiện</h1>
+
+                    <p class="acc-desc">
+                        Chọn các chủ đề bạn quan tâm để hệ thống
+                        gợi ý những sự kiện phù hợp hơn.
+                    </p>
+
+                </div>
+
+                @if (TempData["SoThichThanhCong"] != null)
+                {
+                    <div class="acc-message acc-success">
+                        <i class="bi bi-check-circle"></i>
+                        @TempData["SoThichThanhCong"]
+                    </div>
+                }
+
+                @if (TempData["SoThichLoi"] != null)
+                {
+                    <div class="acc-message acc-error">
+                        <i class="bi bi-exclamation-circle"></i>
+                        @TempData["SoThichLoi"]
+                    </div>
+                }
+
+                <form action="@Url.Action("LuuSoThich", "TaiKhoanKhachHang")"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <h2 class="acc-section-title">
+                        Chủ đề yêu thích
+                    </h2>
+
+                    <div class="acc-topics">
+
+                        @foreach (var chuDe in Model.ChuDes)
+                        {
+                            <label class="acc-topic">
+
+                                <input type="checkbox"
+                                       name="chuDeIds"
+                                       value="@chuDe.ChuDeId"
+                                       checked="@chuDe.DaChon"
+                                       class="acc-topic-checkbox" />
+
+                                <span class="acc-topic-icon">
+                                    <i class="bi bi-stars"></i>
+                                </span>
+
+                                <span class="acc-topic-name">
+                                    @chuDe.TenChuDe
+                                </span>
+
+                            </label>
+                        }
+
+                    </div>
+
+                    @if (!Model.ChuDes.Any())
+                    {
+                        <div class="acc-notice">
+                            Hiện chưa có chủ đề sự kiện đang hoạt động.
+                        </div>
+                    }
+
+                    <div class="acc-count">
+                        Đã chọn:
+                        <strong id="accSelectedCount">
+                            @soChuDeDaChon
+                        </strong>
+                        chủ đề
+                    </div>
+
+                    <div class="acc-notice">
+                        <i class="bi bi-info-circle"></i>
+                        Những chủ đề đã chọn được sử dụng cùng
+                        lịch sử xem sự kiện, yêu thích và đặt vé
+                        để cá nhân hóa danh sách gợi ý.
+                    </div>
+
+                    <div class="acc-actions">
+
+                        <button type="submit"
+                                class="acc-save">
+
+                            <i class="bi bi-heart-fill"></i>
+                            Lưu sở thích
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const tabs = document.querySelectorAll(
+                "[data-acc-tab]"
+            );
+
+            const panels = {
+                profile: document.getElementById("accProfile"),
+                preferences: document.getElementById("accPreferences")
+            };
+
+            function selectTab(tab) {
+                const next = panels[tab]
+                    ? tab
+                    : "profile";
+
+                Object.entries(panels).forEach(([key, element]) => {
+                    element.hidden = key !== next;
+                });
+
+                tabs.forEach(button => {
+                    const active =
+                        button.dataset.accTab === next;
+
+                    button.classList.toggle("active", active);
+
+                    button.setAttribute(
+                        "aria-pressed",
+                        String(active)
+                    );
+                });
+            }
+
+            tabs.forEach(button => {
+                button.addEventListener("click", () => {
+                    selectTab(button.dataset.accTab);
+                });
+            });
+
+            const checkboxes = document.querySelectorAll(
+                ".acc-topic-checkbox"
+            );
+
+            const selectedCount = document.getElementById(
+                "accSelectedCount"
+            );
+
+            function updateCount() {
+                selectedCount.textContent =
+                    Array.from(checkboxes)
+                        .filter(input => input.checked)
+                        .length;
+            }
+
+            checkboxes.forEach(input => {
+                input.addEventListener(
+                    "change",
+                    updateCount
+                );
+            });
+
+            const initialTab =
+                @Html.Raw(System.Text.Json.JsonSerializer.Serialize(tab));
+
+            selectTab(initialTab);
+        })();
+    </script>
+
+</body>
+</html>

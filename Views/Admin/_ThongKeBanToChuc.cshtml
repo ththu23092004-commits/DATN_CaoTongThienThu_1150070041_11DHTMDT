@@ -1,0 +1,1138 @@
+
+@{
+    string kyBtc = ViewData["KyThongKeBTC"]?.ToString() ?? "180";
+}
+
+<style>
+    .ob-wrap, .ob-wrap * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .ob-wrap {
+        margin: 15px 0 24px;
+        color: #5c4b67;
+        font-size: 12px;
+    }
+
+    .ob-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .ob-head h2 {
+        margin: 0;
+        color: #614b70;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .ob-head h2 i {
+        margin-right: 7px;
+        color: #aa76be;
+    }
+
+    .ob-head p, .ob-description {
+        margin: 6px 0 0;
+        color: #9985a5;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    .ob-button, .ob-select, .ob-input {
+        min-height: 37px;
+        border: 1px solid #e5d7ea;
+        border-radius: 9px;
+        background: #fff;
+        color: #826392;
+        padding: 8px 11px;
+        font-size: 11px;
+        outline: none;
+    }
+
+    .ob-button {
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .ob-button:hover:not(:disabled) {
+        background: #f6edf9;
+    }
+
+    .ob-button:disabled {
+        opacity: .45;
+        cursor: default;
+    }
+
+    .ob-input:focus, .ob-select:focus {
+        border-color: #af82bf;
+        box-shadow: 0 0 0 3px rgba(170,118,190,.1);
+    }
+
+    .ob-grid {
+        display: grid;
+        grid-template-columns: minmax(0,1fr) minmax(0,1.25fr);
+        gap: 13px;
+    }
+
+    .ob-panel {
+        min-width: 0;
+        padding: 17px;
+        background: #fff;
+        border: 1px solid #eaddec;
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(80,47,97,.045);
+    }
+
+    .ob-panel-title {
+        margin: 0;
+        color: #654a74;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .ob-chart {
+        position: relative;
+        height: 295px;
+        width: 100%;
+        margin-top: 14px;
+    }
+
+    .ob-chart canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .ob-kpis {
+        display: grid;
+        grid-template-columns: repeat(4,minmax(0,1fr));
+        gap: 10px;
+        margin: 12px 0;
+    }
+
+    .ob-kpi {
+        min-width: 0;
+        padding: 13px;
+        background: #fff;
+        border: 1px solid #eee2f0;
+        border-radius: 10px;
+    }
+
+    .ob-kpi span {
+        display: block;
+        color: #a18dac;
+        font-size: 10px;
+    }
+
+    .ob-kpi strong {
+        display: block;
+        margin-top: 5px;
+        color: #674b76;
+        font-size: 19px;
+        font-weight: 800;
+    }
+
+    .ob-table-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin: 14px 0;
+    }
+
+    .ob-table-tools .ob-input {
+        flex: 1 1 210px;
+        min-width: 0;
+    }
+
+    .ob-table-tools .ob-select {
+        flex: 0 1 175px;
+    }
+
+    .ob-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .ob-table {
+        width: 100%;
+        min-width: 490px;
+        border-collapse: collapse;
+    }
+
+    .ob-table th {
+        padding: 12px 10px;
+        background: #fbf6fd;
+        color: #907b9c;
+        text-align: left;
+        font-size: 10.5px;
+        font-weight: 800;
+        border-bottom: 1px solid #eee3f0;
+    }
+
+    .ob-table td {
+        padding: 12px 10px;
+        color: #6c5877;
+        font-size: 11px;
+        line-height: 1.7;
+        border-bottom: 1px solid #f2eaf3;
+        vertical-align: middle;
+    }
+
+    .ob-table tbody tr:hover {
+        background: #fdf8fe;
+    }
+
+    .ob-name {
+        color: #594265;
+        font-weight: 750;
+    }
+
+    .ob-muted {
+        margin-top: 3px;
+        color: #a392ac;
+        font-size: 10px;
+    }
+
+    .ob-view {
+        padding: 7px 10px;
+        border: 1px solid #e6d8eb;
+        border-radius: 8px;
+        background: #f8effb;
+        color: #9365a7;
+        font-size: 10.5px;
+        font-weight: 750;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .ob-view:hover {
+        background: #eddef4;
+    }
+
+    .ob-deep {
+        margin-top: 14px;
+    }
+
+    .ob-deep[hidden] {
+        display: none !important;
+    }
+
+    .ob-deep-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .ob-deep-title {
+        margin: 0;
+        color: #5d476a;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .ob-deep-sub {
+        margin: 6px 0 0;
+        color: #9c88a7;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    .ob-status {
+        display: inline-block;
+        border-radius: 7px;
+        padding: 6px 9px;
+        background: #f1e9f5;
+        color: #946ca6;
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    .ob-status.approved {
+        background: #e7f7ef;
+        color: #408e6a;
+    }
+
+    .ob-status.pending {
+        background: #fff3e3;
+        color: #ae8143;
+    }
+
+    .ob-status.rejected {
+        background: #fff0f3;
+        color: #bb7085;
+    }
+
+    .ob-table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-top: 13px;
+        color: #9e8daa;
+        font-size: 10.5px;
+    }
+
+    .ob-pages {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .ob-page-button {
+        min-width: 31px;
+        height: 31px;
+        padding: 0 9px;
+        border: 1px solid #e8d8eb;
+        border-radius: 7px;
+        background: #fff;
+        color: #876b94;
+        font-size: 10.5px;
+        cursor: pointer;
+    }
+
+    .ob-page-button.active {
+        background: #a675ba;
+        border-color: #a675ba;
+        color: #fff;
+    }
+
+    .ob-page-button:disabled {
+        cursor: default;
+        opacity: .4;
+    }
+
+    .ob-note {
+        margin-top: 12px;
+        color: #a18ca9;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    @@media (max-width:1150px) {
+        .ob-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width:650px) {
+        .ob-kpis {
+            grid-template-columns: repeat(2,minmax(0,1fr));
+        }
+
+        .ob-panel {
+            padding: 13px;
+        }
+
+        .ob-table-tools .ob-select {
+            flex: 1 1 100%;
+        }
+    }
+</style>
+
+<section class="ob-wrap" id="obSection">
+
+    <div class="ob-head">
+        <div>
+            <h2>
+                <i class="bi bi-building"></i>
+                Phân tích hoạt động theo Ban tổ chức
+            </h2>
+            <p>
+                Xếp hạng, so sánh và xem chi tiết từng BTC.
+            </p>
+        </div>
+
+        <button type="button"
+                class="ob-button"
+                id="obRefresh">
+            <i class="bi bi-arrow-clockwise"></i>
+            Làm mới
+        </button>
+    </div>
+
+    <!-- KPI TONG HOP -->
+    <div class="ob-kpis">
+        <div class="ob-kpi">
+            <span>BTC có hồ sơ tổ chức</span>
+            <strong id="obTotalBtc">—</strong>
+        </div>
+
+        <div class="ob-kpi">
+            <span>Sự kiện tạo trong kỳ</span>
+            <strong id="obTotalEvents">—</strong>
+        </div>
+
+        <div class="ob-kpi">
+            <span>Vé bán trong kỳ</span>
+            <strong id="obTotalTickets">—</strong>
+        </div>
+
+        <div class="ob-kpi">
+            <span>Yêu cầu hủy trong kỳ</span>
+            <strong id="obTotalCancel">—</strong>
+        </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="ob-grid">
+
+        <div class="ob-panel">
+            <div class="ob-head">
+                <h3 class="ob-panel-title">
+                    Xếp hạng Ban tổ chức
+                </h3>
+
+                <select class="ob-select"
+                        id="obMetric">
+                    <option value="soVeBan">Theo vé bán</option>
+                    <option value="soSuKien">Theo sự kiện mới</option>
+                </select>
+            </div>
+
+            <p class="ob-description">
+                Top 8 Ban tổ chức trong kỳ thống kê.
+            </p>
+
+            <div class="ob-chart">
+                <canvas id="obChart"></canvas>
+            </div>
+
+            <p class="ob-note">
+                <i class="bi bi-hand-index"></i>
+                Nhấp vào cột để xem sự kiện của BTC.
+            </p>
+        </div>
+
+        <div class="ob-panel">
+            <h3 class="ob-panel-title">
+                Danh sách Ban tổ chức
+            </h3>
+
+            <p class="ob-description">
+                Danh sách được chia trang để dễ theo dõi.
+            </p>
+
+            <div class="ob-table-tools">
+                <input type="search"
+                       class="ob-input"
+                       id="obBtcSearch"
+                       placeholder="Tìm tên hoặc email BTC..."
+                       aria-label="Tìm Ban tổ chức" />
+            </div>
+
+            <div class="ob-table-wrap">
+                <table class="ob-table">
+                    <thead>
+                        <tr>
+                            <th>Ban tổ chức</th>
+                            <th>Sự kiện mới</th>
+                            <th>Vé bán</th>
+                            <th>Yêu cầu hủy</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="obBody">
+                        <tr>
+                            <td colspan="5">
+                                Đang tải dữ liệu...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="ob-table-footer">
+                <span id="obPageInfo"></span>
+                <div class="ob-pages" id="obPages"></div>
+            </div>
+
+            <p class="ob-note" id="obUpdated">
+                Dữ liệu từ SQL Server.
+            </p>
+        </div>
+    </div>
+
+    <!-- DEEP DIVE -->
+    <div class="ob-panel ob-deep"
+         id="obDeep"
+         hidden>
+
+        <div class="ob-deep-top">
+            <div>
+                <h3 class="ob-deep-title"
+                    id="obDeepTitle">
+                    Phân tích Ban tổ chức
+                </h3>
+
+                <p class="ob-deep-sub" id="obDeepSub">
+                    Chi tiết hoạt động theo sự kiện.
+                </p>
+            </div>
+
+            <button type="button"
+                    class="ob-button"
+                    id="obCloseDeep">
+                <i class="bi bi-x-lg"></i>
+                Đóng chi tiết
+            </button>
+        </div>
+
+        <!-- KPI CUA BTC -->
+        <div class="ob-kpis">
+            <div class="ob-kpi">
+                <span>Tổng sự kiện BTC</span>
+                <strong id="obDeepEvents">—</strong>
+            </div>
+
+            <div class="ob-kpi">
+                <span>Sự kiện mới trong kỳ</span>
+                <strong id="obDeepNewEvents">—</strong>
+            </div>
+
+            <div class="ob-kpi">
+                <span>Vé bán trong kỳ</span>
+                <strong id="obDeepTickets">—</strong>
+            </div>
+
+            <div class="ob-kpi">
+                <span>Yêu cầu hủy trong kỳ</span>
+                <strong id="obDeepCancel">—</strong>
+            </div>
+        </div>
+
+        <!-- TIM KIEM VA LOC -->
+        <div class="ob-table-tools">
+            <input type="search"
+                   class="ob-input"
+                   id="obEventSearch"
+                   placeholder="Tìm tên hoặc mã sự kiện..."
+                   aria-label="Tìm sự kiện của BTC" />
+
+            <select id="obEventStatus"
+                    class="ob-select"
+                    aria-label="Lọc trạng thái duyệt">
+                <option value="">Tất cả trạng thái</option>
+                <option value="ChoDuyet">Chờ duyệt</option>
+                <option value="DaDuyet">Đã duyệt</option>
+                <option value="TuChoi">Từ chối</option>
+                <option value="An">Đã ẩn</option>
+            </select>
+        </div>
+
+        <div class="ob-table-wrap">
+            <table class="ob-table">
+                <thead>
+                    <tr>
+                        <th>Sự kiện</th>
+                        <th>Ngày tạo</th>
+                        <th>Trạng thái</th>
+                        <th>Vé bán</th>
+                        <th>Yêu cầu hủy</th>
+                    </tr>
+                </thead>
+
+                <tbody id="obDeepBody">
+                    <tr>
+                        <td colspan="5">
+                            Chọn BTC để xem chi tiết.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PHAN TRANG DEEP DIVE -->
+        <div class="ob-table-footer">
+            <span id="obDeepPageInfo"></span>
+            <div class="ob-pages"
+                 id="obDeepPages"></div>
+        </div>
+
+        <p class="ob-note">
+            <i class="bi bi-info-circle"></i>
+            Hiển thị 5 sự kiện mỗi trang.
+            KPI phía trên được tính trên toàn bộ dữ liệu
+            của BTC, không bị giới hạn bởi phân trang.
+            Các chỉ số vé bán và yêu cầu hủy được lọc theo kỳ.
+        </p>
+    </div>
+
+</section>
+
+<script>
+(function () {
+    "use strict";
+
+    const period = @Html.Raw(
+        System.Text.Json.JsonSerializer.Serialize(kyBtc)
+    );
+
+    const summaryUrl =
+        '@Url.Action("ThongKeBanToChucDuLieu", "Admin")';
+
+    const detailUrl =
+        '@Url.Action("ThongKeBanToChucChiTiet", "Admin")';
+
+    const $ = id => document.getElementById(id);
+
+    const fmt = value =>
+        new Intl.NumberFormat("vi-VN").format(value ?? 0);
+
+    const colors = [
+        "#A579BD",
+        "#729CD2",
+        "#65B69A",
+        "#D5A566",
+        "#CB8DAC",
+        "#B7A0CF",
+        "#84B7BD",
+        "#D28D8B"
+    ];
+
+    const pageSize = 5;
+
+    let allBtc = [];
+    let allEvents = [];
+
+    let btcPage = 1;
+    let eventPage = 1;
+
+    let selectedBtc = null;
+    let chart = null;
+
+    let detailRequestId = 0;
+
+    function normalize(value) {
+        return String(value ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLowerCase()
+            .trim();
+    }
+
+    function cell(value) {
+        const td = document.createElement("td");
+        td.textContent = value ?? "—";
+        return td;
+    }
+
+    function showMessage(tbody, message) {
+        tbody.replaceChildren();
+
+        const tr = document.createElement("tr");
+        const td = cell(message);
+        td.colSpan = 5;
+
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    }
+
+    function buildPages(containerId, pageCount, current, onClick) {
+        const container = $(containerId);
+        container.replaceChildren();
+
+        if (pageCount <= 1) return;
+
+        function addButton(text, page, disabled, active) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className =
+                "ob-page-button" + (active ? " active" : "");
+            button.textContent = text;
+            button.disabled = disabled;
+
+            if (active) {
+                button.setAttribute("aria-current", "page");
+            }
+
+            button.addEventListener("click", () => onClick(page));
+            container.appendChild(button);
+        }
+
+        addButton(
+            "Trước",
+            current - 1,
+            current <= 1,
+            false
+        );
+
+        // Chỉ hiển thị tối đa 5 số trang gần trang đang xem.
+        const start = Math.max(
+            1,
+            Math.min(current - 2, pageCount - 4)
+        );
+
+        const end = Math.min(pageCount, start + 4);
+
+        for (let i = start; i <= end; i++) {
+            addButton(
+                String(i),
+                i,
+                false,
+                i === current
+            );
+        }
+
+        addButton(
+            "Sau",
+            current + 1,
+            current >= pageCount,
+            false
+        );
+    }
+
+    function renderBtcTable() {
+        const tbody = $("obBody");
+        const keyword = normalize($("obBtcSearch").value);
+
+        const filtered = allBtc.filter(item => {
+            const text = normalize(
+                item.tenToChuc + " " +
+                item.email + " " +
+                item.toChucId
+            );
+
+            return text.includes(keyword);
+        });
+
+        const pages = Math.max(
+            1,
+            Math.ceil(filtered.length / pageSize)
+        );
+
+        btcPage = Math.max(1, Math.min(btcPage, pages));
+
+        const start = (btcPage - 1) * pageSize;
+        const visible = filtered.slice(start, start + pageSize);
+
+        tbody.replaceChildren();
+
+        if (!visible.length) {
+            showMessage(tbody, "Không tìm thấy Ban tổ chức.");
+        }
+
+        visible.forEach(item => {
+            const tr = document.createElement("tr");
+
+            const nameTd = document.createElement("td");
+
+            const name = document.createElement("div");
+            name.className = "ob-name";
+            name.textContent = item.tenToChuc;
+
+            const sub = document.createElement("div");
+            sub.className = "ob-muted";
+            sub.textContent = item.email ||
+                "BTC #" + item.toChucId;
+
+            nameTd.append(name, sub);
+
+            tr.appendChild(nameTd);
+            tr.appendChild(cell(fmt(item.soSuKien)));
+            tr.appendChild(cell(fmt(item.soVeBan)));
+            tr.appendChild(cell(fmt(item.soYeuCauHuy)));
+
+            const action = document.createElement("td");
+            const button = document.createElement("button");
+
+            button.type = "button";
+            button.className = "ob-view";
+            button.textContent = "Xem chi tiết";
+
+            button.addEventListener("click", () => {
+                loadDetail(item.toChucId);
+            });
+
+            action.appendChild(button);
+            tr.appendChild(action);
+
+            tbody.appendChild(tr);
+        });
+
+        $("obPageInfo").textContent = filtered.length
+            ? `Hiển thị ${start + 1}–${start + visible.length} / ${filtered.length} BTC`
+            : "0 Ban tổ chức";
+
+        buildPages("obPages", pages, btcPage, page => {
+            btcPage = page;
+            renderBtcTable();
+        });
+    }
+
+    function statusText(status) {
+        switch (status) {
+            case "ChoDuyet": return "Chờ duyệt";
+            case "DaDuyet": return "Đã duyệt";
+            case "TuChoi": return "Từ chối";
+            case "An": return "Đã ẩn";
+            default: return status || "Chưa xác định";
+        }
+    }
+
+    function renderEventTable() {
+        const tbody = $("obDeepBody");
+
+        const keyword = normalize($("obEventSearch").value);
+        const status = $("obEventStatus").value;
+
+        const filtered = allEvents.filter(item => {
+            const text = normalize(
+                item.tenSuKien + " " + item.suKienId
+            );
+
+            const searchMatch = text.includes(keyword);
+            const statusMatch =
+                !status || item.trangThai === status;
+
+            return searchMatch && statusMatch;
+        });
+
+        const pages = Math.max(
+            1,
+            Math.ceil(filtered.length / pageSize)
+        );
+
+        eventPage = Math.max(1, Math.min(eventPage, pages));
+
+        const start = (eventPage - 1) * pageSize;
+        const visible = filtered.slice(start, start + pageSize);
+
+        tbody.replaceChildren();
+
+        if (!visible.length) {
+            showMessage(
+                tbody,
+                "Không có sự kiện phù hợp bộ lọc."
+            );
+        }
+
+        visible.forEach(item => {
+            const tr = document.createElement("tr");
+
+            const nameTd = document.createElement("td");
+
+            const name = document.createElement("div");
+            name.className = "ob-name";
+            name.textContent = item.tenSuKien;
+
+            const sub = document.createElement("div");
+            sub.className = "ob-muted";
+            sub.textContent = "Sự kiện #" + item.suKienId;
+
+            nameTd.append(name, sub);
+            tr.appendChild(nameTd);
+
+            tr.appendChild(cell(item.ngayTao));
+
+            const statusTd = document.createElement("td");
+            const badge = document.createElement("span");
+
+            const statusClass = item.trangThai === "DaDuyet"
+                ? "approved"
+                : item.trangThai === "ChoDuyet"
+                    ? "pending"
+                    : item.trangThai === "TuChoi"
+                        ? "rejected"
+                        : "";
+
+            badge.className = "ob-status " + statusClass;
+            badge.textContent = statusText(item.trangThai);
+
+            statusTd.appendChild(badge);
+            tr.appendChild(statusTd);
+
+            tr.appendChild(cell(fmt(item.soVeBan)));
+            tr.appendChild(cell(fmt(item.soYeuCauHuy)));
+
+            tbody.appendChild(tr);
+        });
+
+        $("obDeepPageInfo").textContent = filtered.length
+            ? `Hiển thị ${start + 1}–${start + visible.length} / ${filtered.length} sự kiện`
+            : "0 sự kiện";
+
+        buildPages(
+            "obDeepPages",
+            pages,
+            eventPage,
+            page => {
+                eventPage = page;
+                renderEventTable();
+            }
+        );
+    }
+
+    function renderChart() {
+        if (typeof Chart === "undefined") return;
+
+        const metric = $("obMetric").value;
+
+        const sorted = [...allBtc]
+            .sort((a, b) =>
+                (b[metric] || 0) - (a[metric] || 0)
+            )
+            .slice(0, 8);
+
+        if (chart) {
+            chart.destroy();
+        }
+
+        chart = new Chart($("obChart"), {
+            type: "bar",
+            data: {
+                labels: sorted.map(x => x.tenToChuc),
+                datasets: [{
+                    label: metric === "soVeBan"
+                        ? "Vé bán"
+                        : "Sự kiện mới",
+
+                    data: sorted.map(x => x[metric]),
+
+                    backgroundColor: sorted.map(
+                        (_, i) => colors[i % colors.length]
+                    ),
+
+                    borderRadius: 7,
+                    maxBarThickness: 30
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+
+                onClick: (event, elements) => {
+                    if (!elements.length) return;
+
+                    const item = sorted[elements[0].index];
+
+                    if (item) {
+                        loadDetail(item.toChucId);
+                    }
+                },
+
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "#4b3657",
+                        padding: 11,
+                        callbacks: {
+                            label(context) {
+                                return " " + fmt(context.parsed.x) +
+                                    (metric === "soVeBan"
+                                        ? " vé"
+                                        : " sự kiện");
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        grid: { color: "#f0e7f3" }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: {
+                            callback: function(value) {
+                                const text = this.getLabelForValue(value);
+
+                                return text.length > 19
+                                    ? text.slice(0, 19) + "…"
+                                    : text;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async function loadSummary() {
+        const button = $("obRefresh");
+        button.disabled = true;
+
+        try {
+            const params = new URLSearchParams({
+                ky: period
+            });
+
+            const response = await fetch(
+                summaryUrl + "?" + params,
+                { credentials: "same-origin" }
+            );
+
+            if (!response.ok) {
+                throw new Error("Không thể tải thống kê BTC.");
+            }
+
+            const result = await response.json();
+
+            allBtc = result.rows || [];
+
+            $("obTotalBtc").textContent = fmt(result.tongBtc);
+            $("obTotalEvents").textContent = fmt(result.tongSuKien);
+            $("obTotalTickets").textContent = fmt(result.tongVeBan);
+            $("obTotalCancel").textContent = fmt(result.tongYeuCauHuy);
+
+            $("obUpdated").textContent =
+                `Kỳ ${result.tuNgay} – ${result.denNgay} · Cập nhật ${result.capNhatLuc}`;
+
+            renderBtcTable();
+            renderChart();
+
+            if (selectedBtc !== null) {
+                await loadDetail(selectedBtc, false, false);
+            }
+        }
+        catch (error) {
+            $("obUpdated").textContent = error.message;
+        }
+        finally {
+            button.disabled = false;
+        }
+    }
+
+    async function loadDetail(
+        toChucId,
+        scroll = true,
+        resetFilters = true
+    ) {
+        selectedBtc = toChucId;
+        const requestId = ++detailRequestId;
+
+        $("obDeep").hidden = false;
+        $("obDeepTitle").textContent =
+            "Đang tải thông tin Ban tổ chức...";
+
+        showMessage(
+            $("obDeepBody"),
+            "Đang lấy dữ liệu...",
+        );
+
+        if (resetFilters) {
+            eventPage = 1;
+            $("obEventSearch").value = "";
+            $("obEventStatus").value = "";
+        }
+
+        if (scroll) {
+            $("obDeep").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+
+        try {
+            const params = new URLSearchParams({
+                toChucId: String(toChucId),
+                ky: period
+            });
+
+            const response = await fetch(
+                detailUrl + "?" + params,
+                { credentials: "same-origin" }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Không tải được chi tiết Ban tổ chức."
+                );
+            }
+
+            const result = await response.json();
+
+            if (requestId !== detailRequestId) return;
+
+            $("obDeepTitle").textContent =
+                "Phân tích BTC: " + result.tenToChuc;
+
+            $("obDeepSub").textContent =
+                "Chi tiết các sự kiện thuộc BTC #" +
+                result.toChucId;
+
+            $("obDeepEvents").textContent =
+                fmt(result.tongSuKien);
+
+            $("obDeepNewEvents").textContent =
+                fmt(result.suKienMoiTrongKy);
+
+            $("obDeepTickets").textContent =
+                fmt(result.tongVeBanTrongKy);
+
+            $("obDeepCancel").textContent =
+                fmt(result.tongYeuCauHuyTrongKy);
+
+            allEvents = result.rows || [];
+            renderEventTable();
+        }
+        catch (error) {
+            if (requestId !== detailRequestId) return;
+
+            $("obDeepTitle").textContent =
+                "Không thể tải phân tích BTC";
+
+            showMessage(
+                $("obDeepBody"),
+                error.message
+            );
+        }
+    }
+
+    $("obBtcSearch").addEventListener("input", () => {
+        btcPage = 1;
+        renderBtcTable();
+    });
+
+    $("obEventSearch").addEventListener("input", () => {
+        eventPage = 1;
+        renderEventTable();
+    });
+
+    $("obEventStatus").addEventListener("change", () => {
+        eventPage = 1;
+        renderEventTable();
+    });
+
+    $("obMetric").addEventListener(
+        "change",
+        renderChart
+    );
+
+    $("obRefresh").addEventListener(
+        "click",
+        loadSummary
+    );
+
+    $("obCloseDeep").addEventListener("click", () => {
+        detailRequestId++;
+        selectedBtc = null;
+        allEvents = [];
+        $("obDeep").hidden = true;
+    });
+
+    loadSummary();
+
+    // Dữ liệu tự cập nhật mỗi 60 giây.
+    // Giữ nguyên trang và bộ lọc người dùng đang chọn.
+    setInterval(() => {
+        if (document.visibilityState === "visible") {
+            loadSummary();
+        }
+    }, 60000);
+})();
+</script>

@@ -1,238 +1,1163 @@
+
 @model List<VeSuKienWeb.Models.SuKien>
+@using System.Linq
+
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Duyệt sự kiện";
+
+    var hienTai = DateTime.Now;
+
+    var danhSach = (Model ?? new List<VeSuKienWeb.Models.SuKien>())
+        .OrderBy(x =>
+            x.TrangThaiDuyet == "ChoDuyet" &&
+            x.ThoiGianKetThuc > hienTai ? 0 : 1)
+        .ThenByDescending(x => x.NgayDang)
+        .ToList();
+
+    int tong = danhSach.Count;
+
+    int choDuyet = danhSach.Count(x =>
+        x.TrangThaiDuyet == "ChoDuyet" &&
+        x.ThoiGianKetThuc > hienTai);
+
+    string TenTrangThai(string? status, DateTime ketThuc)
+    {
+        if (status == "ChoDuyet" && ketThuc <= hienTai)
+            return "Quá hạn duyệt";
+
+        return status switch
+        {
+            "ChoDuyet" => "Chờ duyệt",
+            "DaDuyet" => "Đã duyệt",
+            "TuChoi" => "Từ chối",
+            "An" => "Đã ẩn",
+            _ => "Chưa xác định"
+        };
+    }
+
+    string MauTrangThai(string? status, DateTime ketThuc)
+    {
+        if (status == "ChoDuyet" && ketThuc <= hienTai)
+            return "expired";
+
+        return status switch
+        {
+            "ChoDuyet" => "pending",
+            "DaDuyet" => "approved",
+            "TuChoi" => "rejected",
+            "An" => "hidden-event",
+            _ => "unknown"
+        };
+    }
 }
 
 <style>
-    .admin-card {
-        background: #fff;
-        border: 1px solid #eef2f7;
-        border-radius: 18px;
-        box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
-        overflow: hidden;
+    .approval-page,
+    .approval-page *,
+    .approval-modal,
+    .approval-modal * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
 
-    .admin-page-title {
-        font-size: 30px;
-        font-weight: 800;
-        color: #111827;
-    }
-
-    .admin-table {
+    .approval-page {
         width: 100%;
-        table-layout: auto;
-    }
-
-    .admin-table th {
-        font-size: 14px;
-        color: #111827;
-        font-weight: 700;
-        white-space: nowrap;
-        padding: 16px 10px;
-        background: #f8fafc;
-    }
-
-    .admin-table td {
-        padding: 14px 10px;
-        vertical-align: middle;
+        min-width: 0;
+        padding-bottom: 28px;
+        color: #51415c;
         font-size: 13px;
-        color: #374151;
     }
 
-    .event-name {
-        max-width: 210px;
+    .approval-page button,
+    .approval-page input,
+    .approval-page select,
+    .approval-modal button {
+        font: inherit;
     }
 
-    .event-name .fw-bold {
-        font-size: 14px;
-        color: #111827;
-    }
-
-    .event-name .small {
-        font-size: 12px;
-        color: #6b7280;
-    }
-
-    .text-one-line {
-        white-space: nowrap;
+    .approval-card {
         overflow: hidden;
-        text-overflow: ellipsis;
+        border: 1px solid #e9dbed;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 7px 24px rgba(85, 48, 104, .05);
     }
 
-    .time-col {
-        white-space: normal;
-        min-width: 120px;
+    .approval-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 13px;
+        padding: 20px 20px 17px;
+        border-bottom: 1px solid #f1e9f3;
     }
 
-    .type-col {
-        min-width: 80px;
+    .approval-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        color: #4d3a57;
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.5;
     }
 
-    .org-col {
-        max-width: 120px;
+    .approval-heading i {
+        color: #a777b9;
+        font-size: 19px;
     }
 
-    .status-col {
-        white-space: nowrap;
-        min-width: 90px;
+    .approval-counts {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
     }
 
-    .action-col {
-        width: 170px;
-        white-space: normal;
-    }
-
-    .badge-soft {
-        border-radius: 999px;
-        padding: 6px 10px;
+    .approval-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 11px;
+        border: 1px solid #eddfef;
+        border-radius: 9px;
+        background: #faf5fc;
+        color: #8f69a1;
         font-size: 12px;
         font-weight: 700;
     }
 
-    .btn-action {
-        border-radius: 999px;
-        padding: 4px 8px;
-        font-size: 12px;
-        font-weight: 600;
+    .approval-count.waiting {
+        border-color: #f0dfca;
+        background: #fff7eb;
+        color: #ae7a3c;
     }
 
-    .action-buttons {
+    .approval-toolbar {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) 185px;
+        gap: 10px;
+        padding: 16px 20px;
+    }
+
+    .approval-search-wrap {
+        position: relative;
+        min-width: 0;
+    }
+
+    .approval-search-wrap i {
+        position: absolute;
+        top: 50%;
+        left: 13px;
+        transform: translateY(-50%);
+        color: #ab91b5;
+        font-size: 15px;
+        pointer-events: none;
+    }
+
+    .approval-input,
+    .approval-select {
+        width: 100%;
+        min-height: 41px;
+        border: 1px solid #e8dbea;
+        border-radius: 9px;
+        background: #fdfafd;
+        color: #65516e;
+        font-size: 12.5px;
+        outline: none;
+    }
+
+    .approval-input {
+        padding: 0 12px 0 38px;
+    }
+
+    .approval-select {
+        padding: 0 12px;
+        cursor: pointer;
+    }
+
+    .approval-input:focus,
+    .approval-select:focus {
+        border-color: #b889c8;
+        box-shadow: 0 0 0 3px rgba(174,118,191,.1);
+    }
+
+    .approval-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .approval-table {
+        width: 100%;
+        min-width: 920px;
+        border-collapse: collapse;
+    }
+
+    .approval-table thead {
+        background: #fcf8fd;
+    }
+
+    .approval-table th {
+        padding: 15px 14px;
+        border-bottom: 1px solid #eee3f0;
+        color: #907b9b;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .approval-table td {
+        padding: 14px;
+        border-bottom: 1px solid #f2eaf3;
+        color: #71617b;
+        font-size: 12.5px;
+        line-height: 1.6;
+        vertical-align: middle;
+    }
+
+    .approval-row {
+        cursor: pointer;
+        transition: background .16s ease;
+    }
+
+    .approval-row:hover,
+    .approval-row:focus-visible {
+        background: #fcf5fe;
+        outline: none;
+    }
+
+    .approval-row:last-child td {
+        border-bottom: none;
+    }
+
+    .approval-event {
         display: flex;
-        justify-content: flex-end;
         align-items: center;
-        gap: 5px;
+        gap: 11px;
+        min-width: 245px;
+    }
+
+    .approval-image {
+        display: grid;
+        place-items: center;
+        width: 70px;
+        height: 53px;
+        flex: 0 0 70px;
+        overflow: hidden;
+        border: 1px solid #ebdfee;
+        border-radius: 10px;
+        background: #f5eefa;
+        color: #b58bc5;
+    }
+
+    .approval-image img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .approval-event-name {
+        display: -webkit-box;
+        max-width: 245px;
+        overflow: hidden;
+        color: #503c5b;
+        font-size: 13.5px;
+        font-weight: 750;
+        line-height: 1.55;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow-wrap: anywhere;
+    }
+
+    .approval-posted {
+        margin-top: 5px;
+        color: #a393ac;
+        font-size: 11.5px;
+    }
+
+    .approval-time strong {
+        display: block;
+        color: #63516c;
+        font-size: 12.5px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .approval-time span {
+        display: block;
+        margin-top: 4px;
+        color: #9d8ca5;
+        font-size: 11.5px;
+        white-space: nowrap;
+    }
+
+    .approval-type {
+        display: inline-block;
+        padding: 7px 10px;
+        border-radius: 8px;
+        background: #f6eff9;
+        color: #9163a3;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .approval-organizer {
+        max-width: 155px;
+        overflow-wrap: anywhere;
+    }
+
+    .approval-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 11.5px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .approval-status.pending {
+        background: #fff2df;
+        color: #af7835;
+    }
+
+    .approval-status.approved {
+        background: #e9f8f1;
+        color: #268d6c;
+    }
+
+    .approval-status.rejected {
+        background: #fff0f4;
+        color: #bf617d;
+    }
+
+    .approval-status.hidden-event {
+        background: #f0edf5;
+        color: #87738f;
+    }
+
+    .approval-status.expired {
+        background: #f1eff3;
+        color: #837b8a;
+    }
+
+    .approval-status.unknown {
+        background: #f1eff3;
+        color: #837b8a;
+    }
+
+    .approval-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
         flex-wrap: wrap;
+        gap: 7px;
+        min-width: 137px;
+    }
+
+    .approval-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        min-height: 35px;
+        padding: 8px 11px;
+        border: 1px solid #e7d9eb;
+        border-radius: 9px;
+        background: #fff;
+        color: #886398;
+        font-size: 11.5px;
+        font-weight: 750;
+        cursor: pointer;
+        transition: .15s ease;
+    }
+
+    .approval-btn.approve {
+        border-color: #cbe9db;
+        background: #effaf4;
+        color: #278b69;
+    }
+
+    .approval-btn.reject {
+        border-color: #f1d6e0;
+        background: #fff3f6;
+        color: #bd607c;
+    }
+
+    .approval-btn.approve:hover {
+        background: #dff5e9;
+    }
+
+    .approval-btn.reject:hover {
+        background: #ffe7ef;
+    }
+
+    .approval-locked {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #a293a9;
+        font-size: 11.5px;
+        white-space: nowrap;
+    }
+
+    .approval-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 15px 20px;
+        border-top: 1px solid #f1e9f3;
+    }
+
+    .approval-page-info {
+        color: #9987a3;
+        font-size: 12px;
+    }
+
+    .approval-pagination {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .approval-page-btn {
+        min-width: 33px;
+        height: 33px;
+        padding: 0 10px;
+        border: 1px solid #e9dcec;
+        border-radius: 8px;
+        background: #fff;
+        color: #806b8b;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .approval-page-btn.active {
+        border-color: #ac78bc;
+        background: #ac78bc;
+        color: white;
+    }
+
+    .approval-page-btn:disabled {
+        opacity: .4;
+        cursor: default;
+    }
+
+    .approval-empty[hidden],
+    .approval-modal[hidden] {
+        display: none !important;
+    }
+
+    .approval-empty {
+        padding: 38px 20px;
+        text-align: center;
+        color: #9f8da7;
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+    /* POPUP XAC NHAN */
+
+    .approval-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 20000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 18px;
+        background: rgba(43, 27, 51, .55);
+        backdrop-filter: blur(4px);
+    }
+
+    .approval-dialog {
+        width: 100%;
+        max-width: 430px;
+        overflow: hidden;
+        border: 1px solid #eadbed;
+        border-radius: 17px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(36,19,44,.24);
+    }
+
+    .approval-dialog-top {
+        padding: 25px 24px 15px;
+        text-align: center;
+    }
+
+    .approval-dialog-icon {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 13px;
+        border-radius: 15px;
+        background: #e9f8f1;
+        color: #278b6b;
+        font-size: 24px;
+    }
+
+    .approval-dialog-icon.reject {
+        background: #fff0f4;
+        color: #c46480;
+    }
+
+    .approval-dialog-title {
+        margin: 0;
+        color: #4c3856;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .approval-dialog-description {
+        margin: 11px 0 0;
+        color: #96839f;
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+    .approval-dialog-event {
+        margin: 12px 24px 19px;
+        padding: 13px;
+        border: 1px solid #ecdfef;
+        border-radius: 10px;
+        background: #fcf7fd;
+        color: #72557f;
+        font-size: 13px;
+        font-weight: 750;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .approval-dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        padding: 16px 24px 22px;
+        border-top: 1px solid #f1e8f3;
+    }
+
+    .approval-dialog-btn {
+        min-height: 40px;
+        border: 1px solid #e9ddec;
+        border-radius: 9px;
+        background: #fff;
+        color: #866c92;
+        font-size: 12.5px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .approval-dialog-btn.confirm {
+        border: 0;
+        background: #299773;
+        color: #fff;
+    }
+
+    .approval-dialog-btn.confirm.reject {
+        background: #c46782;
+    }
+
+    .approval-dialog-btn:disabled {
+        opacity: .65;
+        cursor: wait;
+    }
+
+    @@media (max-width: 760px) {
+        .approval-toolbar {
+            grid-template-columns: 1fr;
+        }
+
+        .approval-card-head {
+            align-items: flex-start;
+        }
     }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="admin-page-title mb-1">Duyệt sự kiện</h2>
-        <div class="text-muted small">
-            Admin xem danh sách sự kiện do các Ban tổ chức gửi lên và phê duyệt.
+<div class="approval-page">
+    <section class="approval-card">
+
+        <div class="approval-card-head">
+            <h1 class="approval-heading">
+                <i class="bi bi-calendar2-check"></i>
+                Danh sách sự kiện
+            </h1>
+
+            <div class="approval-counts">
+                <span class="approval-count">
+                    Tổng: <strong>@tong</strong>
+                </span>
+
+                <span class="approval-count waiting">
+                    Chờ duyệt: <strong>@choDuyet</strong>
+                </span>
+            </div>
         </div>
+
+        <div class="approval-toolbar">
+            <div class="approval-search-wrap">
+                <i class="bi bi-search"></i>
+
+                <input type="search"
+                       id="approvalSearch"
+                       class="approval-input"
+                       placeholder="Tìm tên sự kiện, loại hoặc Ban tổ chức..."
+                       autocomplete="off"
+                       aria-label="Tìm kiếm sự kiện" />
+            </div>
+
+            <select id="approvalFilter"
+                    class="approval-select"
+                    aria-label="Lọc trạng thái sự kiện">
+                <option value="">Tất cả trạng thái</option>
+                <option value="ChoDuyet">Chờ duyệt</option>
+                <option value="DaDuyet">Đã duyệt</option>
+                <option value="TuChoi">Từ chối</option>
+                <option value="An">Đã ẩn</option>
+                <option value="QuaHan">Quá hạn duyệt</option>
+            </select>
+        </div>
+
+        <div class="approval-table-wrap">
+            <table class="approval-table">
+                <thead>
+                    <tr>
+                        <th>Sự kiện</th>
+                        <th>Thời gian tổ chức</th>
+                        <th>Loại sự kiện</th>
+                        <th>Ban tổ chức</th>
+                        <th>Trạng thái</th>
+                        <th style="text-align:right">Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var sk in danhSach)
+                    {
+                        string trangThai = sk.TrangThaiDuyet ?? "";
+
+                        bool quaHan =
+                            trangThai == "ChoDuyet" &&
+                            sk.ThoiGianKetThuc <= hienTai;
+
+                        bool choPhepXuLy =
+                            trangThai == "ChoDuyet" &&
+                            !quaHan;
+
+                        string trangThaiHienThi = quaHan
+                            ? "QuaHan"
+                            : trangThai;
+
+                        string tenTrangThai = TenTrangThai(
+                            trangThai, sk.ThoiGianKetThuc);
+
+                        string mauTrangThai = MauTrangThai(
+                            trangThai, sk.ThoiGianKetThuc);
+
+                        <tr class="approval-row"
+                            tabindex="0"
+                            role="link"
+                            aria-label="Xem chi tiết sự kiện @sk.TenSuKien"
+                            data-url="@Url.Action("ChiTiet", "Admin", new { id = sk.SuKienId })"
+                            data-status="@trangThaiHienThi"
+                            data-name="@sk.TenSuKien"
+                            data-type="@(sk.LoaiSuKien?.TenLoai ?? "")"
+                            data-organizer="@(sk.ToChucSuKien?.TenToChuc ?? "")">
+
+                            <td>
+                                <div class="approval-event">
+                                    <div class="approval-image">
+                                        @if (!string.IsNullOrWhiteSpace(sk.AnhSuKien))
+                                        {
+                                            <img src="@Url.Content(sk.AnhSuKien)"
+                                                 alt=""
+                                                 loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-image"
+                                               style="font-size:22px"></i>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        <div class="approval-event-name"
+                                             title="@sk.TenSuKien">
+                                            @sk.TenSuKien
+                                        </div>
+
+                                        <div class="approval-posted">
+                                            Đăng @sk.NgayDang.ToString("dd/MM/yyyy")
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="approval-time">
+                                    <strong>
+                                        @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                                    </strong>
+
+                                    <span>
+                                        Đến @sk.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="approval-type">
+                                    @(sk.LoaiSuKien?.TenLoai ?? "Chưa cập nhật")
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="approval-organizer">
+                                    @(sk.ToChucSuKien?.TenToChuc ?? "Chưa cập nhật")
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="approval-status @mauTrangThai">
+                                    @if (quaHan)
+                                    {
+                                        <i class="bi bi-clock-history"></i>
+                                    }
+                                    else if (trangThai == "ChoDuyet")
+                                    {
+                                        <i class="bi bi-hourglass-split"></i>
+                                    }
+                                    else if (trangThai == "DaDuyet")
+                                    {
+                                        <i class="bi bi-check-circle"></i>
+                                    }
+                                    else if (trangThai == "TuChoi")
+                                    {
+                                        <i class="bi bi-x-circle"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-eye-slash"></i>
+                                    }
+
+                                    @tenTrangThai
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="approval-actions">
+                                    @if (choPhepXuLy)
+                                    {
+                                        <button type="button"
+                                                class="approval-btn approve approval-confirm-open"
+                                                data-id="@sk.SuKienId"
+                                                data-name="@sk.TenSuKien"
+                                                data-operation="approve">
+                                            <i class="bi bi-check2"></i>
+                                            Duyệt
+                                        </button>
+
+                                        <button type="button"
+                                                class="approval-btn reject approval-confirm-open"
+                                                data-id="@sk.SuKienId"
+                                                data-name="@sk.TenSuKien"
+                                                data-operation="reject">
+                                            <i class="bi bi-x-lg"></i>
+                                            Từ chối
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="approval-locked">
+                                            <i class="bi bi-lock"></i>
+                                            Không thể xử lý
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div id="approvalEmpty"
+             class="approval-empty"
+             hidden>
+            <i class="bi bi-calendar-x"
+               style="display:block;font-size:27px;margin-bottom:9px"></i>
+            Không có sự kiện phù hợp.
+        </div>
+
+        <div class="approval-footer">
+            <span class="approval-page-info"
+                  id="approvalPageInfo"></span>
+
+            <div class="approval-pagination"
+                 id="approvalPagination"></div>
+        </div>
+    </section>
+</div>
+
+<!-- POPUP XAC NHAN -->
+<div class="approval-modal"
+     id="approvalModal"
+     hidden>
+
+    <div class="approval-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="approvalModalTitle">
+
+        <div class="approval-dialog-top">
+            <div class="approval-dialog-icon"
+                 id="approvalModalIcon">
+                <i class="bi bi-check-circle"></i>
+            </div>
+
+            <h2 class="approval-dialog-title"
+                id="approvalModalTitle">
+                Xác nhận thao tác
+            </h2>
+
+            <p class="approval-dialog-description"
+               id="approvalModalDescription">
+                Bạn có chắc chắn muốn tiếp tục?
+            </p>
+        </div>
+
+        <div class="approval-dialog-event"
+             id="approvalModalEvent">
+        </div>
+
+        <form id="approvalConfirmForm" method="post">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   name="id"
+                   id="approvalEventId" />
+
+            <div class="approval-dialog-actions">
+                <button type="button"
+                        class="approval-dialog-btn"
+                        id="approvalCancel">
+                    Quay lại
+                </button>
+
+                <button type="submit"
+                        class="approval-dialog-btn confirm"
+                        id="approvalSubmit">
+                    Xác nhận
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-@if (TempData["ThongBao"] != null)
-{
-    <div class="alert alert-success rounded-4 border-0 shadow-sm">
-        @TempData["ThongBao"]
-    </div>
-}
+<script>
+(function () {
+    "use strict";
 
-@if (Model != null && Model.Any())
-{
-    <div class="admin-card">
-        <table class="table table-hover align-middle mb-0 admin-table">
-            <thead>
-                <tr>
-                    <th>Tên sự kiện</th>
-                    <th class="time-col">Thời gian</th>
-                    <th class="type-col">Loại</th>
-                    <th class="org-col">Tổ chức</th>
-                    <th class="status-col">Trạng thái</th>
-                    <th class="action-col text-end">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var sk in Model)
-            {
-                var thoiGian = $"{sk.ThoiGianBatDau:HH:mm dd/MM/yyyy} - {sk.ThoiGianKetThuc:HH:mm}";
-                string trangThaiClass;
-                string trangThaiText;
+    const rows = Array.from(
+        document.querySelectorAll(".approval-row")
+    );
 
-                switch (sk.TrangThaiDuyet)
-                {
-                    case "DaDuyet":
-                        trangThaiClass = "bg-success";
-                        trangThaiText = "Đã duyệt";
-                        break;
-                    case "TuChoi":
-                        trangThaiClass = "bg-danger";
-                        trangThaiText = "Từ chối";
-                        break;
-                    default:
-                        trangThaiClass = "bg-warning text-dark";
-                        trangThaiText = "Chờ duyệt";
-                        break;
-                }
+    const search = document.getElementById("approvalSearch");
+    const filter = document.getElementById("approvalFilter");
+    const empty = document.getElementById("approvalEmpty");
 
-                <tr>
-                    <td>
-                        <div class="event-name">
-                            <div class="fw-bold text-one-line" title="@sk.TenSuKien">
-                                @sk.TenSuKien
-                            </div>
-                            <div class="small text-muted text-one-line">
-                                Đăng ngày @sk.NgayDang.ToString("dd/MM/yyyy")
-                            </div>
-                        </div>
-                    </td>
+    const pagination =
+        document.getElementById("approvalPagination");
 
-                    <td class="small time-col">@thoiGian</td>
+    const pageInfo =
+        document.getElementById("approvalPageInfo");
 
-                    <td class="small type-col">
-                        <div class="text-one-line" title="@sk.LoaiSuKien?.TenLoai">
-                            @sk.LoaiSuKien?.TenLoai
-                        </div>
-                    </td>
+    const pageSize = 8;
+    let page = 1;
 
-                    <td class="small org-col">
-                        <div class="text-one-line" title="@sk.ToChucSuKien?.TenToChuc">
-                            @sk.ToChucSuKien?.TenToChuc
-                        </div>
-                    </td>
+    function normalize(value) {
+        return String(value ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLocaleLowerCase("vi-VN")
+            .trim();
+    }
 
-                    <td class="status-col">
-                        <span class="badge @trangThaiClass badge-soft">
-                            @trangThaiText
-                        </span>
-                    </td>
+    function getFilteredRows() {
+        const keyword = normalize(search.value);
+        const status = filter.value;
 
-                    <td class="action-col text-end">
-                        <div class="action-buttons">
-                            <a asp-action="ChiTiet"
-                               asp-route-id="@sk.SuKienId"
-                               class="btn btn-outline-primary btn-sm btn-action">
-                                Chi tiết
-                            </a>
+        return rows.filter(row => {
+            const d = row.dataset;
 
-                            @if (sk.TrangThaiDuyet == "ChoDuyet")
-                            {
-                                <form asp-action="Duyet" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@sk.SuKienId" />
-                                    <button class="btn btn-success btn-sm btn-action" type="submit">
-                                        Duyệt
-                                    </button>
-                                </form>
+            const text = normalize([
+                d.name,
+                d.type,
+                d.organizer
+            ].join(" "));
 
-                                <form asp-action="TuChoi" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@sk.SuKienId" />
-                                    <button class="btn btn-outline-danger btn-sm btn-action" type="submit">
-                                        Từ chối
-                                    </button>
-                                </form>
-                            }
-                            else
-                            {
-                                <span class="text-muted small">Đã xử lý</span>
-                            }
-                        </div>
-                    </td>
-                </tr>
+            return (
+                (!keyword || text.includes(keyword)) &&
+                (!status || d.status === status)
+            );
+        });
+    }
+
+    function createButton(label, target, active, disabled) {
+        const button = document.createElement("button");
+        button.type = "button";
+
+        button.className =
+            "approval-page-btn" + (active ? " active" : "");
+
+        button.textContent = label;
+        button.disabled = disabled;
+
+        if (active) {
+            button.setAttribute("aria-current", "page");
+        }
+
+        button.addEventListener("click", () => {
+            page = target;
+            renderTable();
+        });
+
+        return button;
+    }
+
+    function renderTable() {
+        const matched = getFilteredRows();
+
+        const pageCount = Math.max(
+            1,
+            Math.ceil(matched.length / pageSize)
+        );
+
+        page = Math.min(page, pageCount);
+
+        rows.forEach(row => {
+            row.hidden = true;
+            row.style.display = "none";
+        });
+
+        const start = (page - 1) * pageSize;
+        const end = Math.min(
+            start + pageSize,
+            matched.length
+        );
+
+        matched.slice(start, end).forEach(row => {
+            row.hidden = false;
+            row.style.display = "";
+        });
+
+        empty.hidden = matched.length !== 0;
+
+        pageInfo.textContent = matched.length
+            ? `Hiển thị ${start + 1}–${end} / ${matched.length} sự kiện`
+            : "Không có sự kiện phù hợp";
+
+        pagination.replaceChildren();
+
+        if (pageCount <= 1) return;
+
+        pagination.appendChild(
+            createButton(
+                "Trước",
+                Math.max(1, page - 1),
+                false,
+                page === 1
+            )
+        );
+
+        for (let i = 1; i <= pageCount; i++) {
+            pagination.appendChild(
+                createButton(
+                    String(i),
+                    i,
+                    page === i,
+                    false
+                )
+            );
+        }
+
+        pagination.appendChild(
+            createButton(
+                "Sau",
+                Math.min(pageCount, page + 1),
+                false,
+                page === pageCount
+            )
+        );
+    }
+
+    function resetAndRender() {
+        page = 1;
+        renderTable();
+    }
+
+    search.addEventListener("input", resetAndRender);
+    filter.addEventListener("change", resetAndRender);
+
+    // BAM VAO DONG DE XEM CHI TIET
+
+    rows.forEach(row => {
+        row.addEventListener("click", event => {
+            if (event.target.closest("button, a, form"))
+                return;
+
+            if (row.dataset.url) {
+                window.location.href = row.dataset.url;
             }
-            </tbody>
-        </table>
-    </div>
-}
-else
-{
-    <div class="alert alert-light border rounded-4 shadow-sm">
-        <div class="fw-semibold">Chưa có sự kiện nào.</div>
-        <div class="small text-muted">Khi Ban tổ chức gửi sự kiện, bạn sẽ thấy tại đây để duyệt.</div>
-    </div>
-}
+        });
+
+        row.addEventListener("keydown", event => {
+            if (event.target !== row) return;
+
+            if (event.key === "Enter" ||
+                event.key === " ") {
+                event.preventDefault();
+
+                if (row.dataset.url) {
+                    window.location.href = row.dataset.url;
+                }
+            }
+        });
+    });
+
+    // POPUP DUYET / TU CHOI
+
+    const modal = document.getElementById("approvalModal");
+    const form = document.getElementById("approvalConfirmForm");
+    const modalId = document.getElementById("approvalEventId");
+    const modalEvent = document.getElementById("approvalModalEvent");
+    const modalIcon = document.getElementById("approvalModalIcon");
+    const modalTitle = document.getElementById("approvalModalTitle");
+    const modalDescription =
+        document.getElementById("approvalModalDescription");
+
+    const submitButton = document.getElementById(
+        "approvalSubmit"
+    );
+
+    const cancelButton = document.getElementById(
+        "approvalCancel"
+    );
+
+    const approveUrl = '@Url.Action("Duyet", "Admin")';
+    const rejectUrl = '@Url.Action("TuChoi", "Admin")';
+
+    let previousFocus = null;
+    let submitting = false;
+
+    document.querySelectorAll(".approval-confirm-open")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                previousFocus = document.activeElement;
+
+                const approve =
+                    button.dataset.operation === "approve";
+
+                form.action = approve ? approveUrl : rejectUrl;
+                modalId.value = button.dataset.id;
+                modalEvent.textContent =
+                    button.dataset.name || "Sự kiện";
+
+                modalIcon.className =
+                    "approval-dialog-icon" +
+                    (approve ? "" : " reject");
+
+                modalIcon.innerHTML = approve
+                    ? '<i class="bi bi-check-circle"></i>'
+                    : '<i class="bi bi-x-circle"></i>';
+
+                modalTitle.textContent = approve
+                    ? "Xác nhận duyệt sự kiện"
+                    : "Xác nhận từ chối sự kiện";
+
+                modalDescription.textContent = approve
+                    ? "Sự kiện sẽ chuyển sang trạng thái Đã duyệt."
+                    : "Sự kiện sẽ chuyển sang trạng thái Từ chối.";
+
+                submitButton.textContent = approve
+                    ? "Xác nhận duyệt"
+                    : "Xác nhận từ chối";
+
+                submitButton.className =
+                    "approval-dialog-btn confirm" +
+                    (approve ? "" : " reject");
+
+                submitting = false;
+                submitButton.disabled = false;
+
+                modal.hidden = false;
+                cancelButton.focus();
+            });
+        });
+
+    function closeModal() {
+        if (submitting) return;
+
+        modal.hidden = true;
+
+        if (previousFocus?.focus) {
+            previousFocus.focus();
+        }
+    }
+
+    cancelButton.addEventListener("click", closeModal);
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal)
+            closeModal();
+    });
+
+    document.addEventListener("keydown", event => {
+        if (modal.hidden || submitting) return;
+
+        if (event.key === "Escape") {
+            closeModal();
+            return;
+        }
+
+        if (event.key === "Tab") {
+            const first = cancelButton;
+            const last = submitButton;
+
+            if (event.shiftKey &&
+                document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            }
+            else if (!event.shiftKey &&
+                     document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    form.addEventListener("submit", event => {
+        if (submitting || !modalId.value) {
+            event.preventDefault();
+            return;
+        }
+
+        submitting = true;
+        submitButton.disabled = true;
+        submitButton.textContent = "Đang xử lý...";
+    });
+
+    renderTable();
+})();
+</script>

@@ -1,3 +1,4 @@
+
 @model VeSuKienWeb.Models.KhachHang.VeCuaToiItemVM
 
 @{
@@ -10,496 +11,745 @@
         "DaHuy" => "Đã hủy",
         "Huy" => "Đã hủy",
         "HoanTien" => "Đã hoàn tiền",
+        "DaHoanTien" => "Đã hoàn tiền",
         _ => Model.TrangThaiVe
     };
 
     string statusClass = Model.TrangThaiVe switch
     {
-        "DaThanhToan" => "status-paid",
-        "ChuaThanhToan" => "status-unpaid",
-        "DaHuy" => "status-cancel",
-        "Huy" => "status-cancel",
-        "HoanTien" => "status-refund",
-        _ => "status-default"
+        "DaThanhToan" => "paid",
+        "ChuaThanhToan" => "pending",
+        "DaHuy" => "cancelled",
+        "Huy" => "cancelled",
+        "HoanTien" => "refunded",
+        "DaHoanTien" => "refunded",
+        _ => "default"
     };
 
     string viTriGhe = !string.IsNullOrWhiteSpace(Model.DanhSachGhe)
         ? Model.DanhSachGhe
-        : (Model.Hang != null && Model.Cot.HasValue ? $"{Model.Hang}{Model.Cot}" : "Ghế tự do");
+        : (Model.Hang != null && Model.Cot.HasValue
+            ? $"{Model.Hang}{Model.Cot}"
+            : "Ghế tự do");
 
     var danhSachGhe = !string.IsNullOrWhiteSpace(Model.DanhSachGhe)
-        ? Model.DanhSachGhe.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList()
+        ? Model.DanhSachGhe
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .ToList()
         : new List<string> { viTriGhe };
 
     int soLuongVe = danhSachGhe.Count;
-    decimal giaTungVe = soLuongVe > 0 ? Model.GiaVe / soLuongVe : Model.GiaVe;
+
+    decimal giaTungVe = soLuongVe > 0
+        ? Model.GiaVe / soLuongVe
+        : Model.GiaVe;
 
     string loaiSuKienHienThi = Model.LaTrucTiep
         ? "Sự kiện trực tiếp"
-        : (Model.LaTrucTuyen ? "Sự kiện trực tuyến" : Model.TenLoaiSuKien);
+        : (Model.LaTrucTuyen
+            ? "Sự kiện trực tuyến"
+            : Model.TenLoaiSuKien);
+
+    bool cungNgay =
+        Model.ThoiGianBatDau.Date ==
+        Model.ThoiGianKetThuc.Date;
+
+    string thoiGianDienRa = cungNgay
+        ? $"{Model.ThoiGianBatDau:dd/MM/yyyy} | {Model.ThoiGianBatDau:HH:mm} – {Model.ThoiGianKetThuc:HH:mm}"
+        : $"{Model.ThoiGianBatDau:dd/MM/yyyy HH:mm} – {Model.ThoiGianKetThuc:dd/MM/yyyy HH:mm}";
 }
 
 <style>
-    .detail-page {
-        background: #f6f8fb;
-        min-height: 100vh;
-        padding: 14px 0 38px;
+    .ticket-detail-page,
+    .ticket-detail-page * {
+        box-sizing: border-box;
     }
 
-    .detail-wrap {
-        max-width: 980px;
+    .ticket-detail-page {
+        min-height: calc(100vh - 170px);
+        padding: 28px 0 32px;
+        background: transparent;
+        color: #30283c;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .ticket-detail-container {
+        width: 100%;
+        max-width: 880px;
         margin: 0 auto;
-        padding: 0 18px;
+        padding: 0 16px;
     }
 
-    .detail-header {
-        margin-bottom: 16px;
-    }
-
-    .detail-header h2 {
-        font-size: 29px;
-        font-weight: 850;
-        color: #0f172a;
-        margin-bottom: 3px;
-    }
-
-    .detail-header p {
-        color: #64748b;
-        margin: 0;
-        font-size: 15.5px;
-    }
-
-    .detail-card {
+    .ticket-detail-card {
         background: #ffffff;
-        border: 1px solid #dbe4f0;
-        border-radius: 22px;
+        border-radius: 17px;
         overflow: hidden;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
+        box-shadow: 0 13px 35px rgba(66, 37, 86, .09);
     }
 
-    .detail-body {
-        padding: 24px 28px 22px;
-        background:
-            radial-gradient(circle at 12px 12px, rgba(37, 99, 235, .04) 1px, transparent 1px),
-            linear-gradient(135deg, #ffffff, #f8fbff);
-        background-size: 18px 18px, auto;
+    .ticket-detail-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
+        align-items: start;
+        gap: 26px;
+        padding: 24px 27px 16px;
     }
 
-    .status-pill {
+    .ticket-detail-left,
+    .ticket-detail-right {
+        min-width: 0;
+    }
+
+    /* TRANG THAI */
+
+    .ticket-status-badge {
         display: inline-flex;
-        padding: 6px 12px;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 11px;
         border-radius: 999px;
-        font-size: 12.5px;
-        font-weight: 800;
+        font-size: 10.5px;
+        font-weight: 600;
         margin-bottom: 10px;
     }
 
-    .status-paid {
-        background: #dcfce7;
-        color: #166534;
+    .ticket-status-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
     }
 
-    .status-unpaid {
-        background: #fef3c7;
-        color: #92400e;
+    .ticket-status-badge.paid {
+        color: #197044;
+        background: #e9f8ee;
     }
 
-    .status-cancel {
-        background: #f1f5f9;
-        color: #475569;
+    .ticket-status-badge.pending {
+        color: #966d1b;
+        background: #fff4db;
     }
 
-    .status-refund {
-        background: #e0f2fe;
-        color: #075985;
-    }
-
-    .status-default {
-        background: #e0e7ff;
-        color: #3730a3;
-    }
-
-    .event-title {
-        font-size: 26px;
-        font-weight: 900;
-        color: #0f172a;
-        line-height: 1.22;
-        margin-bottom: 6px;
-    }
-
-    .event-type {
-        color: #2563eb;
-        font-size: 15px;
-        font-weight: 750;
-        margin-bottom: 16px;
-    }
-
-    .event-type span {
+    .ticket-status-badge.cancelled {
         color: #64748b;
-        font-weight: 650;
+        background: #f1f3f6;
     }
 
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 11px;
-        margin-bottom: 14px;
+    .ticket-status-badge.refunded {
+        color: #246b96;
+        background: #e8f4fb;
     }
 
-    .info-box {
-        background: rgba(248, 250, 252, .95);
-        border: 1px solid #edf2f7;
-        border-radius: 14px;
-        padding: 12px 14px;
+    .ticket-status-badge.default {
+        color: #79569b;
+        background: #f1ebf8;
     }
 
-    .info-label {
-        color: #64748b;
-        font-size: 12.5px;
-        font-weight: 650;
-        margin-bottom: 4px;
-    }
+    /* TEN SU KIEN */
 
-    .info-value {
-        color: #0f172a;
-        font-size: 15.5px;
-        font-weight: 750;
-        line-height: 1.38;
-        word-break: break-word;
-    }
-
-    .location-box,
-    .online-box {
-        margin-top: 4px;
-        border-radius: 15px;
-        padding: 13px 15px;
-    }
-
-    .location-box {
-        background: #f8fafc;
-        border: 1px solid #edf2f7;
-    }
-
-    .online-box {
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-    }
-
-    .online-box a {
-        color: #1d4ed8;
-        font-weight: 750;
-        word-break: break-all;
-    }
-
-    .password-code {
-        background: #ffffff;
-        border: 1px solid #dbeafe;
-        border-radius: 10px;
-        padding: 4px 8px;
-        color: #1e40af;
+    .ticket-event-title {
+        margin: 0 0 5px;
+        color: #241b32;
+        font-size: 22px;
+        line-height: 1.4;
         font-weight: 800;
+        overflow-wrap: anywhere;
     }
 
-    .section-title {
-        color: #0f172a;
-        font-size: 18px;
-        font-weight: 850;
-        margin: 20px 0 10px;
+    .ticket-event-type {
+        margin-bottom: 19px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #845e99;
     }
 
-    .ticket-table {
-        width: 100%;
-        border: 1px solid #edf2f7;
-        border-radius: 15px;
-        overflow: hidden;
-        background: #ffffff;
+    /* THONG TIN VE */
+
+    .ticket-info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .ticket-table-row {
+    .ticket-info-row {
         display: grid;
-        grid-template-columns: 70px 1fr 145px 150px;
-        align-items: center;
-        padding: 12px 15px;
-        border-bottom: 1px solid #edf2f7;
-        font-size: 15px;
+        grid-template-columns: 112px minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
     }
 
-    .ticket-table-row:last-child {
-        border-bottom: none;
+    .ticket-info-label {
+        color: #81768d;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.7;
     }
 
-    .ticket-table-head {
-        background: #f8fafc;
-        color: #64748b;
-        font-size: 12.5px;
-        font-weight: 850;
-        text-transform: uppercase;
-        letter-spacing: .3px;
+    .ticket-info-value {
+        color: #332a40;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.7;
+        text-align: left;
+        overflow-wrap: anywhere;
     }
 
-    .ticket-no {
-        color: #64748b;
-        font-weight: 750;
-    }
-
-    .ticket-seat {
-        color: #0f172a;
-        font-weight: 850;
-    }
-
-    .ticket-type-name {
-        color: #334155;
+    .ticket-code-value {
+        color: #745197;
+        font-size: 11.5px;
         font-weight: 700;
     }
 
-    .ticket-price {
-        color: #0f172a;
-        font-weight: 850;
+    /* DIA DIEM */
+
+    .ticket-section-heading {
+        margin: 2px 0 12px;
+        color: #30263f;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .ticket-location,
+    .ticket-online-info {
+        margin-bottom: 22px;
+    }
+
+    .ticket-location-name,
+    .ticket-online-platform {
+        color: #352b42;
+        font-size: 12.5px;
+        font-weight: 600;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+    .ticket-location-address {
+        margin-top: 4px;
+        color: #81758d;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+    .ticket-online-label {
+        color: #81758d;
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .ticket-online-link {
+        display: inline-block;
+        margin-top: 8px;
+        color: #8253a4;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        overflow-wrap: anywhere;
+    }
+
+    .ticket-online-password {
+        display: block;
+        margin-top: 8px;
+        color: #5f4b70;
+        font-size: 12px;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    /* DANH SACH GHE */
+
+    .ticket-seat-title {
+        margin: 0 0 12px;
+        color: #30263f;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .ticket-seat-scroll {
+        max-height: 135px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    .ticket-seat-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .ticket-seat-table th {
+        padding: 6px 3px 10px;
+        text-align: left;
+        color: #92859d;
+        font-size: 10.5px;
+        font-weight: 600;
+    }
+
+    .ticket-seat-table td {
+        padding: 8px 3px;
+        color: #352b42;
+        font-size: 11.5px;
+        font-weight: 500;
+        vertical-align: top;
+        overflow-wrap: anywhere;
+    }
+
+    .ticket-seat-table th:first-child,
+    .ticket-seat-table td:first-child {
+        width: 34px;
+    }
+
+    .ticket-seat-table th:nth-child(3),
+    .ticket-seat-table td:nth-child(3) {
+        width: 51px;
+    }
+
+    .ticket-seat-table th:last-child,
+    .ticket-seat-table td:last-child {
+        width: 91px;
         text-align: right;
     }
 
-    .total-box {
-        margin-top: 14px;
+    .ticket-seat-table .seat-position {
+        color: #654b80;
+        font-weight: 600;
+    }
+
+    .ticket-seat-table .seat-price {
+        color: #352b42;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* TONG THANH TOAN */
+
+    .ticket-total {
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 15px;
     }
 
-    .total-inner {
-        width: 360px;
-        background: #f8fafc;
-        border: 1px solid #edf2f7;
-        border-radius: 15px;
-        padding: 14px 16px;
+    .ticket-total-label {
+        color: #30263f;
+        font-size: 12.5px;
+        font-weight: 800;
     }
 
-    .total-line,
-    .total-final {
+    .ticket-total-price {
+        color: #a04fb2;
+        font-size: 20px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    /* FOOTER */
+
+    .ticket-detail-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 32px;
-    }
-
-    .total-line {
-        color: #334155;
-        font-size: 15px;
-        margin-bottom: 8px;
-    }
-
-    .total-line strong {
-        color: #0f172a;
-        font-weight: 850;
-    }
-
-    .total-final {
-        border-top: 1px dashed #cbd5e1;
-        padding-top: 11px;
-        margin-top: 10px;
-        color: #0f172a;
-        font-size: 19px;
-        font-weight: 900;
-    }
-
-    .detail-actions {
-        background: #ffffff;
-        border-top: 1px solid #edf2f7;
-        padding: 16px 28px;
-        display: flex;
-        justify-content: space-between;
         gap: 12px;
+        flex-wrap: wrap;
+        padding: 13px 27px 19px;
+        background: #ffffff;
+    }
+
+    .ticket-footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 9px;
         flex-wrap: wrap;
     }
 
-    .detail-actions .btn {
-        border-radius: 999px;
-        font-size: 14.5px;
-        font-weight: 750;
-        padding: 9px 18px;
+    .ticket-back-btn,
+    .ticket-cancel-btn,
+    .ticket-qr-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 35px;
+        padding: 8px 14px;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: .2s;
     }
 
-    @@media (max-width: 768px) {
-        .info-grid {
+    .ticket-back-btn {
+        border: 1px solid #e0d6e9;
+        background: #ffffff;
+        color: #76558c;
+    }
+
+    .ticket-back-btn:hover {
+        background: #f9f5fc;
+        color: #6a4285;
+        border-color: #c5acd4;
+    }
+
+    /* NUT HUY VE */
+
+    .ticket-cancel-btn {
+        border: 1px solid #dfb5bc;
+        background: #ffffff;
+        color: #ad5364;
+    }
+
+    .ticket-cancel-btn:hover {
+        border-color: #c98591;
+        background: #fff5f6;
+        color: #9e4052;
+    }
+
+    /* NUT QR */
+
+    .ticket-qr-btn {
+        border: 1px solid transparent;
+        background: linear-gradient(110deg, #9251b0, #bf67b6);
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .ticket-qr-btn:hover {
+        background: #9655a8;
+        color: #ffffff;
+    }
+
+    /* LAPTOP */
+
+    @@media (min-width: 851px) and (max-height: 760px) {
+        .ticket-detail-page {
+            padding: 16px 0 20px;
+        }
+
+        .ticket-detail-content {
+            padding-top: 19px;
+            padding-bottom: 10px;
+        }
+
+        .ticket-detail-footer {
+            padding-top: 10px;
+            padding-bottom: 13px;
+        }
+
+        .ticket-event-type {
+            margin-bottom: 14px;
+        }
+
+        .ticket-info-list {
+            gap: 11px;
+        }
+
+        .ticket-location,
+        .ticket-online-info {
+            margin-bottom: 16px;
+        }
+    }
+
+    /* TABLET */
+
+    @@media (max-width: 850px) {
+        .ticket-detail-container {
+            max-width: 600px;
+        }
+
+        .ticket-detail-content {
             grid-template-columns: 1fr;
+            row-gap: 24px;
+        }
+    }
+
+    /* MOBILE */
+
+    @@media (max-width: 520px) {
+        .ticket-detail-page {
+            padding: 15px 0 25px;
         }
 
-        .ticket-table-row {
-            grid-template-columns: 52px 1fr;
-            gap: 6px;
+        .ticket-detail-container {
+            padding: 0 12px;
         }
 
-        .ticket-table-head {
-            display: none;
+        .ticket-detail-content {
+            padding: 19px 16px 10px;
+            row-gap: 22px;
         }
 
-        .ticket-type-name,
-        .ticket-price {
-            grid-column: 2;
-            text-align: left;
+        .ticket-event-title {
+            font-size: 21px;
         }
 
-        .total-inner {
-            width: 100%;
+        .ticket-info-row {
+            grid-template-columns: 99px minmax(0, 1fr);
+            gap: 9px;
         }
 
-        .detail-body {
-            padding: 21px 18px;
+        .ticket-info-label,
+        .ticket-info-value {
+            font-size: 11.5px;
         }
 
-        .detail-actions {
-            padding: 15px 18px;
+        .ticket-code-value {
+            font-size: 10.5px;
+        }
+
+        .ticket-seat-table th {
+            font-size: 9.5px;
+        }
+
+        .ticket-seat-table td {
+            font-size: 10.5px;
+        }
+
+        .ticket-total-price {
+            font-size: 17px;
+        }
+
+        .ticket-detail-footer {
+            padding: 10px 16px 16px;
+        }
+
+        .ticket-footer-actions {
+            gap: 7px;
         }
     }
 </style>
 
-<div class="detail-page">
-    <div class="detail-wrap">
-        <div class="detail-header">
-            <h2>Chi tiết vé</h2>
-            <p>Thông tin sự kiện, danh sách vé đã đặt và tổng thanh toán.</p>
-        </div>
+<div class="ticket-detail-page">
 
-        <div class="detail-card">
-            <div class="detail-body">
-                <span class="status-pill @statusClass">@trangThai</span>
+    <div class="ticket-detail-container">
 
-                <div class="event-title">@Model.TenSuKien</div>
+        <div class="ticket-detail-card">
 
-                <div class="event-type">
-                    <span>Loại sự kiện:</span> @loaiSuKienHienThi
+            <div class="ticket-detail-content">
+
+                <!-- THONG TIN VE BEN TRAI -->
+
+                <div class="ticket-detail-left">
+
+                    <span class="ticket-status-badge @statusClass">
+                        @trangThai
+                    </span>
+
+                    <h2 class="ticket-event-title">
+                        @Model.TenSuKien
+                    </h2>
+
+                    <div class="ticket-event-type">
+                        @loaiSuKienHienThi
+                    </div>
+
+                    <div class="ticket-info-list">
+
+                        <div class="ticket-info-row">
+                            <span class="ticket-info-label">
+                                Mã vé
+                            </span>
+
+                            <span class="ticket-info-value ticket-code-value">
+                                @Model.MaVe
+                            </span>
+                        </div>
+
+                        <div class="ticket-info-row">
+                            <span class="ticket-info-label">
+                                Thời gian diễn ra
+                            </span>
+
+                            <span class="ticket-info-value">
+                                @thoiGianDienRa
+                            </span>
+                        </div>
+
+                        <div class="ticket-info-row">
+                            <span class="ticket-info-label">
+                                Ngày đặt vé
+                            </span>
+
+                            <span class="ticket-info-value">
+                                @Model.NgayDat.ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="info-grid">
-                    <div class="info-box">
-                        <div class="info-label">Mã vé</div>
-                        <div class="info-value">@Model.MaVe</div>
-                    </div>
+                <!-- DIA DIEM, DANH SACH GHE BEN PHAI -->
 
-                    <div class="info-box">
-                        <div class="info-label">Trạng thái vé</div>
-                        <div class="info-value">@trangThai</div>
-                    </div>
+                <div class="ticket-detail-right">
 
-                    <div class="info-box">
-                        <div class="info-label">Thời gian diễn ra</div>
-                        <div class="info-value">
-                            @Model.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-                            -
-                            @Model.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
-                        </div>
-                    </div>
-
-                    <div class="info-box">
-                        <div class="info-label">Ngày đặt vé</div>
-                        <div class="info-value">@Model.NgayDat.ToString("dd/MM/yyyy HH:mm")</div>
-                    </div>
-
-                    <div class="info-box">
-                        <div class="info-label">Loại vé</div>
-                        <div class="info-value">@Model.TenLoaiVe</div>
-                    </div>
-
-                    <div class="info-box">
-                        <div class="info-label">Số lượng vé</div>
-                        <div class="info-value">@soLuongVe vé</div>
-                    </div>
-                </div>
-
-                @if (Model.LaTrucTiep)
-                {
-                    <div class="location-box">
-                        <div class="info-label">Địa điểm tổ chức</div>
-                        <div class="info-value">
-                            @Model.DiaDiem
-                            @if (!string.IsNullOrEmpty(Model.DiaChi))
-                            {
-                                <br />
-                                <span style="font-weight:650; color:#475569;">@Model.DiaChi</span>
-                            }
-                        </div>
-                    </div>
-                }
-                else if (Model.LaTrucTuyen)
-                {
-                    <div class="online-box">
-                        <div class="info-label">Thông tin tham gia trực tuyến</div>
-                        <div class="info-value">
-                            Nền tảng: @Model.OnlineNenTang
-                        </div>
-
-                        @if (!string.IsNullOrEmpty(Model.OnlineLinkXem))
-                        {
-                            <div class="mt-2">
-                                <a href="@Model.OnlineLinkXem" target="_blank">
-                                    @Model.OnlineLinkXem
-                                </a>
-                            </div>
-                        }
-
-                        @if (Model.TrangThaiVe == "DaThanhToan" && !string.IsNullOrEmpty(Model.OnlineMatKhau))
-                        {
-                            <div class="mt-2">
-                                Mật khẩu phòng:
-                                <code class="password-code">@Model.OnlineMatKhau</code>
-                            </div>
-                        }
-                    </div>
-                }
-
-                <div class="section-title">Danh sách vé đã đặt</div>
-
-                <div class="ticket-table">
-                    <div class="ticket-table-row ticket-table-head">
-                        <div>STT</div>
-                        <div>Ghế</div>
-                        <div>Loại vé</div>
-                        <div class="ticket-price">Giá vé</div>
-                    </div>
-
-                    @for (int i = 0; i < danhSachGhe.Count; i++)
+                    @if (Model.LaTrucTiep)
                     {
-                        <div class="ticket-table-row">
-                            <div class="ticket-no">#@(i + 1)</div>
+                        <h3 class="ticket-section-heading">
+                            Địa điểm tổ chức
+                        </h3>
 
-                            <div class="ticket-seat">
-                                @(danhSachGhe[i] == "Ghế tự do" ? "Ghế tự do" : $"Ghế {danhSachGhe[i]}")
+                        <div class="ticket-location">
+
+                            <div class="ticket-location-name">
+                                @Model.DiaDiem
                             </div>
 
-                            <div class="ticket-type-name">
-                                @Model.TenLoaiVe
-                            </div>
+                            @if (!string.IsNullOrWhiteSpace(Model.DiaChi))
+                            {
+                                <div class="ticket-location-address">
+                                    @Model.DiaChi
+                                </div>
+                            }
 
-                            <div class="ticket-price">
-                                @giaTungVe.ToString("N0") đ
-                            </div>
                         </div>
                     }
-                </div>
+                    else if (Model.LaTrucTuyen)
+                    {
+                        <h3 class="ticket-section-heading">
+                            Thông tin tham gia trực tuyến
+                        </h3>
 
-                <div class="total-box">
+                        <div class="ticket-online-info">
 
+                            <div class="ticket-online-label">
+                                Nền tảng
+                            </div>
 
-                        <div class="total-final">
-                            <span>Tổng thanh toán</span>
-                            <span>@Model.GiaVe.ToString("N0") đ</span>
+                            <div class="ticket-online-platform">
+                                @Model.OnlineNenTang
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(Model.OnlineLinkXem))
+                            {
+                                <a href="@Model.OnlineLinkXem"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="ticket-online-link">
+                                    Liên kết tham gia trực tuyến
+                                </a>
+                            }
+
+                            @if (Model.TrangThaiVe == "DaThanhToan" &&
+                                 !string.IsNullOrWhiteSpace(Model.OnlineMatKhau))
+                            {
+                                <span class="ticket-online-password">
+                                    Mật khẩu: @Model.OnlineMatKhau
+                                </span>
+                            }
+
                         </div>
-                    
+                    }
+
+                    <h3 class="ticket-seat-title">
+                        Danh sách vé đã đặt
+                    </h3>
+
+                    <div class="ticket-seat-scroll">
+
+                        <table class="ticket-seat-table">
+
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Ghế</th>
+                                    <th>Loại vé</th>
+                                    <th>Giá vé</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @for (int i = 0; i < danhSachGhe.Count; i++)
+                                {
+                                    <tr>
+                                        <td>@(i + 1)</td>
+
+                                        <td>
+                                            <span class="seat-position">
+                                                @(danhSachGhe[i] == "Ghế tự do"
+                                                    ? "Ghế tự do"
+                                                    : $"Ghế {danhSachGhe[i]}")
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            @Model.TenLoaiVe
+                                        </td>
+
+                                        <td class="seat-price">
+                                            @giaTungVe.ToString("N0") đ
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <div class="ticket-total">
+
+                        <span class="ticket-total-label">
+                            Tổng thanh toán
+                        </span>
+
+                        <span class="ticket-total-price">
+                            @Model.GiaVe.ToString("N0") đ
+                        </span>
+
+                    </div>
+
                 </div>
+
             </div>
 
-            <div class="detail-actions">
-                <a asp-action="VeCuaToi" class="btn btn-outline-secondary">
+            <!-- CAC NUT CHUC NANG -->
+
+            <div class="ticket-detail-footer">
+
+                <a asp-controller="KhachHang"
+                   asp-action="VeCuaToi"
+                   class="ticket-back-btn">
                     Quay lại danh sách vé
                 </a>
 
-                @if (Model.LaTrucTiep && Model.DuocXemQr)
-                {
-                    <a asp-action="XemMaQr"
-                       asp-route-veId="@Model.VeId"
-                       class="btn btn-primary">
-                        Xem mã QR
-                    </a>
-                }
+                <div class="ticket-footer-actions">
+
+                    @if (Model.CoTheHuy)
+                    {
+                        <a asp-controller="KhachHang"
+                           asp-action="YeuCauHoanHuy"
+                           asp-route-veId="@Model.VeId"
+                           class="ticket-cancel-btn">
+
+                            Hủy vé
+
+                        </a>
+                    }
+
+                    @if (Model.LaTrucTiep && Model.DuocXemQr)
+                    {
+                        <a asp-controller="KhachHang"
+                           asp-action="XemMaQr"
+                           asp-route-veId="@Model.VeId"
+                           class="ticket-qr-btn">
+
+                            Xem mã QR
+
+                        </a>
+                    }
+
+                </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>

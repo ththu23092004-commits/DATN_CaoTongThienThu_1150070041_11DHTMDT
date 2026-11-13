@@ -1,155 +1,57 @@
-@using Microsoft.AspNetCore.Mvc.Rendering
-@inject Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper<dynamic> HtmlHelper
 
 @{
     Layout = "_Layout";
 
-    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction =
+        ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string currentController =
+        ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+
+    bool laTrangBanToChuc =
+        currentController.Equals(
+            "BanToChuc",
+            StringComparison.OrdinalIgnoreCase
+        );
 }
 
 <style>
-    
-/* =========================================
-   MỞ RỘNG GIAO DIỆN BAN TỔ CHỨC
-   ========================================= */
+    /* =========================================
+       BO CUC CHUNG BAN TO CHUC
+       ========================================= */
 
-/* Bỏ giới hạn chiều rộng container của layout cha,
-   chỉ áp dụng khi trang chứa giao diện BTC. */
-body:has(.btc-shell) > .container,
-body:has(.btc-shell) > .container-fluid,
-body:has(.btc-shell) main > .container,
-body:has(.btc-shell) main > .container-fluid {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-}
-
-/* Mở rộng phần nội dung BTC */
-.btc-shell {
-    width: 100%;
-    max-width: none;
-    margin: 0;
-}
-
-.btc-layout {
-    width: 100%;
-    max-width: none;
-}
-
-.btc-content {
-    min-width: 0;
-    width: 100%;
-}
-
-
-.btc-shell {
-    background: #f5f7fb;
-    min-height: calc(100vh - 56px);
-    width: 100%;
-    max-width: none;
-    padding: 20px 8px 30px;
-}
-
-
-
-.btc-layout {
-    display: grid;
-    grid-template-columns: 250px minmax(0, 1fr);
-    gap: 16px;
-    align-items: start;
-    width: 100%;
-    max-width: none;
-}
-
-
-    .btc-sidebar {
-        position: sticky;
-        top: 76px;
-        min-height: calc(100vh - 100px);
-        background: #ffffff;
-        border: 1px solid #e6ebf3;
-        border-radius: 24px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
-        padding: 22px;
-        display: flex;
-        flex-direction: column;
+    body:has(.btc-shell) > .container,
+    body:has(.btc-shell) > .container-fluid,
+    body:has(.btc-shell) main > .container,
+    body:has(.btc-shell) main > .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
     }
 
-    .btc-brand {
-        margin-bottom: 24px;
+    .btc-shell,
+    .btc-shell * {
+        box-sizing: border-box;
     }
 
-    .btc-brand-title {
-        color: #0f172a;
-        font-size: 23px;
-        font-weight: 900;
-        line-height: 1.2;
-        margin-bottom: 8px;
-    }
-
-    .btc-brand-subtitle {
-        color: #64748b;
-        font-size: 14px;
+    .btc-shell {
+        width: 100%;
+        max-width: none;
+        min-height: calc(100vh - 56px);
+        padding: 20px 8px 30px;
         margin: 0;
+        background: transparent;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
 
-    .btc-nav {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .btc-nav-link {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-        color: #334155;
-        padding: 12px 13px;
-        border-radius: 15px;
-        font-size: 14.5px;
-        font-weight: 650;
-        transition: .2s ease;
-    }
-
-    .btc-nav-link i {
-        width: 20px;
-        text-align: center;
-        font-size: 16px;
-        color: #64748b;
-        transition: .2s ease;
-    }
-
-    .btc-nav-link:hover {
-        background: #f1f5f9;
-        color: #1d4ed8;
-        transform: translateX(2px);
-    }
-
-    .btc-nav-link:hover i {
-        color: #1d4ed8;
-    }
-
-    .btc-nav-link.active {
-        background: #eef2ff;
-        color: #2563eb;
-        font-weight: 800;
-        box-shadow: inset 3px 0 0 #2563eb;
-    }
-
-    .btc-nav-link.active i {
-        color: #2563eb;
-    }
-
-    .btc-footer {
-        margin-top: auto;
-        padding-top: 18px;
-        border-top: 1px solid #edf2f7;
-        color: #94a3b8;
-        font-size: 13px;
-        line-height: 1.6;
+    .btc-layout {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+        width: 100%;
+        max-width: none;
     }
 
     .btc-content {
@@ -158,13 +60,198 @@ body:has(.btc-shell) main > .container-fluid {
         background: transparent;
     }
 
+    /* =========================================
+       SIDEBAR
+       ========================================= */
+
+    .btc-sidebar {
+        position: sticky;
+        top: 76px;
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 100px);
+        padding: 21px 19px;
+        border: 1px solid #ece0f0;
+        border-radius: 23px;
+        background: #ffffff;
+        box-shadow: 0 15px 36px rgba(87, 53, 103, .075);
+    }
+
+    .btc-brand {
+        margin-bottom: 24px;
+    }
+
+    .btc-brand-title {
+        margin: 0 0 7px;
+        color: #263044;
+        font-size: 21px;
+        font-weight: 800;
+        line-height: 1.35;
+        letter-spacing: -.4px;
+    }
+
+    .btc-brand-subtitle {
+        margin: 0;
+        color: #7c879f;
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1.65;
+    }
+
+    /* =========================================
+       MENU DONG NHAT
+       ========================================= */
+
+    .btc-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .btc-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 11px 11px;
+        border-radius: 13px;
+        background: transparent;
+        color: #46536c;
+        text-decoration: none;
+        font-family: "Be Vietnam Pro", sans-serif;
+        font-size: 12.7px;
+        font-weight: 600;
+        line-height: 1.55;
+        letter-spacing: 0;
+        transition:
+            background .18s ease,
+            color .18s ease,
+            box-shadow .18s ease;
+    }
+
+    .btc-nav-link > i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 17px;
+        width: 17px;
+        height: 19px;
+        color: #8493ad;
+        font-size: 15px;
+        line-height: 1;
+        transition: color .18s ease;
+    }
+
+    .btc-nav-label {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow-wrap: break-word;
+        font: inherit;
+        color: inherit;
+    }
+
+    .btc-nav-link:hover {
+        background: #f7f2fc;
+        color: #875bad;
+        text-decoration: none;
+    }
+
+    .btc-nav-link:hover > i {
+        color: #a374c2;
+    }
+
+    .btc-nav-link.active {
+        background: #eef1ff;
+        color: #426af0;
+        font-weight: 700;
+        box-shadow: inset 3px 0 0 #426af0;
+    }
+
+    .btc-nav-link.active > i {
+        color: #426af0;
+    }
+
+    .btc-nav-link:focus-visible {
+        outline: 2px solid #b987d4;
+        outline-offset: 2px;
+    }
+
+    /* =========================================
+       BADGE THONG BAO NHO
+       ========================================= */
+
+    .btc-nav-badge {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        flex: 0 0 auto;
+        min-width: 19px;
+        height: 19px;
+        margin-left: auto;
+        padding: 0 5px;
+        border-radius: 999px;
+        font-family: "Be Vietnam Pro", sans-serif;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .btc-nav-badge[hidden] {
+        display: none !important;
+    }
+
+    .btc-nav-badge.event {
+        background: #f3e6fb;
+        color: #a36abb;
+        border: 1px solid #e9d2f4;
+    }
+
+    .btc-nav-badge.request {
+        background: #ffe5ef;
+        color: #c45c83;
+        border: 1px solid #f5cddd;
+    }
+
+    .btc-nav-link.active .btc-nav-badge {
+        background: #ffffff;
+    }
+
+    /* =========================================
+       NEN GIAO DIEN BTC
+       ========================================= */
+
+    body.btc-theme-page {
+        background: #f6eafd !important;
+    }
+
+    body.btc-theme-page .event-main {
+        background: #f6eafd !important;
+    }
+
+    body.btc-theme-page .btc-shell,
+    body.btc-theme-page .btc-layout,
+    body.btc-theme-page .btc-content {
+        background: transparent !important;
+    }
+
+    /* =========================================
+       RESPONSIVE
+       ========================================= */
+
     @@media (max-width: 992px) {
         .btc-shell {
             padding: 16px;
         }
 
         .btc-layout {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
         }
 
         .btc-sidebar {
@@ -180,79 +267,300 @@ body:has(.btc-shell) main > .container-fluid {
     }
 
     @@media (max-width: 576px) {
+        .btc-shell {
+            padding: 12px;
+        }
+
+        .btc-sidebar {
+            padding: 19px;
+        }
+
         .btc-nav {
             grid-template-columns: 1fr;
         }
 
-        .btc-sidebar {
-            padding: 20px;
-            border-radius: 22px;
+        .btc-nav-link {
+            font-size: 13px;
         }
     }
 </style>
 
 <div class="btc-shell">
+
     <div class="btc-layout">
+
+        <!-- SIDEBAR -->
         <aside class="btc-sidebar">
+
             <div class="btc-brand">
-                <div class="btc-brand-title">Ban tổ chức</div>
-                <p class="btc-brand-subtitle">Quản lý sự kiện và vé</p>
+                <div class="btc-brand-title">
+                    Ban tổ chức
+                </div>
+
+                <p class="btc-brand-subtitle">
+                    Quản lý sự kiện và vé
+                </p>
             </div>
 
-            <nav class="btc-nav">
+            <nav class="btc-nav"
+                 aria-label="Điều hướng Ban tổ chức">
+
+                <!-- SU KIEN CUA TOI -->
                 <a asp-controller="BanToChuc"
                    asp-action="Index"
-                   class="btc-nav-link @(currentAction == "Index" ? "active" : "")">
+                   id="btcMenuEvents"
+                   class="btc-nav-link @(laTrangBanToChuc && currentAction == "Index" ? "active" : "")">
+
                     <i class="bi bi-calendar-event"></i>
-                    <span>Sự kiện của tôi</span>
+
+                    <span class="btc-nav-label">
+                        Sự kiện của tôi
+                    </span>
+
+                    <span id="btcEventBadge"
+                          class="btc-nav-badge event"
+                          aria-label="Thông báo sự kiện chưa xem"
+                          hidden>
+                    </span>
                 </a>
 
+                <!-- TAO SU KIEN -->
                 <a asp-controller="BanToChuc"
                    asp-action="TaoSuKien"
-                   class="btc-nav-link @(currentAction == "TaoSuKien" ? "active" : "")">
+                   class="btc-nav-link @(laTrangBanToChuc && currentAction == "TaoSuKien" ? "active" : "")">
+
                     <i class="bi bi-plus-circle"></i>
-                    <span>Tạo sự kiện mới</span>
+
+                    <span class="btc-nav-label">
+                        Tạo sự kiện mới
+                    </span>
                 </a>
 
+                <!-- YEU CAU HOAN / HUY -->
+                <a asp-controller="BanToChuc"
+                   asp-action="YeuCauHuyVe"
+                   id="btcMenuRequests"
+                   class="btc-nav-link @(laTrangBanToChuc && currentAction == "YeuCauHuyVe" ? "active" : "")">
 
+                    <i class="bi bi-arrow-repeat"></i>
 
-<a asp-controller="BanToChuc"
-   asp-action="YeuCauHuyVe"
-   class="btc-nav-link @(currentAction == "YeuCauHuyVe" ? "active" : "")">
-    <i class="bi bi-arrow-repeat"></i>
-    <span>Yêu cầu hoàn/hủy vé</span>
-</a>
+                    <span class="btc-nav-label">
+                        Yêu cầu hoàn/hủy vé
+                    </span>
 
+                    <span id="btcRequestBadge"
+                          class="btc-nav-badge request"
+                          aria-label="Yêu cầu hủy vé mới chưa xem"
+                          hidden>
+                    </span>
+                </a>
 
-
+                <!-- THONG KE TONG QUAN -->
                 <a asp-controller="BanToChuc"
                    asp-action="ThongKeTongQuan"
-                   class="btc-nav-link @(currentAction == "ThongKeTongQuan" ? "active" : "")">
+                   class="btc-nav-link @(laTrangBanToChuc && currentAction == "ThongKeTongQuan" ? "active" : "")">
+
                     <i class="bi bi-bar-chart"></i>
-                    <span>Thống kê tổng quan</span>
+
+                    <span class="btc-nav-label">
+                        Thống kê tổng quan
+                    </span>
                 </a>
 
+                <!-- DOANH THU THEO SU KIEN -->
+                <a asp-controller="BanToChuc"
+                   asp-action="DoanhThuTheoSuKien"
+                   class="btc-nav-link @(laTrangBanToChuc && currentAction == "DoanhThuTheoSuKien" ? "active" : "")">
 
-<a asp-controller="BanToChuc"
-   asp-action="DoanhThuTheoSuKien"
-   class="btc-nav-link @(currentAction == "DoanhThuTheoSuKien" ? "active" : "")">
-    <i class="bi bi-bar-chart-line"></i>
-    <span>Doanh thu theo sự kiện</span>
-</a>
+                    <i class="bi bi-bar-chart-line"></i>
 
+                    <span class="btc-nav-label">
+                        Doanh thu theo sự kiện
+                    </span>
+                </a>
+
+                <!-- CHECK IN QR -->
+                <a asp-controller="BanToChuc"
+                   asp-action="QuetMaQr"
+                   class="btc-nav-link @(laTrangBanToChuc && currentAction == "QuetMaQr" ? "active" : "")">
+
+                    <i class="bi bi-qr-code-scan"></i>
+
+                    <span class="btc-nav-label">
+                        Check-in QR
+                    </span>
+                </a>
 
             </nav>
 
-            <div class="btc-footer">
-                <div>© 2026</div>
-                <div>Đặt Vé Sự Kiện</div>
-            </div>
         </aside>
 
+        <!-- NOI DUNG -->
         <main class="btc-content">
             @RenderBody()
         </main>
+
     </div>
 </div>
+
+<script>
+(function () {
+    "use strict";
+
+    const endpoint = "/api/btc-sidebar/thong-bao";
+
+    const eventBadge =
+        document.getElementById("btcEventBadge");
+
+    const requestBadge =
+        document.getElementById("btcRequestBadge");
+
+    const eventLink =
+        document.getElementById("btcMenuEvents");
+
+    const requestLink =
+        document.getElementById("btcMenuRequests");
+
+    if (!eventBadge || !requestBadge) return;
+
+    const pathname = window.location.pathname
+        .replace(/\/+$/, "")
+        .toLowerCase();
+
+    const onEventPage =
+        pathname === "/bantochuc" ||
+        pathname === "/bantochuc/index";
+
+    const onRequestPage =
+        pathname === "/bantochuc/yeucauhuyve";
+
+    function getSeen(key) {
+        try {
+            const json = localStorage.getItem(key);
+            const items = json ? JSON.parse(json) : [];
+
+            return new Set(
+                Array.isArray(items) ? items : []
+            );
+        } catch {
+            return new Set();
+        }
+    }
+
+    function saveSeen(key, set) {
+        try {
+            localStorage.setItem(
+                key,
+                JSON.stringify(Array.from(set))
+            );
+        } catch {
+            // Không chặn hoạt động trang nếu storage bị khóa.
+        }
+    }
+
+    function renderBadge(element, count, description) {
+        element.hidden = count <= 0;
+
+        if (count <= 0) {
+            element.textContent = "";
+            element.title = "";
+            return;
+        }
+
+        element.textContent =
+            count > 99 ? "99+" : String(count);
+
+        element.title = description;
+    }
+
+    async function refreshSidebarNotifications() {
+        try {
+            const response = await fetch(endpoint, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            const userId = String(data.nguoiDungId);
+
+            const eventKey =
+                "btc-events-seen-v1-" + userId;
+
+            const requestKey =
+                "btc-requests-seen-v1-" + userId;
+
+            const seenEvents = getSeen(eventKey);
+            const seenRequests = getSeen(requestKey);
+
+            // Tách ID và trạng thái để khi Admin đổi
+            // Chờ duyệt -> Duyệt / Từ chối, BTC nhận
+            // được thông báo mới.
+            const eventItems = (data.suKien || [])
+                .map(x => String(x.id) + ":" + x.trangThai);
+
+            const requestItems = (data.yeuCau || [])
+                .map(x => String(x));
+
+            if (onEventPage) {
+                eventItems.forEach(x => seenEvents.add(x));
+                saveSeen(eventKey, seenEvents);
+            }
+
+            if (onRequestPage) {
+                requestItems.forEach(x => seenRequests.add(x));
+                saveSeen(requestKey, seenRequests);
+            }
+
+            const newEvents = eventItems.filter(
+                x => !seenEvents.has(x)
+            );
+
+            const newRequests = requestItems.filter(
+                x => !seenRequests.has(x)
+            );
+
+            renderBadge(
+                eventBadge,
+                newEvents.length,
+                "Sự kiện vừa được duyệt hoặc từ chối"
+            );
+
+            renderBadge(
+                requestBadge,
+                newRequests.length,
+                "Yêu cầu hủy vé mới chưa xem"
+            );
+
+        } catch (error) {
+            console.warn(
+                "Không tải được thông báo sidebar:",
+                error
+            );
+        }
+    }
+
+    // Thông báo được cập nhật khi mở trang.
+    refreshSidebarNotifications();
+
+    // Kiểm tra dữ liệu mới định kỳ.
+    // Không tải lại trang mà BTC đang thao tác.
+    setInterval(refreshSidebarNotifications, 45000);
+
+    // Khi quay lại tab, cập nhật số thông báo.
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            refreshSidebarNotifications();
+        }
+    });
+
+})();
+</script>
 
 @RenderSection("Scripts", required: false)

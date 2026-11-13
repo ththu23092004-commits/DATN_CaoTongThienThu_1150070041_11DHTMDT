@@ -1,131 +1,2073 @@
+
 @model IEnumerable<VeSuKienWeb.Models.NguoiDung>
+@using System.Linq
+@using System.Security.Claims
 
 @{
-      Layout = "_AdminLayout";
+    Layout = "_AdminLayout";
     ViewData["Title"] = "Quản lý người dùng";
+
+    var danhSach = (Model ?? Enumerable.Empty<VeSuKienWeb.Models.NguoiDung>())
+        .OrderByDescending(x => x.NgayTao)
+        .ToList();
+
+    int tong = danhSach.Count;
+    int khachHang = danhSach.Count(x => x.VaiTro == "KhachHang");
+    int banToChuc = danhSach.Count(x => x.VaiTro == "ToChuc");
+    int biKhoa = danhSach.Count(x => x.TrangThai == "BiKhoa");
+
+    int.TryParse(
+        User.FindFirstValue(ClaimTypes.NameIdentifier),
+        out int adminHienTaiId);
 }
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-header bg-white border-0 p-4">
-        <div class="d-flex justify-content-between align-items-center">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet" />
+
+<style>
+    .usm-page,
+    .usm-page *,
+    .usm-modal,
+    .usm-modal * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .usm-page {
+        width: 100%;
+        min-width: 0;
+        padding-bottom: 28px;
+        color: #574663;
+        font-size: 13px;
+    }
+
+    .usm-page button,
+    .usm-page input,
+    .usm-page select,
+    .usm-modal button,
+    .usm-modal input,
+    .usm-modal select {
+        font-family: inherit;
+    }
+
+    .usm-card {
+        background: #fff;
+        border: 1px solid #e9ddec;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 7px 24px rgba(85,48,104,.05);
+    }
+
+    /* HEADER */
+
+    .usm-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        padding: 20px;
+        border-bottom: 1px solid #f0e7f2;
+    }
+
+    .usm-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        color: #4c3958;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .usm-title i {
+        color: #a673b9;
+        font-size: 20px;
+    }
+
+    .usm-subtitle {
+        margin: 7px 0 0;
+        color: #9b89a4;
+        font-size: 12px;
+        line-height: 1.8;
+    }
+
+    .usm-create {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        background: linear-gradient(110deg,#a66cbb,#c17caf);
+        color: white !important;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 750;
+        box-shadow: 0 5px 13px rgba(165,100,184,.12);
+        transition: .2s;
+    }
+
+    .usm-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(165,100,184,.18);
+    }
+
+    /* THONG KE CO THE BAM */
+
+    .usm-stats {
+        display: grid;
+        grid-template-columns: repeat(4,minmax(0,1fr));
+        gap: 11px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1e9f3;
+    }
+
+    .usm-stat {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        min-width: 0;
+        min-height: 76px;
+        padding: 12px 13px;
+        border: 1px solid #eee3f0;
+        border-radius: 11px;
+        background: #fcf9fd;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .usm-stat:hover {
+        border-color: #d7b8e2;
+        background: #faf1fc;
+        transform: translateY(-2px);
+    }
+
+    .usm-stat.active {
+        border-color: #b781c8;
+        background: #f7ecfa;
+        box-shadow: 0 0 0 3px rgba(172,113,192,.09);
+    }
+
+    .usm-stat:focus-visible,
+    .usm-btn:focus-visible {
+        outline: 3px solid #d2aedf;
+        outline-offset: 2px;
+    }
+
+    .usm-stat-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #f1e5f6;
+        color: #a16ab4;
+        font-size: 17px;
+    }
+
+    .usm-stat-icon.customer {
+        background: #eaf5ff;
+        color: #5a91bb;
+    }
+
+    .usm-stat-icon.organizer {
+        background: #fff4e5;
+        color: #b78b4d;
+    }
+
+    .usm-stat-icon.locked {
+        background: #fff0f4;
+        color: #c4738a;
+    }
+
+    .usm-stat-label {
+        color: #9885a3;
+        font-size: 11px;
+    }
+
+    .usm-stat-value {
+        margin-top: 3px;
+        color: #594465;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    /* TIM KIEM VA LOC */
+
+    .usm-toolbar {
+        display: grid;
+        grid-template-columns: minmax(220px,1fr) 165px 165px;
+        gap: 10px;
+        padding: 16px 20px;
+    }
+
+    .usm-search {
+        position: relative;
+        min-width: 0;
+    }
+
+    .usm-search i {
+        position: absolute;
+        top: 50%;
+        left: 13px;
+        transform: translateY(-50%);
+        color: #ac92b7;
+        pointer-events: none;
+        font-size: 15px;
+    }
+
+    .usm-input,
+    .usm-select {
+        width: 100%;
+        min-height: 41px;
+        border: 1px solid #e7d9ea;
+        border-radius: 9px;
+        background: #fdfafd;
+        color: #654f70;
+        font-size: 12px;
+        outline: none;
+    }
+
+    .usm-input {
+        padding: 0 12px 0 38px;
+    }
+
+    .usm-select {
+        padding: 0 10px;
+        cursor: pointer;
+    }
+
+    .usm-input:focus,
+    .usm-select:focus {
+        border-color: #ba8bc9;
+        box-shadow: 0 0 0 3px rgba(174,118,191,.1);
+    }
+
+    /* BANG */
+
+    .usm-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .usm-table {
+        width: 100%;
+        min-width: 900px;
+        border-collapse: collapse;
+    }
+
+    .usm-table thead {
+        background: #fcf8fd;
+    }
+
+    .usm-table th {
+        padding: 14px;
+        border-bottom: 1px solid #eee4f0;
+        color: #927d9d;
+        text-align: left;
+        font-size: 11.5px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .usm-table td {
+        padding: 13px 14px;
+        border-bottom: 1px solid #f2eaf3;
+        color: #6f5d79;
+        vertical-align: middle;
+        font-size: 12.5px;
+        line-height: 1.7;
+    }
+
+    .usm-table tbody tr:hover {
+        background: #fdf8fe;
+    }
+
+    .usm-person {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 175px;
+    }
+
+    .usm-avatar {
+        display: grid;
+        place-items: center;
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: #f0e5f5;
+        color: #9668aa;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .usm-name {
+        max-width: 180px;
+        color: #513e5c;
+        font-size: 12.5px;
+        font-weight: 750;
+        overflow-wrap: anywhere;
+    }
+
+    .usm-id {
+        color: #ab9ab4;
+        font-size: 10.5px;
+        margin-top: 3px;
+    }
+
+    .usm-email {
+        max-width: 225px;
+        overflow-wrap: anywhere;
+    }
+
+    .usm-muted {
+        color: #a392ac;
+    }
+
+    .usm-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .usm-badge.admin {
+        background: #f2e9f9;
+        color: #9565ad;
+    }
+
+    .usm-badge.organizer {
+        background: #fff4e5;
+        color: #af8244;
+    }
+
+    .usm-badge.customer {
+        background: #ebf4ff;
+        color: #548db5;
+    }
+
+    .usm-badge.active {
+        background: #e9f8f1;
+        color: #2c9070;
+    }
+
+    .usm-badge.locked {
+        background: #fff0f4;
+        color: #c16a84;
+    }
+
+    .usm-badge.unknown {
+        background: #f2eff5;
+        color: #80718a;
+    }
+
+    /* NUT THAO TAC */
+
+    .usm-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .usm-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 34px;
+        padding: 7px 11px;
+        border: 1px solid #e6d8ea;
+        border-radius: 8px;
+        background: white;
+        font-size: 11.5px;
+        font-weight: 750;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: .15s ease;
+    }
+
+    .usm-btn.edit {
+        background: #f8effa;
+        color: #9363a7;
+    }
+
+    .usm-btn.lock {
+        background: #fff4f6;
+        border-color: #f1d7e0;
+        color: #be6a81;
+    }
+
+    .usm-btn.unlock {
+        background: #effaf4;
+        border-color: #cde9db;
+        color: #278e6a;
+    }
+
+    .usm-btn:hover {
+        filter: brightness(.96);
+    }
+
+    .usm-self {
+        color: #ab9ab2;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    /* PHAN TRANG */
+
+    .usm-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 20px;
+        border-top: 1px solid #f1e9f3;
+    }
+
+    .usm-page-info {
+        color: #9987a3;
+        font-size: 12px;
+    }
+
+    .usm-pages {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .usm-page-button {
+        min-width: 33px;
+        height: 33px;
+        padding: 0 10px;
+        border: 1px solid #e8dbea;
+        border-radius: 8px;
+        background: #fff;
+        color: #806b8b;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .usm-page-button.active {
+        background: #ad79bf;
+        border-color: #ad79bf;
+        color: #fff;
+    }
+
+    .usm-page-button:disabled {
+        opacity: .4;
+        cursor: default;
+    }
+
+    .usm-empty {
+        padding: 38px 20px;
+        text-align: center;
+        color: #9c8aa5;
+        font-size: 13px;
+    }
+
+    .usm-empty[hidden],
+    .usm-modal[hidden] {
+        display: none !important;
+    }
+
+    /* POPUP */
+
+    .usm-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 20000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(43,27,51,.57);
+        backdrop-filter: blur(4px);
+    }
+
+    .usm-dialog {
+        width: 100%;
+        max-width: 510px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border: 1px solid #eadbed;
+        border-radius: 17px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(36,19,44,.25);
+    }
+
+    .usm-dialog.large {
+        max-width: 600px;
+    }
+
+    .usm-dialog-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 22px 24px 18px;
+        border-bottom: 1px solid #f0e7f2;
+    }
+
+    .usm-dialog-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 48px;
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+        background: #f1e5f6;
+        color: #a16ab4;
+        font-size: 21px;
+    }
+
+    .usm-dialog-icon.lock {
+        background: #fff0f4;
+        color: #c36b85;
+    }
+
+    .usm-dialog-icon.unlock {
+        background: #e9f8f1;
+        color: #298e6b;
+    }
+
+    .usm-dialog-title {
+        margin: 0;
+        color: #4d3857;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .usm-dialog-subtitle {
+        margin: 5px 0 0;
+        color: #9b89a4;
+        font-size: 11.5px;
+        line-height: 1.7;
+    }
+
+    .usm-dialog-body {
+        padding: 20px 24px;
+    }
+
+    .usm-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding: 13px;
+        border: 1px solid #eee1f0;
+        border-radius: 11px;
+        background: #fcf8fd;
+    }
+
+    .usm-profile-avatar {
+        display: grid;
+        place-items: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #ead8f0;
+        color: #8958a0;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .usm-profile-name {
+        color: #584064;
+        font-size: 13px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .usm-profile-id {
+        margin-top: 4px;
+        color: #a28dad;
+        font-size: 11px;
+    }
+
+    .usm-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 13px;
+    }
+
+    .usm-detail-item {
+        min-width: 0;
+        padding: 11px 12px;
+        border: 1px solid #f0e6f1;
+        border-radius: 9px;
+        background: #fdfbfe;
+    }
+
+    .usm-detail-label {
+        display: block;
+        margin-bottom: 5px;
+        color: #a18da9;
+        font-size: 10.5px;
+        font-weight: 650;
+    }
+
+    .usm-detail-value {
+        color: #665071;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+    .usm-dialog-note {
+        display: flex;
+        gap: 9px;
+        margin-top: 16px;
+        padding: 12px 13px;
+        border-radius: 9px;
+        background: #fff7ed;
+        color: #a67d48;
+        font-size: 11.5px;
+        line-height: 1.8;
+    }
+
+    .usm-dialog-note i {
+        font-size: 15px;
+        flex: 0 0 auto;
+    }
+
+    .usm-dialog-note.info {
+        background: #f5eef9;
+        color: #936da2;
+    }
+
+    .usm-dialog-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 9px;
+        padding: 16px 24px 21px;
+        border-top: 1px solid #f1e8f3;
+    }
+
+    .usm-dialog-button {
+        min-height: 40px;
+        padding: 9px 17px;
+        border: 1px solid #eaddec;
+        border-radius: 9px;
+        background: #fff;
+        color: #866b92;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .usm-dialog-button.confirm {
+        border: 0;
+        background: #c46782;
+        color: #fff;
+    }
+
+    .usm-dialog-button.confirm.unlock {
+        background: #299773;
+    }
+
+    .usm-dialog-button.confirm.edit {
+        background: #a66cbb;
+    }
+
+    .usm-dialog-button:disabled {
+        opacity: .65;
+        cursor: wait;
+    }
+
+    /* FORM SUA */
+
+    .usm-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .usm-field {
+        min-width: 0;
+    }
+
+    .usm-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .usm-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #665070;
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .usm-field input,
+    .usm-field select {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px solid #e6d9e9;
+        border-radius: 9px;
+        background: #fefcfe;
+        color: #584563;
+        font-size: 12px;
+        outline: none;
+    }
+
+    .usm-field input:focus,
+    .usm-field select:focus {
+        border-color: #b889c8;
+        box-shadow: 0 0 0 3px rgba(174,118,191,.1);
+    }
+
+    .usm-field input:disabled,
+    .usm-field select:disabled {
+        background: #f5f1f6;
+        color: #8e8095;
+    }
+
+    .usm-required {
+        color: #ca718a;
+    }
+
+    @@media (max-width: 1050px) {
+        .usm-stats {
+            grid-template-columns: repeat(2,minmax(0,1fr));
+        }
+
+        .usm-toolbar {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .usm-search {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @@media (max-width: 575px) {
+        .usm-header,
+        .usm-toolbar,
+        .usm-footer {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .usm-stats {
+            padding: 14px;
+            gap: 8px;
+        }
+
+        .usm-stat {
+            padding: 10px;
+        }
+
+        .usm-toolbar {
+            grid-template-columns: 1fr;
+        }
+
+        .usm-search {
+            grid-column: auto;
+        }
+
+        .usm-create {
+            width: 100%;
+        }
+
+        .usm-detail-grid,
+        .usm-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .usm-dialog-header,
+        .usm-dialog-body,
+        .usm-dialog-actions {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .usm-field.full {
+            grid-column: auto;
+        }
+    }
+
+/* Khu vực cấp lại mật khẩu trong popup sửa */
+.usm-reset-section {
+    margin-top: 20px;
+    padding: 17px;
+    border: 1px solid #e8d7ed;
+    border-radius: 12px;
+    background: linear-gradient(
+        135deg,
+        #fcf8fe,
+        #f8f0fb
+    );
+}
+
+.usm-reset-section[hidden] {
+    display: none !important;
+}
+
+.usm-reset-heading {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 16px;
+}
+
+.usm-reset-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 11px;
+    background: #ead9f1;
+    color: #9b69af;
+    font-size: 19px;
+}
+
+.usm-reset-heading h3 {
+    margin: 0;
+    color: #624772;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.usm-reset-heading p {
+    margin: 5px 0 0;
+    color: #9985a5;
+    font-size: 11.5px;
+    line-height: 1.7;
+}
+
+.usm-reset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.usm-reset-show {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 12px;
+    color: #806b8c;
+    font-size: 11.5px;
+    cursor: pointer;
+}
+
+.usm-reset-show input {
+    accent-color: #a971bc;
+}
+
+.usm-reset-hint {
+    margin: 12px 0;
+    color: #9880a4;
+    font-size: 11.5px;
+    line-height: 1.8;
+}
+
+.usm-reset-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 39px;
+    padding: 10px 15px;
+    border: 0;
+    border-radius: 9px;
+    background: #a771ba;
+    color: white;
+    font-size: 12px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.usm-reset-button:hover {
+    background: #9259a8;
+}
+
+.usm-reset-button:disabled {
+    opacity: .65;
+    cursor: wait;
+}
+
+@@media (max-width: 575px) {
+    .usm-reset-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .usm-reset-button {
+        width: 100%;
+    }
+}
+
+</style>
+
+<div class="usm-page">
+
+    @if (TempData["ThongBao"] != null)
+    {
+        <div class="alert alert-light border rounded-3 mb-3"
+             role="status"
+             style="font-size:12.5px;color:#715782">
+            <i class="bi bi-info-circle me-1"></i>
+            @TempData["ThongBao"]
+        </div>
+    }
+
+    <section class="usm-card">
+
+        <!-- HEADER -->
+        <div class="usm-header">
             <div>
-                <h3 class="fw-bold text-primary mb-1">Quản lý người dùng</h3>
-                <p class="text-muted mb-0">Theo dõi tài khoản khách hàng, ban tổ chức và quản trị viên.</p>
+                <h1 class="usm-title">
+                    <i class="bi bi-people"></i>
+                    Quản lý người dùng
+                </h1>
+
+                <p class="usm-subtitle">
+                    Theo dõi và quản lý tài khoản trong hệ thống.
+                </p>
             </div>
 
             <a asp-controller="Admin"
                asp-action="TaoBanToChuc"
-               class="btn btn-primary rounded-pill px-4">
-                + Tạo tài khoản ban tổ chức
+               class="usm-create">
+                <i class="bi bi-person-plus"></i>
+                Tạo tài khoản Ban tổ chức
             </a>
         </div>
-    </div>
 
-    <div class="card-body p-4">
-        @if (TempData["ThongBao"] != null)
-        {
-            <div class="alert alert-success rounded-3">
-                @TempData["ThongBao"]
+        <!-- CAC O THONG KE CO THE BAM -->
+        <div class="usm-stats">
+
+            <button type="button"
+                    class="usm-stat active"
+                    data-stat="all"
+                    aria-pressed="true">
+                <span class="usm-stat-icon">
+                    <i class="bi bi-people-fill"></i>
+                </span>
+
+                <span>
+                    <span class="usm-stat-label d-block">
+                        Tổng tài khoản
+                    </span>
+                    <span class="usm-stat-value d-block">@tong</span>
+                </span>
+            </button>
+
+            <button type="button"
+                    class="usm-stat"
+                    data-stat="KhachHang"
+                    aria-pressed="false">
+                <span class="usm-stat-icon customer">
+                    <i class="bi bi-person"></i>
+                </span>
+
+                <span>
+                    <span class="usm-stat-label d-block">
+                        Khách hàng
+                    </span>
+                    <span class="usm-stat-value d-block">@khachHang</span>
+                </span>
+            </button>
+
+            <button type="button"
+                    class="usm-stat"
+                    data-stat="ToChuc"
+                    aria-pressed="false">
+                <span class="usm-stat-icon organizer">
+                    <i class="bi bi-calendar-event"></i>
+                </span>
+
+                <span>
+                    <span class="usm-stat-label d-block">
+                        Ban tổ chức
+                    </span>
+                    <span class="usm-stat-value d-block">@banToChuc</span>
+                </span>
+            </button>
+
+            <button type="button"
+                    class="usm-stat"
+                    data-stat="BiKhoa"
+                    aria-pressed="false">
+                <span class="usm-stat-icon locked">
+                    <i class="bi bi-person-lock"></i>
+                </span>
+
+                <span>
+                    <span class="usm-stat-label d-block">
+                        Đang bị khóa
+                    </span>
+                    <span class="usm-stat-value d-block">@biKhoa</span>
+                </span>
+            </button>
+
+        </div>
+
+        <!-- TIM KIEM VA LOC -->
+        <div class="usm-toolbar">
+
+            <div class="usm-search">
+                <i class="bi bi-search"></i>
+
+                <input type="search"
+                       id="usmSearch"
+                       class="usm-input"
+                       autocomplete="off"
+                       placeholder="Tìm tên, email hoặc số điện thoại..."
+                       aria-label="Tìm kiếm người dùng" />
             </div>
-        }
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <select id="usmRole"
+                    class="usm-select"
+                    aria-label="Lọc vai trò">
+                <option value="">Tất cả vai trò</option>
+                <option value="KhachHang">Khách hàng</option>
+                <option value="ToChuc">Ban tổ chức</option>
+                <option value="Admin">Admin</option>
+            </select>
+
+            <select id="usmStatus"
+                    class="usm-select"
+                    aria-label="Lọc trạng thái">
+                <option value="">Tất cả trạng thái</option>
+                <option value="HoatDong">Hoạt động</option>
+                <option value="BiKhoa">Bị khóa</option>
+            </select>
+        </div>
+
+        <!-- BANG DANH SACH -->
+        <div class="usm-table-wrap">
+            <table class="usm-table">
+                <thead>
                     <tr>
-                 
                         <th>Người dùng</th>
                         <th>Email</th>
                         <th>Điện thoại</th>
                         <th>Vai trò</th>
-                        <th>Mật khẩu</th>
                         <th>Trạng thái</th>
                         <th>Ngày tạo</th>
-                        <th class="text-end">Thao tác</th>
+                        <th style="text-align:right">Thao tác</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in danhSach)
                     {
-                        <tr>
-                         
+                        bool laChinhMinh =
+                            item.NguoiDungId == adminHienTaiId;
+
+                        string hoTen = string.IsNullOrWhiteSpace(item.HoTen)
+                            ? "Chưa cập nhật"
+                            : item.HoTen;
+
+                        string kyTuDau =
+                            hoTen.Substring(0, 1).ToUpperInvariant();
+
+                        string vaiTroText = item.VaiTro switch
+                        {
+                            "Admin" => "Admin",
+                            "ToChuc" => "Ban tổ chức",
+                            "KhachHang" => "Khách hàng",
+                            _ => "Chưa xác định"
+                        };
+
+                        string trangThaiText = item.TrangThai switch
+                        {
+                            "HoatDong" => "Hoạt động",
+                            "BiKhoa" => "Bị khóa",
+                            _ => "Chưa xác định"
+                        };
+
+                        <tr class="usm-row"
+                            data-id="@item.NguoiDungId"
+                            data-name="@hoTen"
+                            data-email="@item.Email"
+                            data-phone="@(item.DienThoai ?? "")"
+                            data-role="@(item.VaiTro ?? "")"
+                            data-role-text="@vaiTroText"
+                            data-status="@item.TrangThai"
+                            data-status-text="@trangThaiText"
+                            data-created="@item.NgayTao.ToString("dd/MM/yyyy HH:mm")"
+                            data-self="@(laChinhMinh ? "true" : "false")">
+
                             <td>
-                                <div class="fw-semibold">@item.HoTen</div>
-                                <div class="text-muted small">Tài khoản hệ thống</div>
+                                <div class="usm-person">
+                                    <div class="usm-avatar">@kyTuDau</div>
+
+                                    <div>
+                                        <div class="usm-name">@hoTen</div>
+                                        <div class="usm-id">
+                                            ID #@item.NguoiDungId
+                                            @if (laChinhMinh)
+                                            {
+                                                <span> · Bạn</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
-                            <td>@item.Email</td>
-                            <td>@(item.DienThoai ?? "Chưa cập nhật")</td>
+
+                            <td>
+                                <div class="usm-email">@item.Email</div>
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(item.DienThoai)
+                                    ? "Chưa cập nhật"
+                                    : item.DienThoai)
+                            </td>
+
                             <td>
                                 @if (item.VaiTro == "Admin")
                                 {
-                                    <span class="badge rounded-pill bg-danger px-3">Admin</span>
+                                    <span class="usm-badge admin">
+                                        <i class="bi bi-shield-check"></i>
+                                        Admin
+                                    </span>
                                 }
                                 else if (item.VaiTro == "ToChuc")
                                 {
-                                    <span class="badge rounded-pill bg-warning text-dark px-3">Ban tổ chức</span>
+                                    <span class="usm-badge organizer">
+                                        <i class="bi bi-calendar-event"></i>
+                                        Ban tổ chức
+                                    </span>
+                                }
+                                else if (item.VaiTro == "KhachHang")
+                                {
+                                    <span class="usm-badge customer">
+                                        <i class="bi bi-person"></i>
+                                        Khách hàng
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="badge rounded-pill bg-success px-3">Khách hàng</span>
+                                    <span class="usm-badge unknown">
+                                        Chưa xác định
+                                    </span>
                                 }
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill bg-secondary px-3">Đã mã hóa</span>
                             </td>
 
                             <td>
-                                @if (item.TrangThai == "BiKhoa")
+                                @if (item.TrangThai == "HoatDong")
                                 {
-                                    <span class="badge rounded-pill bg-danger px-3">Bị khóa</span>
+                                    <span class="usm-badge active">
+                                        <i class="bi bi-check-circle"></i>
+                                        Hoạt động
+                                    </span>
+                                }
+                                else if (item.TrangThai == "BiKhoa")
+                                {
+                                    <span class="usm-badge locked">
+                                        <i class="bi bi-lock"></i>
+                                        Bị khóa
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="badge rounded-pill bg-success px-3">Hoạt động</span>
+                                    <span class="usm-badge unknown">
+                                        Chưa xác định
+                                    </span>
                                 }
                             </td>
 
-                            <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="white-space:nowrap">
+                                @item.NgayTao.ToString("dd/MM/yyyy")
+                                <div class="usm-id">
+                                    @item.NgayTao.ToString("HH:mm")
+                                </div>
+                            </td>
 
-                            <td class="text-end">
-                                <a asp-controller="Admin"
-                                   asp-action="SuaNguoiDung"
-                                   asp-route-id="@item.NguoiDungId"
-                                   class="btn btn-warning btn-sm rounded-pill px-3 me-1">
-                                    Sửa
-                                </a>
+                            <td>
+                                <div class="usm-actions">
 
-                                <form asp-controller="Admin"
-                                      asp-action="KhoaMoKhoaNguoiDung"
-                                      method="post"
-                                      class="d-inline">
+                                    <button type="button"
+                                            class="usm-btn edit usm-open-edit"
+                                            data-id="@item.NguoiDungId">
+                                        <i class="bi bi-pencil-square"></i>
+                                        Sửa
+                                    </button>
 
-                                    @Html.AntiForgeryToken()
-
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@item.NguoiDungId" />
-
-                                    @if (item.TrangThai == "BiKhoa")
+                                    @if (laChinhMinh)
                                     {
-                                        <button type="submit"
-                                                class="btn btn-success btn-sm rounded-pill px-3">
-                                            Mở khóa
-                                        </button>
+                                        <span class="usm-self">
+                                            <i class="bi bi-shield-lock"></i>
+                                            Tài khoản hiện tại
+                                        </span>
                                     }
-                                    else
+                                    else if (item.TrangThai == "HoatDong")
                                     {
-                                        <button type="submit"
-                                                class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                        <button type="button"
+                                                class="usm-btn lock usm-open-lock"
+                                                data-id="@item.NguoiDungId"
+                                                data-operation="lock">
+                                            <i class="bi bi-lock"></i>
                                             Khóa
                                         </button>
                                     }
-                                </form>
+                                    else if (item.TrangThai == "BiKhoa")
+                                    {
+                                        <button type="button"
+                                                class="usm-btn unlock usm-open-lock"
+                                                data-id="@item.NguoiDungId"
+                                                data-operation="unlock">
+                                            <i class="bi bi-unlock"></i>
+                                            Mở khóa
+                                        </button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+
+        <div id="usmEmpty" class="usm-empty" hidden>
+            <i class="bi bi-person-x"
+               style="display:block;font-size:28px;margin-bottom:9px"></i>
+            Không tìm thấy tài khoản phù hợp.
+        </div>
+
+        <div class="usm-footer">
+            <span id="usmPageInfo" class="usm-page-info"></span>
+            <div id="usmPagination" class="usm-pages"></div>
+        </div>
+    </section>
+</div>
+
+<!-- POPUP SUA NGUOI DUNG -->
+<div class="usm-modal" id="usmEditModal" hidden>
+    <div class="usm-dialog large"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="usmEditTitle">
+
+        <div class="usm-dialog-header">
+            <div class="usm-dialog-icon">
+                <i class="bi bi-pencil-square"></i>
+            </div>
+
+            <div>
+                <h2 class="usm-dialog-title" id="usmEditTitle">
+                    Chỉnh sửa thông tin người dùng
+                </h2>
+                <p class="usm-dialog-subtitle">
+                    Kiểm tra và cập nhật thông tin tài khoản.
+                </p>
+            </div>
+        </div>
+
+        <form id="usmEditForm" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="usm-dialog-body">
+
+                <div class="usm-profile">
+                    <div class="usm-profile-avatar"
+                         id="usmEditAvatar">U</div>
+
+                    <div>
+                        <div class="usm-profile-name"
+                             id="usmEditProfileName"></div>
+
+                        <div class="usm-profile-id"
+                             id="usmEditProfileId"></div>
+                    </div>
+                </div>
+
+                <div class="usm-form-grid">
+
+                    <div class="usm-field full">
+                        <label for="usmEditName">
+                            Họ và tên <span class="usm-required">*</span>
+                        </label>
+                        <input type="text"
+                               id="usmEditName"
+                               name="HoTen"
+                               maxlength="150"
+                               required />
+                    </div>
+
+                    <div class="usm-field full">
+                        <label for="usmEditEmail">
+                            Email <span class="usm-required">*</span>
+                        </label>
+                        <input type="email"
+                               id="usmEditEmail"
+                               name="Email"
+                               maxlength="255"
+                               required />
+                    </div>
+
+                    <div class="usm-field">
+                        <label for="usmEditPhone">
+                            Số điện thoại
+                        </label>
+                        <input type="tel"
+                               id="usmEditPhone"
+                               name="DienThoai"
+                               inputmode="numeric"
+                               pattern="0[0-9]{9}"
+                               maxlength="10"
+                               placeholder="Chưa cập nhật" />
+                    </div>
+
+                    <div class="usm-field">
+                        <label for="usmEditRole">
+                            Vai trò <span class="usm-required">*</span>
+                        </label>
+
+                        <select id="usmEditRole"
+                                name="VaiTro"
+                                required>
+                            <option value="KhachHang">Khách hàng</option>
+                            <option value="ToChuc">Ban tổ chức</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="usm-detail-grid" style="margin-top:16px">
+                    <div class="usm-detail-item">
+                        <span class="usm-detail-label">Trạng thái</span>
+                        <span class="usm-detail-value"
+                              id="usmEditStatus"></span>
+                    </div>
+
+                    <div class="usm-detail-item">
+                        <span class="usm-detail-label">Ngày tạo</span>
+                        <span class="usm-detail-value"
+                              id="usmEditCreated"></span>
+                    </div>
+                </div>
+
+                <div class="usm-dialog-note info">
+                    <i class="bi bi-info-circle"></i>
+                    <span>
+                        Thay đổi email hoặc vai trò có thể yêu cầu
+                        người dùng đăng nhập lại. Mật khẩu và trạng thái
+                        tài khoản không bị thay đổi trong thao tác này.
+                    </span>
+                </div>
+
+                <div id="usmSelfRoleNote"
+                     class="usm-dialog-note"
+                     hidden>
+                    <i class="bi bi-shield-lock"></i>
+                    <span>
+                        Bạn không thể tự thay đổi vai trò Admin của mình.
+                    </span>
+</div>
+<!-- CAP LAI MAT KHAU: CHI HIEN CHO BTC -->
+<div id="usmResetSection"
+     class="usm-reset-section"
+     hidden>
+
+    <div class="usm-reset-heading">
+        <span class="usm-reset-icon">
+            <i class="bi bi-key"></i>
+        </span>
+
+        <div>
+            <h3>Cấp lại mật khẩu</h3>
+            <p>
+                Đặt mật khẩu tạm mới khi Ban tổ chức
+                quên mật khẩu đăng nhập.
+            </p>
+        </div>
+    </div>
+
+    <div class="usm-reset-grid">
+        <div class="usm-field">
+            <label for="usmResetPassword">
+                Mật khẩu tạm mới
+                <span class="usm-required">*</span>
+            </label>
+
+            <input type="password"
+                   id="usmResetPassword"
+                   name="matKhauMoi"
+                   form="usmResetForm"
+                   minlength="12"
+                   maxlength="128"
+                   autocomplete="new-password"
+                   placeholder="Nhập mật khẩu tạm mới" />
+        </div>
+
+        <div class="usm-field">
+            <label for="usmResetConfirm">
+                Xác nhận mật khẩu
+                <span class="usm-required">*</span>
+            </label>
+
+            <input type="password"
+                   id="usmResetConfirm"
+                   name="xacNhanMatKhau"
+                   form="usmResetForm"
+                   minlength="12"
+                   maxlength="128"
+                   autocomplete="new-password"
+                   placeholder="Nhập lại mật khẩu" />
+        </div>
+    </div>
+
+    <label class="usm-reset-show">
+        <input type="checkbox" id="usmShowResetPassword" />
+        Hiển thị mật khẩu
+    </label>
+
+    <p class="usm-reset-hint">
+        Mật khẩu ít nhất 12 ký tự, gồm chữ hoa,
+        chữ thường, số và ký tự đặc biệt.
+        Mật khẩu cũ sẽ không còn dùng để đăng nhập mới.
+    </p>
+
+    <button type="submit"
+            form="usmResetForm"
+            id="usmResetSubmit"
+            class="usm-reset-button">
+        <i class="bi bi-shield-lock"></i>
+        Cấp lại mật khẩu
+    </button>
+</div>
+
+                </div>
+         
+
+            <div class="usm-dialog-actions">
+                <button type="button"
+                        class="usm-dialog-button usm-close-modal">
+                    Hủy bỏ
+                </button>
+
+                <button type="submit"
+                        id="usmEditSubmit"
+                        class="usm-dialog-button confirm edit">
+                    <i class="bi bi-check2-circle me-1"></i>
+                    Lưu thay đổi
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<!-- POPUP KHOA / MO KHOA -->
+<div class="usm-modal" id="usmLockModal" hidden>
+    <div class="usm-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="usmLockTitle">
+
+        <div class="usm-dialog-header">
+            <div class="usm-dialog-icon lock"
+                 id="usmLockIcon">
+                <i class="bi bi-lock"></i>
+            </div>
+
+            <div>
+                <h2 class="usm-dialog-title"
+                    id="usmLockTitle">
+                    Xác nhận khóa tài khoản
+                </h2>
+
+                <p class="usm-dialog-subtitle"
+                   id="usmLockSubtitle">
+                    Kiểm tra thông tin trước khi xác nhận.
+                </p>
+            </div>
+        </div>
+
+        <form id="usmLockForm"
+              asp-controller="Admin"
+              asp-action="KhoaMoKhoaNguoiDung"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="id" id="usmLockId" />
+
+            <div class="usm-dialog-body">
+
+                <div class="usm-profile">
+                    <div class="usm-profile-avatar"
+                         id="usmLockAvatar">U</div>
+
+                    <div>
+                        <div class="usm-profile-name"
+                             id="usmLockName"></div>
+
+                        <div class="usm-profile-id"
+                             id="usmLockCode"></div>
+                    </div>
+                </div>
+
+                <div class="usm-detail-grid">
+
+                    <div class="usm-detail-item">
+                        <span class="usm-detail-label">Email</span>
+                        <span class="usm-detail-value"
+                              id="usmLockEmail"></span>
+                    </div>
+
+                    <div class="usm-detail-item">
+                        <span class="usm-detail-label">Số điện thoại</span>
+                        <span class="usm-detail-value"
+                              id="usmLockPhone"></span>
+                    </div>
+
+                    <div class="usm-detail-item">
+                        <span class="usm-detail-label">Vai trò</span>
+                        <span class="usm-detail-value"
+                              id="usmLockRole"></span>
+                    </div>
+
+                    <div class="usm-detail-item">
+                        <span class="usm-detail-label">Trạng thái</span>
+                        <span class="usm-detail-value"
+                              id="usmLockStatus"></span>
+                    </div>
+
+                    <div class="usm-detail-item"
+                         style="grid-column:1/-1">
+                        <span class="usm-detail-label">Ngày tạo</span>
+                        <span class="usm-detail-value"
+                              id="usmLockCreated"></span>
+                    </div>
+                </div>
+
+                <div class="usm-dialog-note"
+                     id="usmLockNote">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span id="usmLockMessage"></span>
+                </div>
+
+            </div>
+
+            <div class="usm-dialog-actions">
+                <button type="button"
+                        class="usm-dialog-button usm-close-modal">
+                    Quay lại
+                </button>
+
+                <button type="submit"
+                        id="usmLockSubmit"
+                        class="usm-dialog-button confirm">
+                    Xác nhận khóa
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    const rows = Array.from(
+        document.querySelectorAll(".usm-row")
+    );
+
+    const statButtons = Array.from(
+        document.querySelectorAll(".usm-stat")
+    );
+
+    const search = document.getElementById("usmSearch");
+    const role = document.getElementById("usmRole");
+    const status = document.getElementById("usmStatus");
+
+    const empty = document.getElementById("usmEmpty");
+    const info = document.getElementById("usmPageInfo");
+    const pagination = document.getElementById("usmPagination");
+
+    const editModal = document.getElementById("usmEditModal");
+    const lockModal = document.getElementById("usmLockModal");
+    const editForm = document.getElementById("usmEditForm");
+    const lockForm = document.getElementById("usmLockForm");
+
+    const pageSize = 8;
+    let currentPage = 1;
+    let activeStat = "all";
+    let previousFocus = null;
+    let submitting = false;
+
+    const editBaseUrl = '@Url.Action("SuaNguoiDung", "Admin")';
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function put(id, value) {
+        const element = byId(id);
+        if (element) element.textContent = value ?? "";
+    }
+
+    function normalize(value) {
+        return String(value ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLocaleLowerCase("vi-VN")
+            .trim();
+    }
+
+    function getRow(id) {
+        return rows.find(row => row.dataset.id === String(id));
+    }
+
+    function getFilteredRows() {
+        const keyword = normalize(search.value);
+
+        return rows.filter(row => {
+            const d = row.dataset;
+
+            const text = normalize([
+                d.name, d.email, d.phone
+            ].join(" "));
+
+            const matchKeyword =
+                !keyword || text.includes(keyword);
+
+            const matchRole =
+                !role.value || d.role === role.value;
+
+            const matchStatus =
+                !status.value || d.status === status.value;
+
+            const matchStat =
+                activeStat === "all" ||
+                (activeStat === "BiKhoa"
+                    ? d.status === "BiKhoa"
+                    : d.role === activeStat);
+
+            return matchKeyword &&
+                matchRole &&
+                matchStatus &&
+                matchStat;
+        });
+    }
+
+    function createPageButton(label, target, active, disabled) {
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.className =
+            "usm-page-button" + (active ? " active" : "");
+
+        button.textContent = label;
+        button.disabled = disabled;
+
+        if (active) {
+            button.setAttribute("aria-current", "page");
+        }
+
+        button.addEventListener("click", () => {
+            currentPage = target;
+            render();
+        });
+
+        return button;
+    }
+
+    function render() {
+        const matched = getFilteredRows();
+        const pageCount = Math.max(
+            1, Math.ceil(matched.length / pageSize)
+        );
+
+        currentPage = Math.min(currentPage, pageCount);
+
+        rows.forEach(row => {
+            row.hidden = true;
+            row.style.display = "none";
+        });
+
+        const start = (currentPage - 1) * pageSize;
+        const end = Math.min(start + pageSize, matched.length);
+
+        matched.slice(start, end).forEach(row => {
+            row.hidden = false;
+            row.style.display = "";
+        });
+
+        empty.hidden = matched.length !== 0;
+
+        info.textContent = matched.length
+            ? `Hiển thị ${start + 1}–${end} / ${matched.length} tài khoản`
+            : "Không có tài khoản phù hợp";
+
+        pagination.replaceChildren();
+
+        if (pageCount <= 1) return;
+
+        pagination.appendChild(createPageButton(
+            "Trước",
+            Math.max(1, currentPage - 1),
+            false,
+            currentPage === 1
+        ));
+
+        for (let i = 1; i <= pageCount; i++) {
+            pagination.appendChild(createPageButton(
+                String(i), i, i === currentPage, false
+            ));
+        }
+
+        pagination.appendChild(createPageButton(
+            "Sau",
+            Math.min(pageCount, currentPage + 1),
+            false,
+            currentPage === pageCount
+        ));
+    }
+
+    function updateStatButtons() {
+        statButtons.forEach(button => {
+            const active = button.dataset.stat === activeStat;
+            button.classList.toggle("active", active);
+            button.setAttribute(
+                "aria-pressed",
+                active ? "true" : "false"
+            );
+        });
+    }
+
+    // BAM O THONG KE
+    statButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            const selected = button.dataset.stat;
+
+            activeStat = selected;
+            search.value = "";
+
+            // Xóa bộ lọc cũ để không bị xung đột.
+            role.value = "";
+            status.value = "";
+
+            currentPage = 1;
+            updateStatButtons();
+            render();
+        });
+    });
+
+    function onFilterChange() {
+        // Khi chủ động sử dụng bộ lọc, bỏ chế độ chọn thẻ.
+        activeStat = "all";
+        currentPage = 1;
+        updateStatButtons();
+        render();
+    }
+
+    search.addEventListener("input", onFilterChange);
+    role.addEventListener("change", onFilterChange);
+    status.addEventListener("change", onFilterChange);
+
+    // QUAN LY POPUP
+
+    function openModal(modal) {
+        previousFocus = document.activeElement;
+        submitting = false;
+
+        modal.hidden = false;
+        document.body.style.overflow = "hidden";
+
+        const firstInput = modal.querySelector(
+            'input:not([type="hidden"]), select, button'
+        );
+
+        if (firstInput) firstInput.focus();
+    }
+
+    function closeModal() {
+        if (submitting) return;
+
+        editModal.hidden = true;
+        lockModal.hidden = true;
+
+        document.body.style.overflow = "";
+
+        if (previousFocus?.focus) {
+            previousFocus.focus();
+        }
+    }
+
+    document.querySelectorAll(".usm-close-modal")
+        .forEach(button => {
+            button.addEventListener("click", closeModal);
+        });
+
+    [editModal, lockModal].forEach(modal => {
+        modal.addEventListener("click", event => {
+            if (event.target === modal) closeModal();
+        });
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+
+        if (!editModal.hidden || !lockModal.hidden) {
+            closeModal();
+        }
+    });
+
+    // POPUP SUA
+
+    document.querySelectorAll(".usm-open-edit")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                const row = getRow(button.dataset.id);
+                if (!row) return;
+
+                const d = row.dataset;
+
+                editForm.action =
+                    editBaseUrl.replace(/\/$/, "") + "/" +
+                    encodeURIComponent(d.id);
+
+                put("usmEditAvatar",
+                    (d.name || "U").charAt(0).toUpperCase());
+
+                put("usmEditProfileName", d.name);
+                put("usmEditProfileId", "Mã tài khoản #" + d.id);
+                put("usmEditStatus", d.statusText);
+                put("usmEditCreated", d.created);
+
+                byId("usmEditName").value = d.name || "";
+                byId("usmEditEmail").value = d.email || "";
+                byId("usmEditPhone").value = d.phone || "";
+                byId("usmEditRole").value = d.role || "KhachHang";
+
+                const isSelf = d.self === "true";
+
+// Cấp lại mật khẩu chỉ dành cho tài khoản BTC.
+const isOrganizer = d.role === "ToChuc";
+
+byId("usmResetSection").hidden = !isOrganizer;
+byId("usmResetUserId").value = isOrganizer ? d.id : "";
+
+byId("usmResetPassword").value = "";
+byId("usmResetConfirm").value = "";
+byId("usmShowResetPassword").checked = false;
+
+byId("usmResetPassword").type = "password";
+byId("usmResetConfirm").type = "password";
+
+byId("usmResetSubmit").disabled = false;
+
+                byId("usmEditRole").disabled = isSelf;
+                byId("usmSelfRoleNote").hidden = !isSelf;
+
+                // Select disabled không gửi dữ liệu;
+                // thêm input ẩn cho trường hợp tự sửa.
+                const existingHidden =
+                    byId("usmEditHiddenRole");
+
+                if (existingHidden) existingHidden.remove();
+
+                if (isSelf) {
+                    const hidden = document.createElement("input");
+
+                    hidden.type = "hidden";
+                    hidden.id = "usmEditHiddenRole";
+                    hidden.name = "VaiTro";
+                    hidden.value = d.role;
+
+                    editForm.appendChild(hidden);
+                }
+
+                byId("usmEditSubmit").disabled = false;
+                openModal(editModal);
+
+                byId("usmEditName").focus();
+            });
+        });
+
+    // POPUP KHOA / MO KHOA
+
+    document.querySelectorAll(".usm-open-lock")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                const row = getRow(button.dataset.id);
+                if (!row) return;
+
+                const d = row.dataset;
+                const unlock =
+                    button.dataset.operation === "unlock";
+
+                byId("usmLockId").value = d.id;
+
+                put("usmLockAvatar",
+                    (d.name || "U").charAt(0).toUpperCase());
+
+                put("usmLockName", d.name);
+                put("usmLockCode", "Mã tài khoản #" + d.id);
+                put("usmLockEmail", d.email);
+                put("usmLockPhone", d.phone || "Chưa cập nhật");
+                put("usmLockRole", d.roleText);
+                put("usmLockStatus", d.statusText);
+                put("usmLockCreated", d.created);
+
+                put("usmLockTitle", unlock
+                    ? "Xác nhận mở khóa tài khoản"
+                    : "Xác nhận khóa tài khoản");
+
+                put("usmLockSubtitle", unlock
+                    ? "Kiểm tra tài khoản trước khi khôi phục quyền truy cập."
+                    : "Kiểm tra tài khoản trước khi vô hiệu hóa quyền truy cập.");
+
+                put("usmLockMessage", unlock
+                    ? "Sau khi mở khóa, người dùng có thể đăng nhập lại bằng tài khoản hiện tại."
+                    : "Sau khi khóa, người dùng sẽ không thể đăng nhập hoặc tiếp tục sử dụng các chức năng yêu cầu xác thực.");
+
+                const icon = byId("usmLockIcon");
+                icon.className =
+                    "usm-dialog-icon " + (unlock ? "unlock" : "lock");
+
+                icon.innerHTML = unlock
+                    ? '<i class="bi bi-unlock"></i>'
+                    : '<i class="bi bi-lock"></i>';
+
+                const note = byId("usmLockNote");
+                note.className =
+                    "usm-dialog-note" + (unlock ? " info" : "");
+
+                const submit = byId("usmLockSubmit");
+
+                submit.textContent = unlock
+                    ? "Xác nhận mở khóa"
+                    : "Xác nhận khóa";
+
+                submit.className =
+                    "usm-dialog-button confirm" +
+                    (unlock ? " unlock" : "");
+
+                submit.disabled = false;
+
+                openModal(lockModal);
+            });
+        });
+
+    // CHONG BAM GUI FORM LAP LAI
+
+    [editForm, lockForm].forEach(form => {
+        form.addEventListener("submit", event => {
+            if (submitting) {
+                event.preventDefault();
+                return;
+            }
+
+            submitting = true;
+
+            const submitButton = form.querySelector(
+                'button[type="submit"]'
+            );
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Đang xử lý...";
+            }
+        });
+    });
+
+// HIEN / AN MAT KHAU TAM
+byId("usmShowResetPassword").addEventListener(
+    "change",
+    function () {
+        const type = this.checked ? "text" : "password";
+
+        byId("usmResetPassword").type = type;
+        byId("usmResetConfirm").type = type;
+    }
+);
+
+// XAC NHAN CAP LAI MAT KHAU
+byId("usmResetForm").addEventListener(
+    "submit",
+    function (event) {
+        const password = byId("usmResetPassword").value;
+        const confirmPassword = byId("usmResetConfirm").value;
+        const userId = byId("usmResetUserId").value;
+
+        if (!userId || byId("usmResetSection").hidden) {
+            event.preventDefault();
+            return;
+        }
+
+        if (
+            password.length < 12 ||
+            !/[A-Z]/.test(password) ||
+            !/[a-z]/.test(password) ||
+            !/[0-9]/.test(password) ||
+            !/[^A-Za-z0-9]/.test(password)
+        ) {
+            event.preventDefault();
+
+            alert(
+                "Mật khẩu cần ít nhất 12 ký tự, gồm " +
+                "chữ hoa, chữ thường, số và ký tự đặc biệt."
+            );
+
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            event.preventDefault();
+
+            alert("Hai mật khẩu không khớp.");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            "Bạn có chắc chắn muốn cấp lại mật khẩu " +
+            "cho tài khoản Ban tổ chức này?"
+        );
+
+        if (!confirmed) {
+            event.preventDefault();
+            return;
+        }
+
+        byId("usmResetSubmit").disabled = true;
+        byId("usmResetSubmit").textContent = "Đang xử lý...";
+    }
+);
+
+
+    render();
+})();
+</script>
+
+<!-- FORM CAP LAI MAT KHAU RIENG -->
+<form id="usmResetForm"
+      asp-controller="Admin"
+      asp-action="CapLaiMatKhauBtc"
+      method="post">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden"
+           id="usmResetUserId"
+           name="id" />
+</form>
+

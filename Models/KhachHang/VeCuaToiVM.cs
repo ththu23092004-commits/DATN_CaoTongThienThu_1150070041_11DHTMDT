@@ -1,3 +1,4 @@
+
 using System;
 
 namespace VeSuKienWeb.Models.KhachHang
@@ -5,11 +6,14 @@ namespace VeSuKienWeb.Models.KhachHang
     public class VeCuaToiItemVM
     {
         public int VeId { get; set; }
-        public int SuKienId { get; set; }     // thêm mới
+        public int SuKienId { get; set; }
         public string MaVe { get; set; } = string.Empty;
 
         public string TenSuKien { get; set; } = string.Empty;
         public string TenLoaiSuKien { get; set; } = string.Empty;
+
+        public string? AnhSuKien { get; set; }
+
         public DateTime ThoiGianBatDau { get; set; }
         public DateTime ThoiGianKetThuc { get; set; }
 
@@ -33,8 +37,10 @@ namespace VeSuKienWeb.Models.KhachHang
         public string? OnlineMatKhau { get; set; }
 
         public bool SuKienDaKetThuc { get; set; }
-        public bool CoTheHuy { get; set; }    // thêm mới
+        public bool CoTheHuy { get; set; }
+
         public string? DanhSachGhe { get; set; }
+
         public bool DangChoHoanVe { get; set; }
         public bool DuocXemQr { get; set; }
     }

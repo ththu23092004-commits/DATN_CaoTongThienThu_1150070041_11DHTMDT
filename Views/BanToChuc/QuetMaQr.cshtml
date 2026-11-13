@@ -1,207 +1,867 @@
 
 @{
     Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
-    ViewData["Title"] = "Quét QR Check-in";
+    ViewData["Title"] = "Check-in QR";
+
+    var suKienHomNay = ViewBag.SuKienHomNay as List<string>
+        ?? new List<string>();
 }
 
 <style>
-    .qr-page {
-        padding: 20px 0 35px;
-        color: #172033;
+    .btc-qr-page,
+    .btc-qr-page * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
 
-    .qr-page h1 {
-        font-size: 28px;
-        font-weight: 800;
-        margin-bottom: 6px;
-    }
-
-    .qr-description {
-        color: #64748b;
-        font-size: 14px;
-        margin-bottom: 24px;
-    }
-
-    .qr-card {
+    .btc-qr-page {
         width: 100%;
-        max-width: 850px;
-        background: #fff;
-        border: 1px solid #e4eaf2;
-        border-radius: 18px;
-        padding: 24px;
-        box-shadow: 0 8px 28px rgba(15,23,42,.05);
+        min-width: 0;
+        padding-bottom: 32px;
+        color: #4d3c55;
     }
 
-    .qr-camera {
-        width: 100%;
-        max-width: 560px;
-        margin: 18px auto;
-        border-radius: 12px;
+    .btc-qr-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(290px, 1fr);
+        align-items: start;
+        gap: 18px;
+    }
+
+    .btc-qr-card {
+        min-width: 0;
+        background: #ffffff;
+        border: 1px solid #ecddec;
+        border-radius: 17px;
         overflow: hidden;
+        box-shadow: 0 5px 20px rgba(111, 70, 126, .045);
     }
 
-    .qr-buttons {
+    .btc-qr-card-head {
+        padding: 19px 21px;
+        border-bottom: 1px solid #f1e8f1;
+    }
+
+    .btc-qr-card-heading {
         display: flex;
-        flex-wrap: wrap;
+        align-items: center;
         gap: 10px;
     }
 
-    .qr-message {
-        margin-top: 18px;
-        padding: 13px 15px;
-        background: #f1f5f9;
+    .btc-qr-heading-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 39px;
+        height: 39px;
+        border-radius: 11px;
+        background: #f7eaf9;
+        color: #a765b7;
+        font-size: 19px;
+    }
+
+    .btc-qr-card-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 750;
+        color: #46324e;
+    }
+
+    .btc-qr-card-description {
+        margin: 6px 0 0;
+        font-size: 11px;
+        line-height: 1.75;
+        color: #94839b;
+    }
+
+    .btc-qr-card-body {
+        padding: 21px;
+    }
+
+    /* KHU VUC CAMERA */
+
+    .btc-camera-frame {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 335px;
+        background: #faf6fc;
+        border: 1px dashed #dcc4e3;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .btc-camera-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
+        padding: 25px;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .btc-camera-placeholder-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 92px;
+        height: 92px;
+        border: 1px solid #e6ceec;
+        border-radius: 24px;
+        background: #fff;
+        color: #b47ac0;
+        font-size: 43px;
+        box-shadow: 0 10px 30px rgba(152, 92, 171, .08);
+    }
+
+    .btc-camera-placeholder strong {
+        color: #70567a;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .btc-camera-placeholder span {
+        max-width: 270px;
+        color: #a092a6;
+        font-size: 11px;
+        line-height: 1.8;
+    }
+
+    #qr-reader {
+        display: none;
+        width: 100%;
+        min-height: 335px;
+        border: 0 !important;
+        background: #fff;
+    }
+
+    .btc-camera-frame.scanning {
+        background: #ffffff;
+        border-style: solid;
+        border-color: #c894d3;
+    }
+
+    .btc-camera-frame.scanning #qr-reader {
+        display: block;
+    }
+
+    .btc-camera-frame.scanning .btc-camera-placeholder {
+        display: none;
+    }
+
+    #qr-reader video {
+        display: block !important;
+        width: 100% !important;
+        max-height: 470px;
+        object-fit: cover;
+        border-radius: 11px;
+    }
+
+    #qr-reader img {
+        max-width: 100%;
+    }
+
+    #qr-reader__scan_region {
+        background: #ffffff;
+    }
+
+    #qr-reader__dashboard {
+        padding: 10px !important;
+        font-size: 11px;
+    }
+
+    .btc-qr-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 16px;
+    }
+
+    .btc-qr-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 41px;
+        padding: 10px 16px;
         border-radius: 10px;
-        color: #475569;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .btc-qr-button-primary {
+        background: #b977c4;
+        color: #fff;
+        border: 1px solid #b977c4;
+    }
+
+    .btc-qr-button-primary:hover:not(:disabled) {
+        background: #a565b3;
+        border-color: #a565b3;
+    }
+
+    .btc-qr-button-secondary {
+        background: #fff;
+        color: #866b8f;
+        border: 1px solid #e7d7ea;
+    }
+
+    .btc-qr-button-secondary:hover:not(:disabled) {
+        background: #fbf3fc;
+        color: #a060ad;
+    }
+
+    .btc-qr-button:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    .btc-qr-status {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-top: 15px;
+        padding: 12px 14px;
+        border: 1px solid #e9deec;
+        border-radius: 10px;
+        background: #faf8fb;
+        color: #8a7b90;
+        font-size: 11px;
+        line-height: 1.8;
+    }
+
+    .btc-qr-status i {
+        flex-shrink: 0;
+        margin-top: 1px;
         font-size: 14px;
     }
 
-    .qr-success {
-        display: none;
-        margin-top: 16px;
-        padding: 18px;
-        background: #ecfdf5;
-        border: 1px solid #a7f3d0;
-        border-radius: 12px;
-        color: #065f46;
+    .btc-qr-status.active {
+        background: #f6ecfa;
+        border-color: #ead3ef;
+        color: #985ca8;
+    }
+
+    .btc-qr-status.success {
+        background: #edf9f1;
+        border-color: #c9ecd5;
+        color: #287b4d;
+    }
+
+    .btc-qr-status.error {
+        background: #fff2f3;
+        border-color: #f0d0d6;
+        color: #b55065;
+    }
+
+    /* KET QUA CHECK-IN */
+
+    .btc-qr-result[hidden] {
+        display: none !important;
+    }
+
+    .btc-qr-result {
+        margin-top: 17px;
+        padding: 17px;
+        border-radius: 13px;
+        border: 1px solid #c9e9d3;
+        background: #f0faf3;
+    }
+
+    .btc-qr-result.error {
+        background: #fff3f5;
+        border-color: #efd0d8;
+    }
+
+    .btc-qr-result-heading {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #2b7d4c;
+        font-size: 13px;
+        font-weight: 750;
+    }
+
+    .btc-qr-result.error .btc-qr-result-heading {
+        color: #b74c66;
+    }
+
+    .btc-qr-result-heading i {
+        font-size: 20px;
+    }
+
+    .btc-qr-result-label {
+        margin-top: 10px;
+        font-size: 10.5px;
+        font-weight: 650;
+        color: #678574;
+    }
+
+    .btc-qr-result.error .btc-qr-result-label {
+        color: #a97d87;
+    }
+
+    #qrContent {
+        display: block;
+        margin-top: 7px;
+        color: #276b44;
+        font-family: "Be Vietnam Pro", sans-serif;
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.9;
+        white-space: pre-wrap;
         overflow-wrap: anywhere;
     }
 
-    .qr-note {
-        margin-top: 16px;
-        color: #64748b;
-        font-size: 13px;
+    .btc-qr-result.error #qrContent {
+        color: #a94760;
     }
-    
-#qrContent {
-    display: block;
-    white-space: pre-line;
-    overflow-wrap: anywhere;
-    margin-top: 10px;
-    line-height: 1.8;
-}
 
+    /* COT BEN PHAI */
+
+    .btc-today-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .btc-today-count {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        padding: 0 8px;
+        border-radius: 8px;
+        background: #f7eaf9;
+        color: #a765b5;
+        font-size: 11px;
+        font-weight: 750;
+    }
+
+    .btc-today-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .btc-today-item {
+        display: flex;
+        gap: 10px;
+        padding: 13px;
+        border: 1px solid #eee1ef;
+        border-radius: 11px;
+        background: #fcf9fd;
+    }
+
+    .btc-today-dot {
+        flex-shrink: 0;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 31px;
+        height: 31px;
+        border-radius: 9px;
+        background: #f4e9f8;
+        color: #aa6db8;
+    }
+
+    .btc-today-item-text {
+        min-width: 0;
+        color: #5e4a66;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.85;
+        overflow-wrap: anywhere;
+    }
+
+    .btc-today-empty {
+        padding: 23px 12px;
+        text-align: center;
+    }
+
+    .btc-today-empty i {
+        display: block;
+        margin-bottom: 10px;
+        color: #bd9ac6;
+        font-size: 30px;
+    }
+
+    .btc-today-empty strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #735b7b;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .btc-today-empty p {
+        margin: 0;
+        color: #a091a5;
+        font-size: 10.5px;
+        line-height: 1.75;
+    }
+
+    .btc-auto-note {
+        display: flex;
+        gap: 9px;
+        margin-top: 15px;
+        padding: 12px 13px;
+        border-radius: 11px;
+        background: #f8f2fb;
+        border: 1px solid #eee2f3;
+        color: #93749d;
+        font-size: 10.5px;
+        line-height: 1.85;
+    }
+
+    .btc-auto-note i {
+        color: #af75bb;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .btc-guide-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .btc-guide-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+    }
+
+    .btc-guide-number {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        background: #f8effa;
+        color: #a363b1;
+        font-size: 11px;
+        font-weight: 750;
+    }
+
+    .btc-guide-text strong {
+        display: block;
+        margin-bottom: 3px;
+        color: #584260;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .btc-guide-text span {
+        display: block;
+        color: #95859d;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    @@media (max-width: 1100px) {
+        .btc-qr-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .btc-qr-sidebar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: start;
+            gap: 15px;
+        }
+    }
+
+    @@media (max-width: 650px) {
+        .btc-qr-card-head,
+        .btc-qr-card-body {
+            padding: 15px;
+        }
+
+        .btc-qr-sidebar {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .btc-camera-frame,
+        #qr-reader {
+            min-height: 265px;
+        }
+
+        .btc-qr-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .btc-qr-button {
+            padding: 9px;
+            font-size: 10.5px;
+        }
+    }
 </style>
 
-<div class="qr-page">
+<div class="btc-qr-page">
 
-    <h1>Quét QR Check-in</h1>
+    <div class="btc-qr-layout">
 
-    <p class="qr-description">
-        Sử dụng webcam laptop để đọc mã QR trên vé điện tử
-        của khách tham gia sự kiện.
-    </p>
+        <!-- CAMERA QUET QR -->
+        <section class="btc-qr-card">
 
-    <div class="qr-card">
+            <div class="btc-qr-card-head">
+                <div class="btc-qr-card-heading">
 
-        <h5 class="fw-bold mb-3">
-            <i class="bi bi-qr-code-scan"></i>
-            Camera quét mã QR
-        </h5>
+                    <span class="btc-qr-heading-icon">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </span>
 
-        <p class="text-muted">
-            Nhấn bật camera, sau đó đưa mã QR
-            trên điện thoại vào trước webcam.
-        </p>
+                    <div>
+                        <h2 class="btc-qr-card-title">
+                            Quét mã QR check-in
+                        </h2>
 
-<div class="mb-3">
-    <label for="suKienId" class="form-label fw-bold">
-        Chọn sự kiện cần check-in
-    </label>
+                        <p class="btc-qr-card-description">
+                            Đưa mã QR trên vé điện tử
+                            của khách vào trước camera.
+                        </p>
+                    </div>
 
-    <select id="suKienId"
-            class="form-select"
-            asp-items="ViewBag.DanhSachSuKien">
-        <option value="">-- Chọn sự kiện --</option>
-    </select>
-</div>
+                </div>
+            </div>
 
-<form id="qrAntiForgery" style="display:none">
-    @Html.AntiForgeryToken()
-</form>
+            <div class="btc-qr-card-body">
 
-        <div class="qr-buttons">
-            <button type="button"
-                    id="btnStart"
-                    class="btn btn-primary"
-                    onclick="batCamera()">
-                <i class="bi bi-camera-video"></i>
-                Bật camera
-            </button>
+                <div class="btc-camera-frame"
+                     id="btcCameraFrame">
 
-            <button type="button"
-                    id="btnStop"
-                    class="btn btn-outline-secondary"
-                    onclick="tatCamera()">
-                <i class="bi bi-camera-video-off"></i>
-                Tắt camera
-            </button>
-        </div>
+                    <div class="btc-camera-placeholder">
 
-        <div id="qr-reader" class="qr-camera"></div>
+                        <div class="btc-camera-placeholder-icon">
+                            <i class="bi bi-qr-code"></i>
+                        </div>
 
-        <div id="qrMessage" class="qr-message">
-            Camera chưa được bật.
-        </div>
+                        <strong>
+                            Camera chưa được bật
+                        </strong>
 
+                        <span>
+                            Nhấn Bật camera để bắt đầu
+                            quét và xác thực mã vé.
+                        </span>
 
-<div id="qrResult" class="qr-success" role="status" aria-live="polite">
-    <strong id="qrResultTitle">
-        <i id="qrResultIcon" class="bi bi-check-circle-fill"></i>
-        <span id="qrResultText">Check-in thành công!</span>
-    </strong>
+                    </div>
 
-    <div id="qrResultLabel" class="mt-2">
-        Thông tin đơn hàng:
+                    <div id="qr-reader"></div>
+
+                </div>
+
+                <div class="btc-qr-actions">
+
+                    <button type="button"
+                            id="btnStart"
+                            class="btc-qr-button btc-qr-button-primary"
+                            onclick="batCamera()">
+
+                        <i class="bi bi-camera-video"></i>
+                        Bật camera
+
+                    </button>
+
+                    <button type="button"
+                            id="btnStop"
+                            class="btc-qr-button btc-qr-button-secondary"
+                            onclick="tatCamera()"
+                            disabled>
+
+                        <i class="bi bi-camera-video-off"></i>
+                        Tắt camera
+
+                    </button>
+
+                </div>
+
+                <div class="btc-qr-status"
+                     id="qrStatus"
+                     role="status"
+                     aria-live="polite">
+
+                    <i class="bi bi-info-circle"
+                       id="qrStatusIcon"></i>
+
+                    <span id="qrMessage">
+                        Camera chưa được bật.
+                    </span>
+
+                </div>
+
+                <!-- KET QUA -->
+                <div class="btc-qr-result"
+                     id="qrResult"
+                     role="status"
+                     aria-live="polite"
+                     hidden>
+
+                    <div class="btc-qr-result-heading">
+
+                        <i id="qrResultIcon"
+                           class="bi bi-check-circle-fill"></i>
+
+                        <span id="qrResultText">
+                            Check-in thành công!
+                        </span>
+
+                    </div>
+
+                    <div class="btc-qr-result-label"
+                         id="qrResultLabel">
+                        Thông tin đơn hàng
+                    </div>
+
+                    <div id="qrContent"></div>
+
+                </div>
+
+                <form id="qrAntiForgery" hidden>
+                    @Html.AntiForgeryToken()
+                </form>
+
+            </div>
+        </section>
+
+        <!-- COT THONG TIN BEN PHAI -->
+        <aside class="btc-qr-sidebar">
+
+            <!-- SU KIEN HOM NAY -->
+            <section class="btc-qr-card">
+
+                <div class="btc-qr-card-head">
+
+                    <div class="btc-today-header">
+
+                        <div>
+                            <h2 class="btc-qr-card-title">
+                                <i class="bi bi-calendar-check me-1"></i>
+                                Sự kiện hôm nay
+                            </h2>
+
+                            <p class="btc-qr-card-description">
+                                Những sự kiện đã duyệt
+                                đang diễn ra trong ngày.
+                            </p>
+                        </div>
+
+                        <span class="btc-today-count">
+                            @suKienHomNay.Count
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="btc-qr-card-body">
+
+                    @if (suKienHomNay.Any())
+                    {
+                        <div class="btc-today-list">
+
+                            @foreach (var suKien in suKienHomNay)
+                            {
+                                <div class="btc-today-item">
+
+                                    <span class="btc-today-dot">
+                                        <i class="bi bi-calendar-event"></i>
+                                    </span>
+
+                                    <div class="btc-today-item-text">
+                                        @suKien
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="btc-today-empty">
+
+                            <i class="bi bi-calendar-x"></i>
+
+                            <strong>
+                                Chưa có sự kiện hôm nay
+                            </strong>
+
+                            <p>
+                                Không tìm thấy sự kiện đã duyệt
+                                nào diễn ra trong ngày.
+                            </p>
+
+                        </div>
+                    }
+
+                    <div class="btc-auto-note">
+
+                        <i class="bi bi-stars"></i>
+
+                        <span>
+                            Không cần chọn sự kiện thủ công.
+                            Khi quét mã QR, hệ thống tự tìm
+                            đúng sự kiện của vé và kiểm tra
+                            điều kiện check-in.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- HUONG DAN -->
+            <section class="btc-qr-card">
+
+                <div class="btc-qr-card-head">
+
+                    <h2 class="btc-qr-card-title">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Hướng dẫn check-in
+                    </h2>
+
+                </div>
+
+                <div class="btc-qr-card-body">
+
+                    <div class="btc-guide-list">
+
+                        <div class="btc-guide-item">
+
+                            <span class="btc-guide-number">01</span>
+
+                            <div class="btc-guide-text">
+                                <strong>Bật camera</strong>
+                                <span>
+                                    Cho phép trình duyệt truy cập
+                                    webcam của thiết bị.
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <div class="btc-guide-item">
+
+                            <span class="btc-guide-number">02</span>
+
+                            <div class="btc-guide-text">
+                                <strong>Quét mã vé</strong>
+                                <span>
+                                    Đưa mã QR của khách vào giữa
+                                    khung hình để hệ thống đọc.
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <div class="btc-guide-item">
+
+                            <span class="btc-guide-number">03</span>
+
+                            <div class="btc-guide-text">
+                                <strong>Kiểm tra kết quả</strong>
+                                <span>
+                                    Hệ thống xác thực vé và
+                                    check-in các vé hợp lệ
+                                    trong cùng đơn hàng.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </aside>
+
     </div>
 
-    <code id="qrContent"></code>
-</div>
-
-
-            <code id="qrContent"></code>
-        </div>
-
-
-<div class="qr-note">
-    Hệ thống xác thực mã QR và ghi nhận check-in
-    cho toàn bộ vé trong cùng đơn hàng.
-    Mỗi đơn chỉ được check-in một lần.
-</div>
-
-
-    </div>
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-
 <script>
+    "use strict";
+
     let qrScanner = null;
     let cameraDangBat = false;
     let dangXuLy = false;
 
     const qrMessage = document.getElementById("qrMessage");
+    const qrStatus = document.getElementById("qrStatus");
+    const qrStatusIcon = document.getElementById("qrStatusIcon");
+
     const qrResult = document.getElementById("qrResult");
     const qrContent = document.getElementById("qrContent");
     const qrResultText = document.getElementById("qrResultText");
     const qrResultIcon = document.getElementById("qrResultIcon");
     const qrResultLabel = document.getElementById("qrResultLabel");
-    const suKienSelect = document.getElementById("suKienId");
+
+    const cameraFrame = document.getElementById("btcCameraFrame");
+    const btnStart = document.getElementById("btnStart");
+    const btnStop = document.getElementById("btnStop");
+
+    function capNhatNut() {
+        btnStart.disabled =
+            cameraDangBat || dangXuLy || qrScanner !== null;
+
+        btnStop.disabled =
+            !cameraDangBat || dangXuLy;
+    }
+
+    function capNhatThongBao(noiDung, loai = "normal") {
+        qrMessage.textContent = noiDung;
+
+        qrStatus.classList.remove(
+            "active",
+            "success",
+            "error"
+        );
+
+        if (loai !== "normal") {
+            qrStatus.classList.add(loai);
+        }
+
+        qrStatusIcon.className =
+            loai === "success"
+                ? "bi bi-check-circle"
+                : loai === "error"
+                    ? "bi bi-exclamation-circle"
+                    : loai === "active"
+                        ? "bi bi-camera-video"
+                        : "bi bi-info-circle";
+    }
+
+    function anKetQua() {
+        qrResult.hidden = true;
+        qrResult.classList.remove("error");
+    }
 
     function hienThiKetQua(thanhCong, tieuDe, noiDung) {
-        qrResult.style.display = "block";
+        qrResult.hidden = false;
 
-        qrResult.style.background = thanhCong
-            ? "#ecfdf5"
-            : "#fef2f2";
-
-        qrResult.style.borderColor = thanhCong
-            ? "#86efac"
-            : "#fecaca";
-
-        qrResult.style.color = thanhCong
-            ? "#065f46"
-            : "#991b1b";
+        qrResult.classList.toggle(
+            "error",
+            !thanhCong
+        );
 
         qrResultText.textContent = tieuDe;
 
@@ -210,68 +870,87 @@
             : "bi bi-x-circle-fill";
 
         qrResultLabel.textContent = thanhCong
-            ? "Thông tin đơn hàng:"
-            : "Lý do:";
+            ? "Thông tin đơn hàng"
+            : "Lý do";
 
-        qrContent.textContent = noiDung;
-        qrContent.style.color = thanhCong
-            ? "#047857"
-            : "#b91c1c";
+        qrContent.textContent = noiDung || "";
+
+        capNhatThongBao(
+            thanhCong
+                ? "Đã xác nhận check-in thành công."
+                : "Không thể check-in mã vé này.",
+            thanhCong ? "success" : "error"
+        );
     }
 
     async function dungCamera() {
         const scanner = qrScanner;
 
-        if (!scanner) {
-            cameraDangBat = false;
-            return;
-        }
-
         qrScanner = null;
 
-        try {
-            if (cameraDangBat) {
+        if (scanner) {
+            try {
                 await scanner.stop();
+            } catch (error) {
+                console.warn(
+                    "Không thể dừng scanner:",
+                    error
+                );
             }
-
-            scanner.clear();
-        } catch (error) {
-            console.error("Lỗi tắt camera:", error);
 
             try {
                 scanner.clear();
-            } catch (_) {}
-        } finally {
-            cameraDangBat = false;
+            } catch (error) {
+                console.warn(
+                    "Không thể xóa scanner:",
+                    error
+                );
+            }
         }
+
+        cameraDangBat = false;
+
+        cameraFrame.classList.remove("scanning");
+
+        capNhatNut();
     }
 
     async function batCamera() {
-        const suKienId = suKienSelect.value;
-
-        if (!suKienId) {
-            qrMessage.textContent =
-                "Vui lòng chọn sự kiện trước khi bật camera.";
-            return;
-        }
-
-        if (cameraDangBat || dangXuLy || qrScanner) {
+        if (
+            cameraDangBat ||
+            dangXuLy ||
+            qrScanner !== null
+        ) {
             return;
         }
 
         if (typeof Html5Qrcode === "undefined") {
-            qrMessage.textContent =
-                "Không tải được thư viện quét mã QR.";
+            capNhatThongBao(
+                "Không tải được thư viện quét QR. " +
+                "Vui lòng kiểm tra kết nối Internet.",
+                "error"
+            );
             return;
         }
 
-        qrResult.style.display = "none";
-        qrMessage.textContent = "Đang bật webcam...";
+        anKetQua();
 
-        const scanner = new Html5Qrcode("qr-reader");
-        qrScanner = scanner;
+        capNhatThongBao(
+            "Đang khởi động camera...",
+            "active"
+        );
 
         try {
+            const scanner = new Html5Qrcode(
+                "qr-reader",
+                { verbose: false }
+            );
+
+            qrScanner = scanner;
+            capNhatNut();
+
+            cameraFrame.classList.add("scanning");
+
             await scanner.start(
                 { facingMode: "user" },
                 {
@@ -281,25 +960,29 @@
                         height: 220
                     }
                 },
-                async (decodedText) => {
+                async function (decodedText) {
                     if (dangXuLy) return;
 
                     dangXuLy = true;
+                    capNhatNut();
 
-                    // Chặn đọc lặp lại ngay khi phát hiện QR.
                     try {
                         scanner.pause(true);
-                    } catch (_) {}
+                    } catch (_) {
+                        // Không bắt buộc pause thành công.
+                    }
 
-                    qrMessage.textContent =
-                        "Đã đọc QR. Đang kiểm tra dữ liệu...";
+                    capNhatThongBao(
+                        "Đã đọc mã QR. Đang xác thực vé...",
+                        "active"
+                    );
 
                     await dungCamera();
 
-                    if (!decodedText.startsWith("CHECKIN|")) {
-                        qrMessage.textContent =
-                            "Check-in không thành công.";
-
+                    if (
+                        typeof decodedText !== "string" ||
+                        !decodedText.startsWith("CHECKIN|")
+                    ) {
                         hienThiKetQua(
                             false,
                             "Mã QR không hợp lệ!",
@@ -307,6 +990,7 @@
                         );
 
                         dangXuLy = false;
+                        capNhatNut();
                         return;
                     }
 
@@ -315,23 +999,22 @@
                     );
 
                     if (!tokenInput) {
-                        qrMessage.textContent =
-                            "Không tìm thấy mã xác thực bảo mật.";
-
                         hienThiKetQua(
                             false,
-                            "Không thể check-in!",
-                            "Vui lòng tải lại trang và thử lại."
+                            "Không thể xác thực!",
+                            "Không tìm thấy mã bảo mật. " +
+                            "Vui lòng tải lại trang."
                         );
 
                         dangXuLy = false;
+                        capNhatNut();
                         return;
                     }
 
                     const formData = new FormData();
 
                     formData.append("maQr", decodedText);
-                    formData.append("suKienId", suKienId);
+
                     formData.append(
                         "__RequestVerificationToken",
                         tokenInput.value
@@ -343,13 +1026,15 @@
                             {
                                 method: "POST",
                                 body: formData,
-                                credentials: "same-origin"
+                                credentials: "same-origin",
+                                headers: {
+                                    "Accept": "application/json"
+                                }
                             }
                         );
 
-                        const contentType = response.headers.get(
-                            "content-type"
-                        ) || "";
+                        const contentType =
+                            response.headers.get("content-type") || "";
 
                         if (!contentType.includes("application/json")) {
                             throw new Error(
@@ -360,19 +1045,20 @@
                         const data = await response.json();
 
                         if (response.ok && data.success === true) {
-                            qrMessage.textContent =
-                                data.message ||
-                                "Check-in thành công.";
-
-                            const danhSachGhe = Array.isArray(data.danhSachGhe)
-                                ? data.danhSachGhe.join(", ")
-                                : "Không có thông tin ghế";
+                            const danhSachGhe =
+                                Array.isArray(data.danhSachGhe)
+                                    ? data.danhSachGhe.join(", ")
+                                    : "Không có thông tin ghế";
 
                             const noiDung =
-                                "Đơn #" + (data.donHangId ?? "Lẻ") +
-                                "\nSố vé: " + data.soVe +
-                                "\nGhế: " + danhSachGhe +
-                                "\nThời gian: " + data.thoiGianCheckIn;
+                                "Đơn: #" +
+                                (data.donHangId ?? "Vé lẻ") +
+                                "\nSố vé: " +
+                                (data.soVe ?? 0) +
+                                "\nGhế / Loại vé: " +
+                                danhSachGhe +
+                                "\nThời gian: " +
+                                (data.thoiGianCheckIn || "—");
 
                             hienThiKetQua(
                                 true,
@@ -380,55 +1066,63 @@
                                 noiDung
                             );
                         } else {
-                            const loi = data.message ||
-                                "Vé không đủ điều kiện check-in.";
-
-                            qrMessage.textContent =
-                                "Check-in bị từ chối.";
-
                             hienThiKetQua(
                                 false,
                                 "Check-in không thành công!",
-                                loi
+                                data.message ||
+                                "Vé không đủ điều kiện check-in."
                             );
                         }
 
                     } catch (error) {
                         console.error(
-                            "Lỗi gửi yêu cầu check-in:",
+                            "Lỗi xác nhận check-in:",
                             error
                         );
 
-                        qrMessage.textContent =
-                            "Không xác định được kết quả từ máy chủ.";
-
                         hienThiKetQua(
                             false,
-                            "Không thể xác nhận check-in!",
-                            "Vui lòng kiểm tra trạng thái vé trên hệ thống " +
-                            "trước khi quét lại để tránh xử lý nhầm."
+                            "Chưa xác định được kết quả!",
+                            "Không nhận được phản hồi xác nhận " +
+                            "từ máy chủ. Vui lòng kiểm tra trạng thái " +
+                            "vé trước khi quét lại để tránh trùng."
                         );
-                    } finally {
-                        dangXuLy = false;
                     }
+
+                    dangXuLy = false;
+                    capNhatNut();
                 },
-                () => {}
+                function () {
+                    // Bỏ qua các khung hình chưa nhận diện QR.
+                }
             );
 
             cameraDangBat = true;
 
-            qrMessage.textContent =
-                "Webcam đang hoạt động. Đưa mã QR vào khung hình.";
+            capNhatThongBao(
+                "Camera đang hoạt động. " +
+                "Đưa mã QR vào giữa khung hình.",
+                "active"
+            );
+
+            capNhatNut();
 
         } catch (error) {
-            console.error("Lỗi bật webcam:", error);
+            console.error(
+                "Lỗi khởi động camera:",
+                error
+            );
 
             await dungCamera();
 
-            qrMessage.textContent =
-                "Không mở được webcam: " + error.message;
+            capNhatThongBao(
+                "Không mở được camera: " +
+                (error?.message || "Lỗi không xác định."),
+                "error"
+            );
 
             dangXuLy = false;
+            capNhatNut();
         }
     }
 
@@ -437,7 +1131,32 @@
 
         await dungCamera();
 
-        qrMessage.textContent = "Camera đã tắt.";
+        capNhatThongBao(
+            "Camera đã tắt."
+        );
     }
-</script>
 
+    document.addEventListener(
+        "visibilitychange",
+        function () {
+            if (
+                document.hidden &&
+                cameraDangBat &&
+                !dangXuLy
+            ) {
+                tatCamera();
+            }
+        }
+    );
+
+    window.addEventListener(
+        "pagehide",
+        function () {
+            if (qrScanner) {
+                dungCamera();
+            }
+        }
+    );
+
+    capNhatNut();
+</script>

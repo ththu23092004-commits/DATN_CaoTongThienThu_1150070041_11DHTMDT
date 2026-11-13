@@ -1,3 +1,4 @@
+
 @model VeSuKienWeb.Models.BanToChuc.ThongKeTongQuanDashboardVM
 @using System.Text.Json
 
@@ -5,518 +6,749 @@
     Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
     ViewData["Title"] = "Thống kê tổng quan";
 
-    string TrangThaiVeText(string status) => status switch
-    {
-        "ChuaThanhToan" => "Chưa thanh toán",
+    var jsonOptions = new JsonSerializerOptions {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    var months = Model.HoatDongTheoThang.Select(x => new {
+        name = x.Thang,
+        sold = x.VeThanhToan,
+        checkin = x.LuotCheckIn
+    }).ToList();
+
+    var eventStates = Model.TrangThaiSuKien.Select(x => new {
+        name = x.TrangThai,
+        value = x.SoLuong
+    }).ToList();
+
+    string TicketName(string? s) => s switch {
         "DaThanhToan" => "Đã thanh toán",
         "DaCheckIn" => "Đã check-in",
         "Huy" => "Đã hủy",
-        _ => status
+        "DaHuy" => "Đã hủy",
+        "ChuaThanhToan" => "Chưa thanh toán",
+        _ => s ?? "Khác"
     };
 
-    string TrangThaiYeuCauText(string status) => status switch
-    {
+    string RequestName(string? s) => s switch {
         "ChoDuyet" => "Chờ duyệt",
-        "DaDuyet" => "Đã duyệt",
+        "DaHuy" => "Đã chấp nhận",
         "TuChoi" => "Từ chối",
-        _ => status
+        _ => s ?? "Khác"
     };
 
-    var doanhThuLabels = Model.DoanhThuTheoThang.Select(x => x.Thang).ToList();
-    var doanhThuData = Model.DoanhThuTheoThang.Select(x => x.DoanhThu).ToList();
+    var ticketStates = Model.TrangThaiVe.Select(x => new {
+        name = TicketName(x.TrangThai),
+        value = x.SoLuong
+    }).ToList();
 
-    var veBanLabels = Model.VeBanTheoSuKien.Select(x => x.TenSuKien).ToList();
-    var veBanData = Model.VeBanTheoSuKien.Select(x => x.SoVe).ToList();
+    var requestStates = Model.TrangThaiHoanHuy.Select(x => new {
+        name = RequestName(x.TrangThai),
+        value = x.SoLuong
+    }).ToList();
 
-    var trangThaiVeLabels = Model.TrangThaiVe.Select(x => TrangThaiVeText(x.TrangThai)).ToList();
-    var trangThaiVeData = Model.TrangThaiVe.Select(x => x.SoLuong).ToList();
-
-    var hoanHuyLabels = Model.TrangThaiHoanHuy.Select(x => TrangThaiYeuCauText(x.TrangThai)).ToList();
-    var hoanHuyData = Model.TrangThaiHoanHuy.Select(x => x.SoLuong).ToList();
-
-    var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = null };
+    var filterName = Model.SuKienDangChon.HasValue
+        ? Model.DanhSachSuKien
+            .FirstOrDefault(x => x.SuKienId == Model.SuKienDangChon.Value)
+            ?.TenSuKien ?? "Sự kiện"
+        : "Tất cả sự kiện";
 }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-    .dash-page {
-        padding: 2px 0 36px;
+    .dbx, .dbx * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
-
-    .dash-head {
+    .dbx {
+        color: #52415c;
+        font-size: 12px;
+        padding-bottom: 30px;
+        min-width: 0;
+    }
+    .dbx-header, .dbx-heading, .dbx-panel-head {
         display: flex;
+        align-items: center;
         justify-content: space-between;
+        gap: 12px;
+    }
+    .dbx-header {
         align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 18px;
+        flex-wrap: wrap;
+        margin-bottom: 19px;
     }
-
-    .dash-title {
-        color: #0f172a;
-        font-size: 30px;
-        font-weight: 900;
-        margin: 0 0 4px;
+    .dbx-eyebrow {
+        color: #a875ba;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: .6px;
+        margin-bottom: 5px;
     }
-
-    .dash-subtitle {
-        color: #64748b;
-        font-size: 14.5px;
+    .dbx-title {
+        color: #46344f;
+        font-size: 21px;
+        font-weight: 800;
         margin: 0;
     }
-
-    .dash-badge {
-        background: linear-gradient(135deg, #eef2ff, #eff6ff);
-        color: #1d4ed8;
-        border: 1px solid #bfdbfe;
-        border-radius: 999px;
-        padding: 8px 14px;
-        font-size: 13px;
-        font-weight: 800;
-        white-space: nowrap;
+    .dbx-subtitle {
+        color: #97879e;
+        font-size: 12px;
+        line-height: 1.7;
+        margin: 7px 0 0;
     }
-
-    .kpi-grid {
+    .dbx-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .dbx-select, .dbx-button {
+        min-height: 38px;
+        padding: 8px 12px;
+        border: 1px solid #e8dbea;
+        background: #fff;
+        color: #765f81;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 9px;
+    }
+    .dbx-select {
+        max-width: 230px;
+        outline: none;
+    }
+    .dbx-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .dbx-button:hover {
+        background: #faf2fc;
+        color: #a667b4;
+    }
+    .dbx-section { margin-bottom: 20px; }
+    .dbx-heading {
+        flex-wrap: wrap;
+        margin-bottom: 11px;
+    }
+    .dbx-heading h2 {
+        font-size: 14px;
+        font-weight: 800;
+        color: #4b3855;
+        margin: 0;
+    }
+    .dbx-heading h2 span {
+        font-size: 11px;
+        margin-right: 8px;
+        color: #a675b8;
+    }
+    .dbx-muted {
+        font-size: 11px;
+        color: #9d8ba5;
+    }
+    .dbx-kpis {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-        margin-bottom: 16px;
+        gap: 11px;
     }
-
-    .kpi-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 22px;
-        padding: 18px 20px;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, .07);
-        position: relative;
-        overflow: hidden;
+    .dbx-kpi {
+        min-width: 0;
+        background: #fff;
+        border: 1px solid #eddfed;
+        border-top: 3px solid var(--accent);
+        border-radius: 13px;
+        padding: 15px;
+        box-shadow: 0 4px 16px rgba(86,54,103,.04);
     }
-
-    .kpi-card::after {
-        content: "";
-        position: absolute;
-        right: -26px;
-        top: -26px;
-        width: 82px;
-        height: 82px;
-        border-radius: 50%;
-        background: rgba(37, 99, 235, .08);
+    .dbx-purple { --accent:#9b79d0; --soft:#f2ecfc; }
+    .dbx-teal { --accent:#45b4a1; --soft:#e9f8f5; }
+    .dbx-orange { --accent:#edaa61; --soft:#fff4e7; }
+    .dbx-pink { --accent:#df86aa; --soft:#fff0f6; }
+    .dbx-kpi-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
     }
-
-    .kpi-label {
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 700;
-        margin-bottom: 8px;
+    .dbx-kpi-label {
+        color: #8e7c98;
+        font-size: 11px;
+        font-weight: 650;
     }
-
-    .kpi-value {
-        color: #0f172a;
-        font-size: 25px;
-        font-weight: 900;
-        line-height: 1.1;
-        position: relative;
-        z-index: 1;
-    }
-
-    .kpi-note {
-        color: #94a3b8;
-        font-size: 12.5px;
-        margin-top: 8px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .dash-grid {
+    .dbx-kpi-icon {
         display: grid;
-        grid-template-columns: 1.45fr .9fr;
-        gap: 16px;
-        margin-bottom: 16px;
+        place-items: center;
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        color: var(--accent);
+        background: var(--soft);
+        font-size: 16px;
     }
-
-    .dash-panel {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, .07);
-        overflow: hidden;
+    .dbx-kpi-value {
+        color: #493651;
+        font-size: 23px;
+        font-weight: 800;
+        margin: 9px 0 4px;
+        font-variant-numeric: tabular-nums;
     }
-
-    .panel-head {
-        padding: 17px 20px 8px;
+    .dbx-kpi-note {
+        color: #a090a7;
+        font-size: 10.5px;
+        line-height: 1.7;
     }
-
-    .panel-title {
-        color: #0f172a;
-        font-size: 17px;
-        font-weight: 900;
-        margin: 0 0 3px;
-    }
-
-    .panel-desc {
-        color: #64748b;
-        font-size: 13px;
-        margin: 0;
-    }
-
-    .chart-box {
-        height: 300px;
-        padding: 8px 18px 18px;
-    }
-
-    .chart-box.small {
-        height: 285px;
-    }
-
-    .bottom-grid {
+    .dbx-grid {
         display: grid;
-        grid-template-columns: 1.25fr 1fr;
-        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 13px;
     }
-
-    .table-clean {
-        width: 100%;
-        border-collapse: collapse;
+    .dbx-panel {
+        min-width: 0;
+        overflow: hidden;
+        background: white;
+        border: 1px solid #eddfed;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(86,54,103,.04);
     }
-
-    .table-clean th {
-        background: #f8fafc;
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 850;
-        text-transform: uppercase;
-        letter-spacing: .25px;
-        padding: 12px 16px;
-        border-top: 1px solid #edf2f7;
-        border-bottom: 1px solid #edf2f7;
+    .dbx-panel-head {
+        align-items: flex-start;
+        padding: 15px 16px 12px;
+        border-bottom: 1px solid #f3eaf3;
     }
-
-    .table-clean td {
-        color: #475569;
-        font-size: 14px;
-        padding: 13px 16px;
-        border-bottom: 1px solid #edf2f7;
-        vertical-align: middle;
-        font-weight: 500;
-    }
-
-    .table-clean tr:last-child td {
-        border-bottom: none;
-    }
-
-    .table-clean tbody tr:hover {
-        background: #f8fafc;
-    }
-
-    .event-name {
-        color: #334155;
-        font-weight: 600;
-        line-height: 1.35;
-    }
-
-    .ticket-code {
-        color: #475569;
-        font-weight: 500;
+    .dbx-panel-head h3 {
         font-size: 13px;
-    }
-
-    .money {
-        color: #0f172a;
         font-weight: 750;
-        white-space: nowrap;
+        margin: 0;
+        color: #533e5e;
     }
-
-    .status-pill {
-        display: inline-flex;
-        border-radius: 999px;
-        padding: 5px 10px;
+    .dbx-panel-head p {
+        font-size: 11px;
+        line-height: 1.65;
+        color: #9b8ca3;
+        margin: 5px 0 0;
+    }
+    .dbx-tag {
+        flex-shrink: 0;
+        padding: 6px 9px;
+        background: #f7eef9;
+        color: #a36fb1;
+        border-radius: 7px;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    .dbx-chart {
+        height: 235px;
+        position: relative;
+        padding: 12px 14px 10px;
+    }
+    .dbx-chart canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .dbx-chart-foot {
+        padding: 0 16px 13px;
+        font-size: 10.5px;
+        color: #9888a0;
+        line-height: 1.7;
+    }
+    .dbx-items { padding: 5px 16px 9px; }
+    .dbx-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f2eaf3;
+    }
+    .dbx-item:last-child { border-bottom: 0; }
+    .dbx-item-main { min-width: 0; }
+    .dbx-item-title {
         font-size: 12px;
+        line-height: 1.6;
+        font-weight: 750;
+        color: #574260;
+        text-decoration: none;
+    }
+    a.dbx-item-title:hover { color: #a46db7; }
+    .dbx-item-sub {
+        font-size: 10.5px;
+        color: #9b8ba2;
+        margin-top: 5px;
+        line-height: 1.7;
+    }
+    .dbx-item-number {
+        color: #8d65ad;
+        font-size: 11px;
         font-weight: 800;
         white-space: nowrap;
     }
-
-    .status-wait {
-        background: #fef3c7;
-        color: #92400e;
+    .dbx-status {
+        padding: 6px 9px;
+        background: #f6eef9;
+        color: #8b6e98;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 7px;
+        white-space: nowrap;
     }
-
-    .status-ok {
-        background: #dcfce7;
-        color: #166534;
+    .dbx-status.pending {
+        color: #a66d2c;
+        background: #fff3e6;
     }
-
-    .status-no {
-        background: #fee2e2;
-        color: #991b1b;
+    .dbx-status.approved {
+        color: #248769;
+        background: #e8f7f1;
     }
-
-    .empty-text {
-        padding: 28px 18px;
+    .dbx-status.rejected {
+        color: #ba5578;
+        background: #fff0f5;
+    }
+    .dbx-link {
+        color: #9f68b0;
+        font-size: 11px;
+        font-weight: 750;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .dbx-link:hover { text-decoration: underline; }
+    .dbx-empty {
+        padding: 27px 15px;
         text-align: center;
-        color: #64748b;
-        font-size: 14px;
+        color: #9c8ca4;
+        font-size: 12px;
     }
-
-    @@media (max-width: 1100px) {
-        .kpi-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .dash-grid,
-        .bottom-grid {
-            grid-template-columns: 1fr;
-        }
+    .dbx-note {
+        margin-top: 12px;
+        font-size: 11px;
+        color: #9888a0;
+        line-height: 1.8;
     }
-
-    @@media (max-width: 576px) {
-        .kpi-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .dash-head {
-            flex-direction: column;
-        }
-
-        .chart-box {
-            height: 260px;
-        }
+    @@media(max-width:1150px) {
+        .dbx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media(max-width:900px) {
+        .dbx-grid { grid-template-columns: 1fr; }
+    }
+    @@media(max-width:600px) {
+        .dbx-header { flex-direction: column; }
+        .dbx-kpi { padding: 12px; }
+        .dbx-kpi-value { font-size: 20px; }
+        .dbx-chart { height: 225px; }
+        .dbx-actions, .dbx-actions form, .dbx-select { width: 100%; max-width: none; }
     }
 </style>
 
-<div class="dash-page">
-    <div class="dash-head">
+<div class="dbx">
+    <header class="dbx-header">
         <div>
-            <h2 class="dash-title">Thống kê tổng quan</h2>
-            <p class="dash-subtitle">
-                Theo dõi doanh thu, số vé bán và yêu cầu hủy vé của các sự kiện.
+            <div class="dbx-eyebrow">
+                BAN TỔ CHỨC / OPERATIONS
+            </div>
+            <h1 class="dbx-title">Thống kê tổng quan</h1>
+            <p class="dbx-subtitle">
+                Theo dõi vận hành sự kiện, tình hình vé,
+                check-in và yêu cầu cần xử lý.
             </p>
         </div>
-
-        <div class="dash-badge">
-            Dashboard ban tổ chức
+        <div class="dbx-actions">
+            <form asp-controller="BanToChuc"
+                  asp-action="ThongKeTongQuan" method="get">
+                <select name="suKienId" class="dbx-select"
+                        aria-label="Lọc theo sự kiện"
+                        onchange="this.form.submit()">
+                    <option value="">Tất cả sự kiện</option>
+                    @foreach (var s in Model.DanhSachSuKien)
+                    {
+                        <option value="@s.SuKienId"
+                                selected="@(Model.SuKienDangChon == s.SuKienId)">
+                            @s.TenSuKien
+                        </option>
+                    }
+                </select>
+            </form>
+            <button type="button" class="dbx-button"
+                    onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Làm mới
+            </button>
         </div>
-    </div>
+    </header>
 
-    <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-label">Tổng sự kiện</div>
-            <div class="kpi-value">@Model.TongSuKien</div>
-            <div class="kpi-note">Sự kiện thuộc ban tổ chức</div>
+    <section class="dbx-section">
+        <div class="dbx-heading">
+            <h2><span>01</span> Tổng quan hoạt động</h2>
+            <span class="dbx-muted">@filterName · Toàn bộ lịch sử</span>
         </div>
-
-        <div class="kpi-card">
-            <div class="kpi-label">Vé đã bán</div>
-            <div class="kpi-value">@Model.TongVeDaBan</div>
-            <div class="kpi-note">Vé đã thanh toán</div>
-        </div>
-
-        <div class="kpi-card">
-            <div class="kpi-label">Tổng doanh thu</div>
-            <div class="kpi-value">@Model.TongDoanhThu.ToString("N0") đ</div>
-            <div class="kpi-note">Giao dịch thành công</div>
-        </div>
-
-        <div class="kpi-card">
-            <div class="kpi-label">Yêu cầu chờ duyệt</div>
-            <div class="kpi-value">@Model.YeuCauChoDuyet</div>
-            <div class="kpi-note">Yêu cầu hủy vé</div>
-        </div>
-    </div>
-
-    <div class="dash-grid">
-        <div class="dash-panel">
-            <div class="panel-head">
-                <h5 class="panel-title">Doanh thu theo tháng</h5>
-                <p class="panel-desc">Tổng doanh thu từ các vé đã thanh toán thành công.</p>
+        <div class="dbx-kpis">
+            <div class="dbx-kpi dbx-purple">
+                <div class="dbx-kpi-head">
+                    <span class="dbx-kpi-label">Tổng sự kiện</span>
+                    <span class="dbx-kpi-icon">
+                        <i class="bi bi-calendar-event"></i>
+                    </span>
+                </div>
+                <div class="dbx-kpi-value">@Model.TongSuKien.ToString("N0")</div>
+                <div class="dbx-kpi-note">Thuộc Ban tổ chức đăng nhập</div>
             </div>
-            <div class="chart-box">
-                <canvas id="revenueChart"></canvas>
+            <div class="dbx-kpi dbx-teal">
+                <div class="dbx-kpi-head">
+                    <span class="dbx-kpi-label">Vé còn hiệu lực</span>
+                    <span class="dbx-kpi-icon">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </span>
+                </div>
+                <div class="dbx-kpi-value">@Model.TongVeDaBan.ToString("N0")</div>
+                <div class="dbx-kpi-note">Đã thanh toán hoặc đã check-in</div>
             </div>
-        </div>
-
-        <div class="dash-panel">
-            <div class="panel-head">
-                <h5 class="panel-title">Trạng thái vé</h5>
-                <p class="panel-desc">Phân bổ vé theo trạng thái hiện tại.</p>
+            <div class="dbx-kpi dbx-orange">
+                <div class="dbx-kpi-head">
+                    <span class="dbx-kpi-label">Vé đã check-in</span>
+                    <span class="dbx-kpi-icon">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </span>
+                </div>
+                <div class="dbx-kpi-value">@Model.TongCheckIn.ToString("N0")</div>
+                <div class="dbx-kpi-note">Ghi nhận vào cổng thành công</div>
             </div>
-            <div class="chart-box small">
-                <canvas id="ticketStatusChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="dash-grid">
-        <div class="dash-panel">
-            <div class="panel-head">
-                <h5 class="panel-title">Số vé bán theo sự kiện</h5>
-                <p class="panel-desc">Top sự kiện có số lượng vé bán cao nhất.</p>
-            </div>
-            <div class="chart-box">
-                <canvas id="ticketByEventChart"></canvas>
-            </div>
-        </div>
-
-        <div class="dash-panel">
-            <div class="panel-head">
-                <h5 class="panel-title">Yêu cầu hủy vé</h5>
-                <p class="panel-desc">Tỷ lệ yêu cầu theo trạng thái xử lý.</p>
-            </div>
-            <div class="chart-box small">
-                <canvas id="refundStatusChart"></canvas>
+            <div class="dbx-kpi dbx-pink">
+                <div class="dbx-kpi-head">
+                    <span class="dbx-kpi-label">Yêu cầu chờ duyệt</span>
+                    <span class="dbx-kpi-icon">
+                        <i class="bi bi-hourglass-split"></i>
+                    </span>
+                </div>
+                <div class="dbx-kpi-value">@Model.YeuCauChoDuyet.ToString("N0")</div>
+                <div class="dbx-kpi-note">Cần xử lý yêu cầu hủy vé</div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="bottom-grid">
-        <div class="dash-panel">
-            <div class="panel-head">
-                <h5 class="panel-title">Top sự kiện bán chạy</h5>
-                <p class="panel-desc">Sắp xếp theo số vé đã bán.</p>
-            </div>
+    <section class="dbx-section">
+        <div class="dbx-heading">
+            <h2><span>02</span> Phân tích vận hành</h2>
+            <span class="dbx-muted">4 biểu đồ · Di chuột để xem số liệu</span>
+        </div>
 
-            @if (Model.TopSuKienBanChay.Any())
-            {
-                <table class="table-clean">
-                    <thead>
-                        <tr>
-                            <th>Sự kiện</th>
-                            <th class="text-end">Vé bán</th>
-                            <th class="text-end">Doanh thu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.TopSuKienBanChay)
+        <div class="dbx-grid">
+            <article class="dbx-panel">
+                <div class="dbx-panel-head">
+                    <div>
+                        <h3>Vé thanh toán và check-in</h3>
+                        <p>Xu hướng theo tháng trong 12 tháng gần nhất.</p>
+                    </div>
+                    <span class="dbx-tag">Đường</span>
+                </div>
+                <div class="dbx-chart">
+                    <canvas id="opsTicketsTrend"></canvas>
+                </div>
+                <div class="dbx-chart-foot">
+                    Tím: vé phát sinh thanh toán · Xanh: lượt check-in.
+                </div>
+            </article>
+
+            <article class="dbx-panel">
+                <div class="dbx-panel-head">
+                    <div>
+                        <h3>Trạng thái sự kiện</h3>
+                        <p>Phân loại theo tiến độ tổ chức và phê duyệt.</p>
+                    </div>
+                    <span class="dbx-tag">Cột</span>
+                </div>
+                <div class="dbx-chart">
+                    <canvas id="opsEventStatus"></canvas>
+                </div>
+                <div class="dbx-chart-foot">
+                    Nhận biết nhanh số sự kiện cần chuẩn bị hoặc phê duyệt.
+                </div>
+            </article>
+
+            <article class="dbx-panel">
+                <div class="dbx-panel-head">
+                    <div>
+                        <h3>Trạng thái vé hiện tại</h3>
+                        <p>So sánh vé đã thanh toán, check-in và đã hủy.</p>
+                    </div>
+                    <span class="dbx-tag">Cột ngang</span>
+                </div>
+                <div class="dbx-chart">
+                    <canvas id="opsTicketStatus"></canvas>
+                </div>
+                <div class="dbx-chart-foot">
+                    Mỗi vé chỉ thuộc một trạng thái hiện tại.
+                </div>
+            </article>
+
+            <article class="dbx-panel">
+                <div class="dbx-panel-head">
+                    <div>
+                        <h3>Trạng thái yêu cầu hủy</h3>
+                        <p>Khối lượng yêu cầu chờ duyệt và đã xử lý.</p>
+                    </div>
+                    <span class="dbx-tag">Cột ngang</span>
+                </div>
+                <div class="dbx-chart">
+                    <canvas id="opsCancelStatus"></canvas>
+                </div>
+                <div class="dbx-chart-foot">
+                    Phân tích trạng thái yêu cầu, không phải số tiền hoàn.
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="dbx-section">
+        <div class="dbx-heading">
+            <h2><span>03</span> Theo dõi và xử lý</h2>
+            <span class="dbx-muted">Liên kết đến nghiệp vụ thực tế</span>
+        </div>
+        <div class="dbx-grid">
+            <article class="dbx-panel">
+                <div class="dbx-panel-head">
+                    <div>
+                        <h3>Sự kiện sắp diễn ra</h3>
+                        <p>5 sự kiện gần nhất trong 30 ngày tới.</p>
+                    </div>
+                    <a asp-controller="BanToChuc" asp-action="Index"
+                       class="dbx-link">Xem tất cả</a>
+                </div>
+                @if (Model.SuKienSapDienRa.Any())
+                {
+                    <div class="dbx-items">
+                        @foreach (var s in Model.SuKienSapDienRa)
                         {
-                            <tr>
-                                <td>
-                                    <div class="event-name">@item.TenSuKien</div>
-                                </td>
-                                <td class="text-end">@item.SoVeDaBan</td>
-                                <td class="text-end money">@item.DoanhThu.ToString("N0") đ</td>
-                            </tr>
+                            <div class="dbx-item">
+                                <div class="dbx-item-main">
+                                    <a class="dbx-item-title"
+                                       asp-controller="BanToChuc"
+                                       asp-action="ChiTiet"
+                                       asp-route-id="@s.SuKienId">
+                                        @s.TenSuKien
+                                        <i class="bi bi-arrow-up-right"></i>
+                                    </a>
+                                    <div class="dbx-item-sub">
+                                        @s.ThoiGianBatDau.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                </div>
+                                <span class="dbx-item-number">@s.SoVeHieuLuc vé</span>
+                            </div>
                         }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="empty-text">Chưa có dữ liệu sự kiện bán chạy.</div>
-            }
-        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="dbx-empty">
+                        Chưa có sự kiện sắp diễn ra trong 30 ngày tới.
+                    </div>
+                }
+            </article>
 
-        <div class="dash-panel">
-            <div class="panel-head">
-                <h5 class="panel-title">Yêu cầu hủy vé gần đây</h5>
-                <p class="panel-desc">Các yêu cầu mới nhất từ khách hàng.</p>
-            </div>
-
-            @if (Model.YeuCauGanDay.Any())
-            {
-                <table class="table-clean">
-                    <thead>
-                        <tr>
-                            <th>Mã vé</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày yêu cầu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.YeuCauGanDay)
+            <article class="dbx-panel">
+                <div class="dbx-panel-head">
+                    <div>
+                        <h3>Yêu cầu hủy gần đây</h3>
+                        <p>5 yêu cầu mới nhất của Ban tổ chức.</p>
+                    </div>
+                    <a asp-controller="BanToChuc"
+                       asp-action="YeuCauHuyVe"
+                       class="dbx-link">Xử lý yêu cầu</a>
+                </div>
+                @if (Model.YeuCauGanDay.Any())
+                {
+                    <div class="dbx-items">
+                        @foreach (var y in Model.YeuCauGanDay)
                         {
-                            string cls = item.TrangThai switch
-                            {
-                                "ChoDuyet" => "status-pill status-wait",
-                                "DaDuyet" => "status-pill status-ok",
-                                "TuChoi" => "status-pill status-no",
-                                _ => "status-pill status-wait"
+                            var statusClass = y.TrangThai switch {
+                                "ChoDuyet" => "pending",
+                                "DaHuy" => "approved",
+                                "TuChoi" => "rejected",
+                                _ => ""
                             };
-
-                            <tr>
-                                <td>
-                                    <div class="ticket-code">@item.MaVe</div>
-                                    <div class="text-muted small">@item.TenSuKien</div>
-                                </td>
-                                <td>
-                                    <span class="@cls">
-                                        @TrangThaiYeuCauText(item.TrangThai)
-                                    </span>
-                                </td>
-                                <td class="text-muted small">
-                                    @item.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")
-                                </td>
-                            </tr>
+                            <div class="dbx-item">
+                                <div class="dbx-item-main">
+                                    <div class="dbx-item-title">@y.TenSuKien</div>
+                                    <div class="dbx-item-sub">
+                                        @y.MaVe ·
+                                        @y.NgayYeuCau.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                </div>
+                                <span class="dbx-status @statusClass">
+                                    @RequestName(y.TrangThai)
+                                </span>
+                            </div>
                         }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="empty-text">Chưa có yêu cầu hủy vé gần đây.</div>
-            }
+                    </div>
+                }
+                else
+                {
+                    <div class="dbx-empty">Chưa có yêu cầu hủy vé.</div>
+                }
+            </article>
         </div>
-    </div>
+
+        <div class="dbx-note">
+            <i class="bi bi-info-circle"></i>
+            KPI phản ánh trạng thái hiện tại của dữ liệu.
+            Biểu đồ đường ghi nhận vé theo ngày thanh toán và
+            check-in theo ngày vào cổng. Tải lại trang để cập nhật SQL Server.
+        </div>
+    </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const revenueLabels = @Html.Raw(JsonSerializer.Serialize(doanhThuLabels, jsonOptions));
-    const revenueData = @Html.Raw(JsonSerializer.Serialize(doanhThuData, jsonOptions));
+(function () {
+    "use strict";
 
-    const ticketEventLabels = @Html.Raw(JsonSerializer.Serialize(veBanLabels, jsonOptions));
-    const ticketEventData = @Html.Raw(JsonSerializer.Serialize(veBanData, jsonOptions));
+    const months = @Html.Raw(JsonSerializer.Serialize(months, jsonOptions));
+    const events = @Html.Raw(JsonSerializer.Serialize(eventStates, jsonOptions));
+    const tickets = @Html.Raw(JsonSerializer.Serialize(ticketStates, jsonOptions));
+    const requests = @Html.Raw(JsonSerializer.Serialize(requestStates, jsonOptions));
 
-    const ticketStatusLabels = @Html.Raw(JsonSerializer.Serialize(trangThaiVeLabels, jsonOptions));
-    const ticketStatusData = @Html.Raw(JsonSerializer.Serialize(trangThaiVeData, jsonOptions));
+    if (typeof Chart === "undefined") {
+        console.error("Chart.js chưa được tải.");
+        return;
+    }
 
-    const refundLabels = @Html.Raw(JsonSerializer.Serialize(hoanHuyLabels, jsonOptions));
-    const refundData = @Html.Raw(JsonSerializer.Serialize(hoanHuyData, jsonOptions));
-
-    const moneyFormat = (value) => new Intl.NumberFormat('vi-VN').format(value) + ' đ';
-
-    Chart.defaults.font.family = "'Inter', 'Segoe UI', Arial, sans-serif";
-    Chart.defaults.color = "#64748b";
-
-    const gradientLine = (ctx) => {
-        const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 280);
-        gradient.addColorStop(0, 'rgba(37, 99, 235, .28)');
-        gradient.addColorStop(1, 'rgba(37, 99, 235, .02)');
-        return gradient;
+    const colors = {
+        purple: "#9b79d0",
+        teal: "#45b4a1",
+        orange: "#edaa61",
+        pink: "#df86aa",
+        blue: "#79a6db",
+        gray: "#b3a7bd"
     };
 
-    new Chart(document.getElementById('revenueChart'), {
-        type: 'line',
+    const palette = [
+        colors.purple, colors.teal, colors.orange,
+        colors.pink, colors.blue, colors.gray
+    ];
+
+    Chart.defaults.font.family = "'Be Vietnam Pro', sans-serif";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = "#8c7c96";
+
+    const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: "#493653",
+                titleFont: { size: 12 },
+                bodyFont: { size: 11 },
+                padding: 11,
+                cornerRadius: 9
+            }
+        }
+    };
+
+    const count = value => new Intl.NumberFormat("vi-VN").format(value);
+
+    function barChart(canvasId, items, horizontal) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+
+        new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels: items.map(x => x.name),
+                datasets: [{
+                    label: "Số lượng",
+                    data: items.map(x => x.value),
+                    backgroundColor: items.map(
+                        (_, i) => palette[i % palette.length]
+                    ),
+                    borderRadius: 6,
+                    maxBarThickness: 33
+                }]
+            },
+            options: {
+                ...baseOptions,
+                indexAxis: horizontal ? "y" : "x",
+                plugins: {
+                    ...baseOptions.plugins,
+                    tooltip: {
+                        ...baseOptions.plugins.tooltip,
+                        callbacks: {
+                            label: ctx => "Số lượng: " + count(ctx.raw)
+                        }
+                    }
+                },
+                scales: horizontal ? {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: "#f1eaf3" },
+                        ticks: { precision: 0 }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                } : {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 30,
+                            autoSkip: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "#f1eaf3" },
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+    new Chart(document.getElementById("opsTicketsTrend"), {
+        type: "line",
         data: {
-            labels: revenueLabels,
-            datasets: [{
-                label: 'Doanh thu',
-                data: revenueData,
-                tension: 0.45,
-                fill: true,
-                borderColor: '#2563eb',
-                backgroundColor: gradientLine,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: '#2563eb',
-                pointBorderWidth: 3,
-                pointRadius: 4,
-                pointHoverRadius: 7,
-                borderWidth: 3
-            }]
+            labels: months.map(x => x.name),
+            datasets: [
+                {
+                    label: "Vé thanh toán",
+                    data: months.map(x => x.sold),
+                    borderColor: colors.purple,
+                    backgroundColor: "rgba(155,121,208,.11)",
+                    tension: .32,
+                    borderWidth: 2.5,
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5,
+                    fill: true
+                },
+                {
+                    label: "Lượt check-in",
+                    data: months.map(x => x.checkin),
+                    borderColor: colors.teal,
+                    backgroundColor: colors.teal,
+                    tension: .32,
+                    borderWidth: 2.5,
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5,
+                    fill: false
+                }
+            ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 1200,
-                easing: 'easeOutQuart'
-            },
+            ...baseOptions,
+            interaction: { mode: "index", intersect: false },
             plugins: {
-                legend: { display: false },
+                ...baseOptions.plugins,
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 7,
+                        padding: 12
+                    }
+                },
                 tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 12,
+                    ...baseOptions.plugins.tooltip,
                     callbacks: {
-                        label: ctx => moneyFormat(ctx.raw)
+                        label: ctx => ctx.dataset.label + ": " +
+                            count(ctx.raw) + " vé"
                     }
                 }
             },
@@ -524,139 +756,16 @@
                 x: { grid: { display: false } },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(148, 163, 184, .18)' },
-                    ticks: {
-                        callback: value => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(value)
-                    }
-                }
-            }
-        }
-    });
-
-    new Chart(document.getElementById('ticketByEventChart'), {
-        type: 'bar',
-        data: {
-            labels: ticketEventLabels,
-            datasets: [{
-                label: 'Vé bán',
-                data: ticketEventData,
-                backgroundColor: ['#6366f1', '#8b5cf6', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444', '#0ea5e9'],
-                borderRadius: 14,
-                maxBarThickness: 44
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 1100,
-                easing: 'easeOutQuart'
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 12
-                }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: {
-                        maxRotation: 0,
-                        callback: function(value) {
-                            const label = this.getLabelForValue(value);
-                            return label.length > 14 ? label.substring(0, 14) + '...' : label;
-                        }
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(148, 163, 184, .18)' },
+                    grid: { color: "#f1eaf3" },
                     ticks: { precision: 0 }
                 }
             }
         }
     });
 
-    new Chart(document.getElementById('ticketStatusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ticketStatusLabels,
-            datasets: [{
-                data: ticketStatusData,
-                backgroundColor: ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'],
-                borderColor: '#ffffff',
-                borderWidth: 5,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '72%',
-            animation: {
-                animateRotate: true,
-                animateScale: true,
-                duration: 1200,
-                easing: 'easeOutQuart'
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 9,
-                        usePointStyle: true,
-                        padding: 15
-                    }
-                },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 12
-                }
-            }
-        }
-    });
+    barChart("opsEventStatus", events, false);
+    barChart("opsTicketStatus", tickets, true);
+    barChart("opsCancelStatus", requests, true);
 
-    new Chart(document.getElementById('refundStatusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: refundLabels,
-            datasets: [{
-                data: refundData,
-                backgroundColor: ['#f59e0b', '#22c55e', '#ef4444'],
-                borderColor: '#ffffff',
-                borderWidth: 5,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '72%',
-            animation: {
-                animateRotate: true,
-                animateScale: true,
-                duration: 1200,
-                easing: 'easeOutQuart'
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 9,
-                        usePointStyle: true,
-                        padding: 15
-                    }
-                },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    padding: 12,
-                    cornerRadius: 12
-                }
-            }
-        }
-    });
+})();
 </script>

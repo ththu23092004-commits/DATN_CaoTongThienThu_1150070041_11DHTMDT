@@ -1,279 +1,1805 @@
+
 @model VeSuKienWeb.Models.Admin.AdminDashboardVM
+@using System.Linq
+@using System.Text.Json
 
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Thống kê hệ thống";
+
+    var topIds = Model.TopSuKien.Select(x => x.SuKienId).ToList();
+    var topNames = Model.TopSuKien.Select(x => x.TenSuKien).ToList();
+    var topValues = Model.TopSuKien.Select(x => x.SoVeBan).ToList();
 }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 
 <style>
-    .dash-title {
-        font-size: 32px;
-        font-weight: 800;
-        color: #111827;
+    .sd-page,
+    .sd-page * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
     }
 
-    .dash-subtitle {
-        color: #6b7280;
-        font-size: 14px;
-    }
-
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
-        margin-bottom: 22px;
-    }
-
-    .kpi-card, .dash-panel {
-        background: #fff;
-        border: 1px solid #eef2f7;
-        border-radius: 24px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
-    }
-
-    .kpi-card {
-        padding: 22px;
-    }
-
-    .kpi-label {
-        color: #6b7280;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .kpi-value {
-        font-size: 36px;
-        font-weight: 800;
-        color: #111827;
-        margin-top: 8px;
-    }
-
-    .kpi-note {
-        color: #9ca3af;
+    .sd-page {
+        width: 100%;
+        min-width: 0;
+        padding-bottom: 30px;
+        color: #554562;
         font-size: 12px;
-        margin-top: 6px;
     }
 
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: 1.4fr 1fr;
-        gap: 22px;
-        margin-bottom: 22px;
+    .sd-page button,
+    .sd-page select {
+        font-family: inherit;
     }
 
-    .dashboard-grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 22px;
-        margin-bottom: 22px;
+    .sd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 17px;
     }
 
-    .dash-panel {
-        padding: 24px;
-    }
-
-    .panel-title {
-        font-size: 18px;
+    .sd-title {
+        margin: 0;
+        font-size: 21px;
+        color: #493654;
         font-weight: 800;
-        color: #111827;
-        margin-bottom: 18px;
     }
 
-    @@media(max-width: 1200px) {
-        .kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
+    .sd-title i {
+        margin-right: 8px;
+        color: #a373b9;
+    }
+
+    .sd-sub {
+        margin: 6px 0 0;
+        color: #9c8aa5;
+        font-size: 11.5px;
+        line-height: 1.8;
+    }
+
+    .sd-tools {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .sd-control {
+        min-height: 37px;
+        padding: 8px 12px;
+        border: 1px solid #e7d9ea;
+        border-radius: 9px;
+        background: #fff;
+        color: #765f82;
+        font-size: 11.5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .sd-control:hover {
+        background: #faf4fc;
+        color: #8c5ca0;
+    }
+
+    .sd-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 22px 0 12px;
+    }
+
+    .sd-section h2 {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin: 0;
+        color: #614b6d;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .sd-section h2 i {
+        color: #a673b9;
+        font-size: 17px;
+    }
+
+    .sd-section small {
+        color: #a18fa9;
+        font-size: 10.5px;
+    }
+
+    /* =========================
+       TANG 1 - KPI
+    ========================= */
+
+    .sd-kpis {
+        display: grid;
+        grid-template-columns: repeat(3,minmax(0,1fr));
+        gap: 11px;
+    }
+
+    .sd-kpi {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 112px;
+        padding: 15px 16px 13px;
+        overflow: hidden;
+        border: 1px solid #ece1ee;
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 5px 17px rgba(77,45,92,.04);
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+    .sd-kpi:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+        box-shadow: 0 9px 22px rgba(78,46,92,.09);
+    }
+
+    .sd-kpi-label {
+        display: block;
+        max-width: calc(100% - 105px);
+        color: #927f9d;
+        font-size: 10.5px;
+        font-weight: 700;
+    }
+
+    .sd-kpi-number {
+        display: block;
+        margin-top: 9px;
+        color: #473652;
+        font-size: 24px;
+        line-height: 1.2;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-kpi-number small {
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .sd-kpi-note {
+        display: block;
+        margin-top: 7px;
+        max-width: 100%;
+        color: #a08eaa;
+        font-size: 10px;
+        line-height: 1.5;
+    }
+
+    .sd-spark-box {
+        position: absolute;
+        top: 13px;
+        right: 11px;
+        width: 104px;
+        height: 47px;
+        pointer-events: none;
+    }
+
+    .sd-spark-box canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .sd-kpi-icon {
+        position: absolute;
+        top: 13px;
+        right: 15px;
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--soft);
+        color: var(--accent);
+        font-size: 18px;
+    }
+
+    .sd-purple {
+        --accent: #a277bc;
+        --soft: #f3eaf8;
+    }
+
+    .sd-blue {
+        --accent: #6c9bd2;
+        --soft: #eaf3fd;
+    }
+
+    .sd-green {
+        --accent: #55aa8b;
+        --soft: #e6f7f0;
+    }
+
+    .sd-orange {
+        --accent: #d3a15c;
+        --soft: #fff4e5;
+    }
+
+    .sd-pink {
+        --accent: #ce85ab;
+        --soft: #fceef5;
+    }
+
+    .sd-red {
+        --accent: #ce7b8e;
+        --soft: #fff0f3;
+    }
+
+    .sd-strip {
+        display: grid;
+        grid-template-columns: repeat(4,minmax(0,1fr));
+        gap: 10px;
+        margin-top: 11px;
+    }
+
+    .sd-strip-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        padding: 13px;
+        border: 1px solid #ebdfee;
+        border-radius: 11px;
+        background: #fff;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .sd-strip-item > i {
+        color: #ab7bbd;
+        font-size: 19px;
+    }
+
+    .sd-strip-item strong {
+        display: block;
+        color: #5b4468;
+        font-size: 15px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-strip-item span {
+        display: block;
+        margin-top: 4px;
+        color: #a08eaa;
+        font-size: 10px;
+    }
+
+    /* =========================
+       TANG 2 - BIEU DO
+    ========================= */
+
+    .sd-grid {
+        display: grid;
+        grid-template-columns: minmax(0,1.35fr) minmax(0,1fr);
+        gap: 13px;
+        margin-bottom: 13px;
+    }
+
+    .sd-grid.equal {
+        grid-template-columns: repeat(2,minmax(0,1fr));
+    }
+
+    .sd-panel {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid #eaddec;
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 5px 18px rgba(77,45,92,.04);
+    }
+
+    .sd-panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 9px;
+        margin-bottom: 15px;
+    }
+
+    .sd-panel-title {
+        margin: 0;
+        color: #5b4668;
+        font-size: 12.5px;
+        font-weight: 800;
+    }
+
+    .sd-panel-desc {
+        margin: 6px 0 0;
+        color: #a08eaa;
+        font-size: 10.5px;
+        line-height: 1.7;
+    }
+
+    .sd-tag {
+        flex: 0 0 auto;
+        padding: 6px 8px;
+        border-radius: 7px;
+        background: #f4eaf8;
+        color: #9870aa;
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    .sd-chart {
+        position: relative;
+        height: 275px;
+        min-width: 0;
+    }
+
+    .sd-chart.tall {
+        height: 310px;
+    }
+
+    .sd-chart canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .sd-chart-note {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #f3eaf4;
+        color: #a18daa;
+        font-size: 10px;
+        line-height: 1.8;
+    }
+
+    .sd-chart-note i {
+        color: #ae7cbe;
+        margin-right: 5px;
+    }
+
+    /* =========================
+       TANG 3 - DEEP DIVE
+    ========================= */
+
+    .sd-deep {
+        overflow: hidden;
+        border: 1px solid #e8d9ed;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 6px 20px rgba(77,45,92,.05);
+    }
+
+    .sd-deep-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 19px;
+        border-bottom: 1px solid #f0e7f3;
+        background: #fdf9fe;
+    }
+
+    .sd-deep-title {
+        margin: 0;
+        color: #5b4369;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .sd-deep-subtitle {
+        margin: 6px 0 0;
+        color: #9e8aa7;
+        font-size: 11px;
+        line-height: 1.7;
+    }
+
+    .sd-deep-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .sd-deep-btn {
+        min-height: 35px;
+        padding: 8px 11px;
+        border: 1px solid #e6d6ea;
+        border-radius: 8px;
+        background: white;
+        color: #9065a4;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .sd-deep-btn.primary {
+        border-color: #b78bca;
+        background: #a879bc;
+        color: white;
+    }
+
+    .sd-deep-summary {
+        display: grid;
+        grid-template-columns: repeat(3,minmax(0,1fr));
+        gap: 10px;
+        padding: 15px 19px;
+        border-bottom: 1px solid #f0e7f3;
+    }
+
+    .sd-deep-stat {
+        padding: 12px;
+        border: 1px solid #eee4f0;
+        border-radius: 9px;
+        background: #fcf9fd;
+    }
+
+    .sd-deep-stat span {
+        display: block;
+        color: #a18da9;
+        font-size: 10.5px;
+    }
+
+    .sd-deep-stat strong {
+        display: block;
+        margin-top: 5px;
+        color: #664b73;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .sd-deep-table-wrap {
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    .sd-deep-table {
+        width: 100%;
+        min-width: 680px;
+        border-collapse: collapse;
+    }
+
+    .sd-deep-table thead {
+        background: #fbf6fd;
+    }
+
+    .sd-deep-table th {
+        padding: 13px 16px;
+        color: #8e799b;
+        font-size: 11px;
+        text-align: left;
+        font-weight: 800;
+        border-bottom: 1px solid #eee2f0;
+    }
+
+    .sd-deep-table td {
+        padding: 13px 16px;
+        color: #715d7b;
+        font-size: 11.5px;
+        line-height: 1.7;
+        border-bottom: 1px solid #f2ebf4;
+        vertical-align: middle;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-deep-table tbody tr:hover {
+        background: #fdf8fe;
+    }
+
+    .sd-deep-table td:first-child {
+        color: #60496e;
+        font-weight: 750;
+    }
+
+    .sd-deep-empty {
+        padding: 30px 16px;
+        color: #9f8eaa;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .sd-deep-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 19px;
+        border-top: 1px solid #eee4f0;
+        color: #9d8ba7;
+        font-size: 10.5px;
+    }
+
+    .sd-deep-footnote {
+        padding: 12px 19px;
+        background: #faf5fc;
+        color: #927da0;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    /* RESPONSIVE */
+
+    @@media(max-width:1150px) {
+        .sd-kpis {
+            grid-template-columns: repeat(2,minmax(0,1fr));
         }
 
-        .dashboard-grid,
-        .dashboard-grid-3 {
+        .sd-strip {
+            grid-template-columns: repeat(2,minmax(0,1fr));
+        }
+
+        .sd-grid,
+        .sd-grid.equal {
             grid-template-columns: 1fr;
+        }
+    }
+
+    @@media(max-width:630px) {
+        .sd-kpis {
+            grid-template-columns: 1fr;
+        }
+
+        .sd-header {
+            align-items: flex-start;
+        }
+
+        .sd-grid {
+            gap: 10px;
+        }
+
+        .sd-panel {
+            padding: 14px;
+        }
+
+        .sd-deep-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .sd-chart,
+        .sd-chart.tall {
+            height: 255px;
+        }
+
+        .sd-deep-header,
+        .sd-deep-summary {
+            padding-left: 14px;
+            padding-right: 14px;
         }
     }
 </style>
 
-<div class="mb-4">
-    <h2 class="dash-title mb-1">Thống kê hệ thống</h2>
-    <div class="dash-subtitle">
-        Tổng quan dữ liệu người dùng, sự kiện và trạng thái hoạt động của hệ thống.
-    </div>
-</div>
+<div class="sd-page">
 
-<div class="kpi-grid">
-    <div class="kpi-card">
-        <div class="kpi-label">Tổng người dùng</div>
-        <div class="kpi-value">@Model.TongNguoiDung</div>
-        <div class="kpi-note">Toàn bộ tài khoản trong hệ thống</div>
-    </div>
+    <!-- TIEU DE -->
+    <div class="sd-header">
+        <div>
+            <h1 class="sd-title">
+                <i class="bi bi-bar-chart-line"></i>
+                Thống kê hệ thống
+            </h1>
+            <p class="sd-sub">
+                Phân tích hoạt động người dùng, sự kiện,
+                vé và đơn hàng trên toàn hệ thống.
+            </p>
+        </div>
 
-    <div class="kpi-card">
-        <div class="kpi-label">Ban tổ chức</div>
-        <div class="kpi-value">@Model.TongBanToChuc</div>
-        <div class="kpi-note">Tài khoản có vai trò tổ chức</div>
-    </div>
+        <div class="sd-tools">
+            <select id="sdPeriod"
+                    class="sd-control"
+                    aria-label="Khoảng thời gian">
+                <option value="30" selected="@(Model.KyThongKe == "30")">
+                    30 ngày
+                </option>
+                <option value="90" selected="@(Model.KyThongKe == "90")">
+                    90 ngày
+                </option>
+                <option value="180" selected="@(Model.KyThongKe == "180")">
+                    180 ngày
+                </option>
+                <option value="365" selected="@(Model.KyThongKe == "365")">
+                    365 ngày
+                </option>
+            </select>
 
-    <div class="kpi-card">
-        <div class="kpi-label">Tổng sự kiện</div>
-        <div class="kpi-value">@Model.TongSuKien</div>
-        <div class="kpi-note">Bao gồm tất cả trạng thái</div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-label">Sự kiện chờ duyệt</div>
-        <div class="kpi-value">@Model.SuKienChoDuyet</div>
-        <div class="kpi-note">Cần quản trị viên xử lý</div>
-    </div>
-</div>
-
-<div class="dashboard-grid">
-    <div class="dash-panel">
-        <div class="panel-title">Sự kiện được tạo theo tháng</div>
-        <canvas id="eventMonthChart" height="120"></canvas>
-    </div>
-
-    <div class="dash-panel">
-        <div class="panel-title">Tỷ lệ trạng thái sự kiện</div>
-        <canvas id="eventStatusChart" height="230"></canvas>
-    </div>
-</div>
-
-<div class="dashboard-grid">
-    <div class="dash-panel">
-        <div class="panel-title">Người dùng mới theo tháng</div>
-        <canvas id="userMonthChart" height="120"></canvas>
+            <button id="sdRefresh"
+                    type="button"
+                    class="sd-control">
+                <i class="bi bi-arrow-clockwise"></i>
+                Làm mới
+            </button>
+        </div>
     </div>
 
-    <div class="dash-panel">
-        <div class="panel-title">Hình thức tổ chức sự kiện</div>
-        <canvas id="eventFormatChart" height="230"></canvas>
+    <!-- OVERVIEW -->
+    <div class="sd-section">
+        <h2>
+            <i class="bi bi-grid-1x2"></i>
+            01 · Tổng quan hệ thống
+        </h2>
+        <small>
+            Cập nhật @Model.CapNhatLuc.ToString("HH:mm:ss")
+        </small>
     </div>
-</div>
 
-<div class="dashboard-grid">
-    <div class="dash-panel">
-        <div class="panel-title">Số sự kiện theo từng loại</div>
-        <canvas id="eventTypeChart" height="130"></canvas>
+    <div class="sd-kpis">
+
+        <button class="sd-kpi sd-purple"
+                type="button"
+                data-target="sdUserPanel">
+            <span class="sd-kpi-label">Tổng người dùng</span>
+
+            <strong class="sd-kpi-number">
+                @Model.TongNguoiDung.ToString("N0")
+            </strong>
+
+            <span class="sd-kpi-note">
+                +@Model.NguoiDungMoiTrongKy tài khoản mới trong kỳ
+            </span>
+
+            <div class="sd-spark-box">
+                <canvas id="sdSparkUsers"></canvas>
+            </div>
+        </button>
+
+        <button class="sd-kpi sd-blue"
+                type="button"
+                data-url="@Url.Action("NguoiDung", "Admin")">
+            <span class="sd-kpi-label">Ban tổ chức</span>
+
+            <strong class="sd-kpi-number">
+                @Model.TongBanToChuc.ToString("N0")
+            </strong>
+
+            <span class="sd-kpi-note">
+                +@Model.BanToChucMoiTrongKy BTC mới trong kỳ
+            </span>
+
+            <span class="sd-kpi-icon">
+                <i class="bi bi-calendar-event"></i>
+            </span>
+        </button>
+
+        <button class="sd-kpi sd-green"
+                type="button"
+                data-target="sdEventPanel">
+            <span class="sd-kpi-label">Tổng sự kiện</span>
+
+            <strong class="sd-kpi-number">
+                @Model.TongSuKien.ToString("N0")
+            </strong>
+
+            <span class="sd-kpi-note">
+                +@Model.SuKienMoiTrongKy sự kiện mới trong kỳ
+            </span>
+
+            <div class="sd-spark-box">
+                <canvas id="sdSparkEvents"></canvas>
+            </div>
+        </button>
+
+        <button class="sd-kpi sd-orange"
+                type="button"
+                data-target="sdRevenuePanel">
+            <span class="sd-kpi-label">Doanh thu đơn thành công</span>
+
+            <strong class="sd-kpi-number">
+                @Model.TongDoanhThu.ToString("N0")
+                <small>đ</small>
+            </strong>
+
+            <span class="sd-kpi-note">
+                @Model.DoanhThuTrongKy.ToString("N0") đ trong kỳ
+            </span>
+
+            <div class="sd-spark-box">
+                <canvas id="sdSparkRevenue"></canvas>
+            </div>
+        </button>
+
+        <button class="sd-kpi sd-pink"
+                type="button"
+                data-target="sdTopPanel">
+            <span class="sd-kpi-label">Vé thuộc đơn thành công</span>
+
+            <strong class="sd-kpi-number">
+                @Model.TongVeBan.ToString("N0")
+            </strong>
+
+            <span class="sd-kpi-note">
+                @Model.VeBanTrongKy vé bán trong kỳ
+            </span>
+
+            <div class="sd-spark-box">
+                <canvas id="sdSparkTickets"></canvas>
+            </div>
+        </button>
+
+        <button class="sd-kpi sd-red"
+                type="button"
+                data-target="sdStatusPanel">
+            <span class="sd-kpi-label">Sự kiện chờ duyệt</span>
+
+            <strong class="sd-kpi-number">
+                @Model.SuKienChoDuyet.ToString("N0")
+            </strong>
+
+            <span class="sd-kpi-note">
+                Tổng số đang chờ trên toàn hệ thống
+            </span>
+
+            <span class="sd-kpi-icon">
+                <i class="bi bi-hourglass-split"></i>
+            </span>
+        </button>
     </div>
 
-    <div class="dash-panel">
-        <div class="panel-title">Tổng quan nhanh</div>
-        <canvas id="quickRadarChart" height="230"></canvas>
+    <!-- CHI SO NHO -->
+    <div class="sd-strip">
+
+        <a class="sd-strip-item"
+           href="@Url.Action("NguoiDung", "Admin")">
+            <i class="bi bi-person-lock"></i>
+            <div>
+                <strong>@Model.TaiKhoanBiKhoa</strong>
+                <span>Tài khoản bị khóa</span>
+            </div>
+        </a>
+
+        <a class="sd-strip-item"
+           href="@Url.Action("YeuCauHoanHuy", "Admin")">
+            <i class="bi bi-ticket"></i>
+            <div>
+                <strong>@Model.YeuCauHuyChoXuLy</strong>
+                <span>Yêu cầu hủy chờ BTC</span>
+            </div>
+        </a>
+
+        <div class="sd-strip-item">
+            <i class="bi bi-receipt"></i>
+            <div>
+                <strong>@Model.TongDonThanhCong</strong>
+                <span>Đơn thành công</span>
+            </div>
+        </div>
+
+        <div class="sd-strip-item">
+            <i class="bi bi-arrow-counterclockwise"></i>
+            <div>
+                <strong>@Model.TongTienHoanGhiNhan.ToString("N0") đ</strong>
+                <span>Tiền hoàn ghi nhận</span>
+            </div>
+        </div>
     </div>
+
+    <!-- BREAKDOWN -->
+    <div class="sd-section">
+        <h2>
+            <i class="bi bi-graph-up"></i>
+            02 · Phân tích hoạt động
+        </h2>
+
+        <small>
+            @Model.TuNgay.ToString("dd/MM/yyyy")
+            –
+            @Model.DenNgay.ToString("dd/MM/yyyy")
+        </small>
+    </div>
+
+    <!-- HANG 1 -->
+    <div class="sd-grid">
+
+        <section class="sd-panel" id="sdRevenuePanel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Doanh thu và số vé bán
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Cột doanh thu, đường số vé theo tháng.
+                    </p>
+                </div>
+                <span class="sd-tag">Kinh doanh</span>
+            </div>
+
+            <div class="sd-chart tall">
+                <canvas id="sdRevenueChart"></canvas>
+            </div>
+
+            <div class="sd-chart-note">
+                <i class="bi bi-hand-index"></i>
+                Bấm một cột để xem đơn hàng thành công trong tháng.
+                Doanh thu chưa trừ tiền hoàn.
+            </div>
+        </section>
+
+        <section class="sd-panel" id="sdStatusPanel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Trạng thái sự kiện
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Phân bố trạng thái kiểm duyệt toàn hệ thống.
+                    </p>
+                </div>
+                <span class="sd-tag">Kiểm duyệt</span>
+            </div>
+
+            <div class="sd-chart tall">
+                <canvas id="sdStatusChart"></canvas>
+            </div>
+
+            <div class="sd-chart-note">
+                <i class="bi bi-hand-index"></i>
+                Bấm cột trạng thái để xem danh sách sự kiện.
+            </div>
+        </section>
+    </div>
+
+    <!-- HANG 2 -->
+    <div class="sd-grid equal">
+
+        <section class="sd-panel" id="sdEventPanel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Sự kiện mới theo tháng
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Xu hướng tạo sự kiện trong kỳ.
+                    </p>
+                </div>
+                <span class="sd-tag">Sự kiện</span>
+            </div>
+
+            <div class="sd-chart">
+                <canvas id="sdEventChart"></canvas>
+            </div>
+
+            <div class="sd-chart-note">
+                <i class="bi bi-hand-index"></i>
+                Bấm điểm dữ liệu để đào sâu.
+            </div>
+        </section>
+
+        <section class="sd-panel" id="sdUserPanel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Người dùng mới theo tháng
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Tổng số tài khoản đăng ký mới.
+                    </p>
+                </div>
+                <span class="sd-tag">Tăng trưởng</span>
+            </div>
+
+            <div class="sd-chart">
+                <canvas id="sdUserChart"></canvas>
+            </div>
+
+            <div class="sd-chart-note">
+                <i class="bi bi-hand-index"></i>
+                Bấm cột để xem các tài khoản được tạo.
+            </div>
+        </section>
+    </div>
+
+    <!-- HANG 3 -->
+    <div class="sd-grid equal">
+
+        <section class="sd-panel" id="sdTopPanel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Top sự kiện bán nhiều vé
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Số vé thuộc đơn thành công trong kỳ.
+                    </p>
+                </div>
+                <span class="sd-tag">Top 8</span>
+            </div>
+
+            <div class="sd-chart tall">
+                <canvas id="sdTopChart"></canvas>
+            </div>
+
+            <div class="sd-chart-note">
+                <i class="bi bi-hand-index"></i>
+                Bấm sự kiện để xem danh sách vé.
+            </div>
+        </section>
+
+        <section class="sd-panel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Sự kiện theo danh mục
+                    </h3>
+                    <p class="sd-panel-desc">
+                        So sánh số sự kiện theo từng loại.
+                    </p>
+                </div>
+                <span class="sd-tag">Danh mục</span>
+            </div>
+
+            <div class="sd-chart tall">
+                <canvas id="sdTypeChart"></canvas>
+            </div>
+
+            <div class="sd-chart-note">
+                <i class="bi bi-info-circle"></i>
+                Rê chuột để xem số lượng và tỷ trọng.
+            </div>
+        </section>
+    </div>
+
+    <!-- HANG 4 -->
+    <div class="sd-grid equal">
+
+        <section class="sd-panel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Hình thức tổ chức
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Trực tiếp, trực tuyến và hybrid.
+                    </p>
+                </div>
+                <span class="sd-tag">Cơ cấu</span>
+            </div>
+
+            <div class="sd-chart">
+                <canvas id="sdFormatChart"></canvas>
+            </div>
+        </section>
+
+        <section class="sd-panel">
+            <div class="sd-panel-head">
+                <div>
+                    <h3 class="sd-panel-title">
+                        Chỉ số quản trị
+                    </h3>
+                    <p class="sd-panel-desc">
+                        Các chỉ số bổ sung giúp theo dõi vận hành.
+                    </p>
+                </div>
+                <span class="sd-tag">Vận hành</span>
+            </div>
+
+            <div class="sd-strip"
+                 style="grid-template-columns:1fr 1fr;margin-top:9px">
+
+                <div class="sd-strip-item">
+                    <i class="bi bi-shield-check"></i>
+                    <div>
+                        <strong id="sdApprovalRate">—</strong>
+                        <span>Tỷ lệ sự kiện được duyệt</span>
+                    </div>
+                </div>
+
+                <div class="sd-strip-item">
+                    <i class="bi bi-calendar-plus"></i>
+                    <div>
+                        <strong>@Model.SuKienMoiTrongKy</strong>
+                        <span>Sự kiện mới trong kỳ</span>
+                    </div>
+                </div>
+
+                <div class="sd-strip-item">
+                    <i class="bi bi-person-plus"></i>
+                    <div>
+                        <strong>@Model.NguoiDungMoiTrongKy</strong>
+                        <span>Người dùng mới trong kỳ</span>
+                    </div>
+                </div>
+
+                <div class="sd-strip-item">
+                    <i class="bi bi-bag-check"></i>
+                    <div>
+                        <strong>@Model.DonThanhCongTrongKy</strong>
+                        <span>Đơn thành công trong kỳ</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="sd-chart-note">
+                Tỷ lệ duyệt được tính trên các sự kiện có
+                quyết định duyệt hoặc từ chối,
+                không bao gồm sự kiện đang chờ.
+            </p>
+        </section>
+    </div>
+
+<!-- PHAN TICH THEO BAN TO CHUC -->
+@{
+    ViewData["KyThongKeBTC"] = Model.KyThongKe;
+}
+
+<partial name="_ThongKeBanToChuc" />
+
+    <!-- DEEP DIVE -->
+    <div class="sd-section" id="sdDeepSection">
+        <h2>
+            <i class="bi bi-search"></i>
+            03 · Phân tích chuyên sâu
+        </h2>
+        <small>Drill-through · Dữ liệu SQL Server</small>
+    </div>
+
+    <section class="sd-deep">
+
+        <div class="sd-deep-header">
+            <div>
+                <h3 class="sd-deep-title" id="sdDeepTitle">
+                    Chi tiết Top sự kiện bán vé
+                </h3>
+
+                <p class="sd-deep-subtitle" id="sdDeepSubtitle">
+                    Danh sách sự kiện nổi bật trong kỳ đã chọn.
+                    Bấm biểu đồ phía trên để xem dữ liệu khác.
+                </p>
+            </div>
+
+            <div class="sd-deep-actions">
+                <button type="button"
+                        class="sd-deep-btn"
+                        id="sdResetDeep">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Top sự kiện
+                </button>
+
+                <button type="button"
+                        class="sd-deep-btn primary"
+                        id="sdReloadDeep">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Làm mới chi tiết
+                </button>
+            </div>
+        </div>
+
+        <div class="sd-deep-summary">
+            <div class="sd-deep-stat">
+                <span id="sdDeepLabel1">Sự kiện trong Top</span>
+                <strong id="sdDeepValue1">
+                    @Model.TopSuKien.Count
+                </strong>
+            </div>
+
+            <div class="sd-deep-stat">
+                <span id="sdDeepLabel2">Vé của các sự kiện Top</span>
+                <strong id="sdDeepValue2">
+                    @Model.TopSuKien.Sum(x => x.SoVeBan).ToString("N0")
+                </strong>
+            </div>
+
+            <div class="sd-deep-stat">
+                <span id="sdDeepLabel3">Kỳ phân tích</span>
+                <strong id="sdDeepValue3">
+                    @Model.KyThongKe ngày
+                </strong>
+            </div>
+        </div>
+
+        <div class="sd-deep-table-wrap">
+            <table class="sd-deep-table">
+                <thead>
+                    <tr>
+                        <th style="width:54px">STT</th>
+                        <th id="sdCol1">Sự kiện / Bản ghi</th>
+                        <th id="sdCol2">Thông tin liên quan</th>
+                        <th id="sdCol3">Chỉ số / Trạng thái</th>
+                        <th id="sdCol4">Ngày</th>
+                    </tr>
+                </thead>
+
+                <tbody id="sdDeepBody">
+                    @for (int i = 0; i < Model.TopSuKien.Count; i++)
+                    {
+                        var item = Model.TopSuKien[i];
+
+                        <tr>
+                            <td>@(i + 1)</td>
+                            <td>@item.TenSuKien</td>
+                            <td>Sự kiện #@item.SuKienId</td>
+                            <td>
+                                @item.SoVeBan.ToString("N0") vé
+                            </td>
+                            <td>Trong kỳ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div id="sdDeepEmpty"
+             class="sd-deep-empty"
+             hidden>
+            Không có dữ liệu để phân tích.
+        </div>
+
+        <div class="sd-deep-footer">
+            <span id="sdDeepCount">
+                @Model.TopSuKien.Count bản ghi đang hiển thị
+            </span>
+
+            <span id="sdDeepUpdated">
+                Dữ liệu cập nhật
+                @Model.CapNhatLuc.ToString("HH:mm:ss")
+            </span>
+        </div>
+
+        <div class="sd-deep-footnote" id="sdDeepExplanation">
+            <i class="bi bi-info-circle me-1"></i>
+            Bảng mặc định xếp hạng sự kiện theo số vé thuộc
+            đơn hàng thành công trong kỳ.
+            Khi bấm vào một vùng biểu đồ có hỗ trợ drill-through,
+            bảng sẽ thay bằng danh sách bản ghi tương ứng.
+        </div>
+    </section>
 </div>
 
 <script>
-    const eventMonthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ThangSuKien));
-    const eventMonthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoSuKienTheoThang));
+(function () {
+    "use strict";
 
-    const userMonthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ThangNguoiDung));
-    const userMonthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoNguoiDungTheoThang));
+    const data = {
+        period: @Html.Raw(JsonSerializer.Serialize(Model.KyThongKe)),
 
-    const eventTypeLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TenLoaiSuKien));
-    const eventTypeData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoLuongTheoLoai));
+        eventMonths: @Html.Raw(JsonSerializer.Serialize(Model.ThangSuKien)),
+        eventValues: @Html.Raw(JsonSerializer.Serialize(Model.SoSuKienTheoThang)),
 
-    const choDuyet = @Model.SuKienChoDuyet;
-    const daDuyet = @Model.SuKienDaDuyet;
-    const tuChoi = @Model.SuKienTuChoi;
+        userMonths: @Html.Raw(JsonSerializer.Serialize(Model.ThangNguoiDung)),
+        userValues: @Html.Raw(JsonSerializer.Serialize(Model.SoNguoiDungTheoThang)),
 
-    const trucTiep = @Model.SuKienTrucTiep;
-    const trucTuyen = @Model.SuKienTrucTuyen;
-    const hybrid = @Model.SuKienHybrid;
+        revenueMonths: @Html.Raw(JsonSerializer.Serialize(Model.ThangDoanhThu)),
+        revenueValues: @Html.Raw(JsonSerializer.Serialize(Model.DoanhThuTheoThang)),
+        ticketValues: @Html.Raw(JsonSerializer.Serialize(Model.VeBanTheoThang)),
 
-    const tongNguoiDung = @Model.TongNguoiDung;
-    const tongBanToChuc = @Model.TongBanToChuc;
-    const tongSuKien = @Model.TongSuKien;
+        typeNames: @Html.Raw(JsonSerializer.Serialize(Model.TenLoaiSuKien)),
+        typeValues: @Html.Raw(JsonSerializer.Serialize(Model.SoLuongTheoLoai)),
 
-    const commonGrid = {
-        color: '#e5e7eb'
+        topIds: @Html.Raw(JsonSerializer.Serialize(topIds)),
+        topNames: @Html.Raw(JsonSerializer.Serialize(topNames)),
+        topValues: @Html.Raw(JsonSerializer.Serialize(topValues)),
+
+        statusValues: [
+            @Model.SuKienChoDuyet,
+            @Model.SuKienDaDuyet,
+            @Model.SuKienTuChoi,
+            @Model.SuKienDaAn
+        ],
+
+        formatValues: [
+            @Model.SuKienTrucTiep,
+            @Model.SuKienTrucTuyen,
+            @Model.SuKienHybrid
+        ]
     };
 
-    new Chart(document.getElementById('eventMonthChart'), {
-        type: 'line',
-        data: {
-            labels: eventMonthLabels,
-            datasets: [{
-                label: 'Số sự kiện',
-                data: eventMonthData,
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99,102,241,.12)',
-                fill: true,
-                tension: .45,
-                pointRadius: 5,
-                pointBackgroundColor: '#6366f1'
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, ticks: { precision: 0 }, grid: commonGrid },
-                x: { grid: { display: false } }
-            }
-        }
-    });
+    const C = {
+        purple: "#A277BC",
+        blue: "#6C9BD2",
+        green: "#55AA8B",
+        orange: "#D3A15C",
+        pink: "#CE85AB",
+        red: "#CE7B8E",
+        grid: "#F0E8F2",
+        text: "#9885A2"
+    };
 
-    new Chart(document.getElementById('eventStatusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Chờ duyệt', 'Đã duyệt', 'Từ chối'],
-            datasets: [{
-                data: [choDuyet, daDuyet, tuChoi],
-                backgroundColor: ['#facc15', '#22c55e', '#ef4444'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            cutout: '68%',
-            plugins: { legend: { position: 'bottom' } }
-        }
-    });
+    const fmt = value =>
+        new Intl.NumberFormat("vi-VN").format(value ?? 0);
 
-    new Chart(document.getElementById('userMonthChart'), {
-        type: 'bar',
-        data: {
-            labels: userMonthLabels,
-            datasets: [{
-                label: 'Người dùng mới',
-                data: userMonthData,
-                backgroundColor: '#38bdf8',
-                borderRadius: 12
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, ticks: { precision: 0 }, grid: commonGrid },
-                x: { grid: { display: false } }
-            }
-        }
-    });
+    const fmtMoney = value => fmt(value) + " đ";
 
-    new Chart(document.getElementById('eventFormatChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Trực tiếp', 'Trực tuyến'],
-            datasets: [{
-                data: [trucTiep, trucTuyen],
-                backgroundColor: [
-                    '#4f46e5',
-                    '#06b6d4'
-                ],
-                borderWidth: 0,
-                hoverOffset: 12
-            }]
-        },
-        options: {
-            cutout: '65%',
+    const $ = id => document.getElementById(id);
+
+    if (typeof Chart === "undefined") {
+        console.error("Chart.js chưa được tải.");
+        return;
+    }
+
+    Chart.defaults.font.family = "Be Vietnam Pro";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = C.text;
+
+    const originalTop = data.topNames.map((name, index) => ({
+        title: name,
+        subtitle: "Sự kiện #" + data.topIds[index],
+        detail: fmt(data.topValues[index]) + " vé",
+        date: "Trong kỳ"
+    }));
+
+    let activeDrill = null;
+    let drillRequest = 0;
+
+    function monthLabel(value) {
+        const parts = String(value).split("-");
+        return parts.length === 2
+            ? parts[1] + "/" + parts[0]
+            : String(value);
+    }
+
+    function chartOptions() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: "nearest",
+                intersect: true
+            },
             plugins: {
                 legend: {
-                    position: 'bottom',
                     labels: {
                         usePointStyle: true,
-                        pointStyle: 'circle',
-                        padding: 20,
-                        font: {
-                            size: 13,
-                            weight: '600'
+                        padding: 14
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "#473452",
+                    padding: 11,
+                    cornerRadius: 9,
+                    titleFont: {
+                        family: "Be Vietnam Pro"
+                    },
+                    bodyFont: {
+                        family: "Be Vietnam Pro"
+                    }
+                }
+            }
+        };
+    }
+
+    function axis() {
+        return {
+            beginAtZero: true,
+            ticks: {
+                precision: 0,
+                color: C.text
+            },
+            grid: { color: C.grid },
+            border: { display: false }
+        };
+    }
+
+    function horizontalAxis() {
+        return {
+            ticks: {
+                color: C.text,
+                maxRotation: 0
+            },
+            grid: { display: false },
+            border: { display: false }
+        };
+    }
+
+    function graph(id, config) {
+        const canvas = $(id);
+
+        if (!canvas) return null;
+
+        return new Chart(canvas, config);
+    }
+
+    // ==================================
+    // MINI CHART: GOC PHAI TREN KPI
+    // ==================================
+
+    function spark(id, values, color) {
+        const canvas = $(id);
+
+        if (!canvas) return;
+
+        const points = Array.isArray(values) && values.length
+            ? values
+            : [0];
+
+        new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: points.map((_, index) => index),
+                datasets: [{
+                    data: points,
+                    borderColor: color,
+                    backgroundColor: color + "18",
+                    fill: true,
+                    tension: .35,
+                    borderWidth: 2.1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                events: [],
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                }
+            }
+        });
+    }
+
+    spark("sdSparkUsers", data.userValues, C.purple);
+    spark("sdSparkEvents", data.eventValues, C.green);
+    spark("sdSparkRevenue", data.revenueValues, C.orange);
+    spark("sdSparkTickets", data.ticketValues, C.pink);
+
+    // ==================================
+    // DEEP DIVE: BANG THUC TE
+    // ==================================
+
+    function updateDeepSummary(
+        label1, value1,
+        label2, value2,
+        label3, value3
+    ) {
+        $("sdDeepLabel1").textContent = label1;
+        $("sdDeepValue1").textContent = value1;
+
+        $("sdDeepLabel2").textContent = label2;
+        $("sdDeepValue2").textContent = value2;
+
+        $("sdDeepLabel3").textContent = label3;
+        $("sdDeepValue3").textContent = value3;
+    }
+
+    function fillDeepTable(items) {
+        const tbody = $("sdDeepBody");
+        tbody.replaceChildren();
+
+        $("sdDeepEmpty").hidden = items.length > 0;
+
+        items.forEach((item, index) => {
+            const tr = document.createElement("tr");
+
+            const values = [
+                String(index + 1),
+                item.title || "Chưa có tên",
+                item.subtitle || "—",
+                item.detail || "—",
+                item.date || "—"
+            ];
+
+            values.forEach(value => {
+                const td = document.createElement("td");
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+
+        $("sdDeepCount").textContent =
+            fmt(items.length) + " bản ghi đang hiển thị";
+    }
+
+    function setDeepColumns() {
+        $("sdCol1").textContent = "Bản ghi";
+        $("sdCol2").textContent = "Thông tin liên quan";
+        $("sdCol3").textContent = "Chỉ số / Trạng thái";
+        $("sdCol4").textContent = "Ngày";
+    }
+
+    function resetDeep() {
+        drillRequest++;
+        activeDrill = null;
+
+        $("sdDeepTitle").textContent =
+            "Chi tiết Top sự kiện bán vé";
+
+        $("sdDeepSubtitle").textContent =
+            "Xếp hạng sự kiện có vé thuộc đơn thành công trong kỳ.";
+
+        updateDeepSummary(
+            "Sự kiện trong Top",
+            fmt(data.topNames.length),
+            "Vé của các sự kiện Top",
+            fmt(data.topValues.reduce((a, b) => a + b, 0)),
+            "Kỳ thống kê",
+            data.period + " ngày"
+        );
+
+        $("sdCol1").textContent = "Sự kiện";
+        $("sdCol2").textContent = "Mã sự kiện";
+        $("sdCol3").textContent = "Số vé";
+        $("sdCol4").textContent = "Thời gian";
+
+        fillDeepTable(originalTop);
+
+        $("sdDeepExplanation").textContent =
+            "Bảng Top sự kiện dựa trên số vé thuộc đơn hàng " +
+            "thành công trong kỳ. Nhấp cột hoặc điểm của " +
+            "các biểu đồ phía trên để xem dữ liệu chi tiết.";
+
+        $("sdDeepUpdated").textContent =
+            "Dữ liệu từ lần tải Dashboard";
+    }
+
+    async function loadDeep(type, key, title) {
+        activeDrill = { type, key, title };
+        const requestId = ++drillRequest;
+
+        $("sdDeepTitle").textContent = title;
+        $("sdDeepSubtitle").textContent =
+            "Đang truy vấn danh sách bản ghi từ SQL Server...";
+
+        setDeepColumns();
+
+        updateDeepSummary(
+            "Nhóm phân tích", title,
+            "Bản ghi hiển thị", "Đang tải",
+            "Kỳ thống kê", data.period + " ngày"
+        );
+
+        fillDeepTable([]);
+
+        $("sdDeepEmpty").hidden = false;
+        $("sdDeepEmpty").textContent =
+            "Đang tải dữ liệu phân tích...";
+
+        $("sdDeepSection").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        const params = new URLSearchParams({
+            loai: type,
+            giaTri: String(key),
+            ky: data.period
+        });
+
+        try {
+            const response = await fetch(
+                "/Admin/ThongKeChiTiet?" + params.toString(),
+                {
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Không thể lấy dữ liệu chi tiết. " +
+                    "Vui lòng kiểm tra action ThongKeChiTiet."
+                );
+            }
+
+            const result = await response.json();
+
+            if (requestId !== drillRequest) return;
+
+            const items = Array.isArray(result.items)
+                ? result.items
+                : [];
+
+            $("sdDeepTitle").textContent =
+                result.title || title;
+
+            $("sdDeepSubtitle").textContent =
+                "Dữ liệu chi tiết theo vùng biểu đồ đã chọn.";
+
+            fillDeepTable(items);
+
+            updateDeepSummary(
+                "Nhóm đang xem", title,
+                "Bản ghi hiển thị", fmt(items.length),
+                "Kỳ thống kê", data.period + " ngày"
+            );
+
+            $("sdDeepUpdated").textContent =
+                "Truy vấn lúc " +
+                new Date().toLocaleTimeString("vi-VN");
+
+            $("sdDeepExplanation").textContent =
+                "Danh sách được truy vấn trực tiếp từ hệ thống " +
+                "theo vùng biểu đồ đã chọn. Tối đa 100 bản ghi " +
+                "gần nhất được trả về; tổng số trong biểu đồ " +
+                "có thể lớn hơn số dòng của bảng.";
+
+            if (!items.length) {
+                $("sdDeepEmpty").hidden = false;
+                $("sdDeepEmpty").textContent =
+                    "Không có bản ghi phù hợp.";
+            }
+        }
+        catch (error) {
+            if (requestId !== drillRequest) return;
+
+            $("sdDeepSubtitle").textContent =
+                "Truy vấn chưa thành công.";
+
+            $("sdDeepEmpty").hidden = false;
+            $("sdDeepEmpty").textContent = error.message;
+
+            $("sdDeepValue2").textContent = "—";
+        }
+    }
+
+    function clickDrill(type, labels, title) {
+        return (event, elements) => {
+            if (!elements.length) return;
+
+            const index = elements[0].index;
+            const key = labels[index];
+
+            if (key === undefined || key === null) return;
+
+            loadDeep(type, key, title);
+        };
+    }
+
+    $("sdResetDeep").addEventListener("click", resetDeep);
+
+    $("sdReloadDeep").addEventListener("click", () => {
+        if (activeDrill) {
+            loadDeep(
+                activeDrill.type,
+                activeDrill.key,
+                activeDrill.title
+            );
+        }
+        else {
+            window.location.reload();
+        }
+    });
+
+    // ==================================
+    // DOANH THU + VE
+    // ==================================
+
+    graph("sdRevenueChart", {
+        type: "bar",
+        data: {
+            labels: data.revenueMonths.map(monthLabel),
+            datasets: [
+                {
+                    label: "Doanh thu",
+                    data: data.revenueValues,
+                    backgroundColor: C.purple,
+                    hoverBackgroundColor: "#8757A0",
+                    borderRadius: 7,
+                    yAxisID: "yMoney",
+                    order: 2
+                },
+                {
+                    type: "line",
+                    label: "Số vé",
+                    data: data.ticketValues,
+                    borderColor: C.orange,
+                    backgroundColor: C.orange,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    borderWidth: 2.5,
+                    tension: .35,
+                    yAxisID: "yTickets",
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            ...chartOptions(),
+            onClick: clickDrill(
+                "donHangThang",
+                data.revenueMonths,
+                "Đơn hàng thành công theo tháng"
+            ),
+            plugins: {
+                ...chartOptions().plugins,
+                tooltip: {
+                    ...chartOptions().plugins.tooltip,
+                    callbacks: {
+                        label(context) {
+                            return context.dataset.yAxisID === "yMoney"
+                                ? " Doanh thu: " + fmtMoney(context.parsed.y)
+                                : " Số vé: " + fmt(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: horizontalAxis(),
+                yMoney: {
+                    ...axis(),
+                    position: "left",
+                    ticks: {
+                        callback: value =>
+                            new Intl.NumberFormat("vi-VN", {
+                                notation: "compact"
+                            }).format(value)
+                    }
+                },
+                yTickets: {
+                    ...axis(),
+                    position: "right",
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // ==================================
+    // TRANG THAI: COT NGANG
+    // ==================================
+
+    const statusKeys = [
+        "ChoDuyet", "DaDuyet", "TuChoi", "An"
+    ];
+
+    graph("sdStatusChart", {
+        type: "bar",
+        data: {
+            labels: [
+                "Chờ duyệt",
+                "Đã duyệt",
+                "Từ chối",
+                "Đã ẩn"
+            ],
+            datasets: [{
+                label: "Sự kiện",
+                data: data.statusValues,
+                backgroundColor: [
+                    C.orange,
+                    C.green,
+                    C.red,
+                    C.purple
+                ],
+                borderRadius: 7,
+                barThickness: 23
+            }]
+        },
+        options: {
+            ...chartOptions(),
+            indexAxis: "y",
+            onClick: clickDrill(
+                "trangThai",
+                statusKeys,
+                "Sự kiện theo trạng thái"
+            ),
+            plugins: {
+                ...chartOptions().plugins,
+                legend: { display: false }
+            },
+            scales: {
+                x: axis(),
+                y: {
+                    grid: { display: false },
+                    ticks: { color: C.text }
+                }
+            }
+        }
+    });
+
+    // ==================================
+    // SU KIEN THEO THANG: DUONG
+    // ==================================
+
+    graph("sdEventChart", {
+        type: "line",
+        data: {
+            labels: data.eventMonths.map(monthLabel),
+            datasets: [{
+                label: "Sự kiện mới",
+                data: data.eventValues,
+                borderColor: C.purple,
+                backgroundColor: "rgba(162,119,188,.12)",
+                fill: true,
+                tension: .35,
+                pointRadius: 4,
+                pointHoverRadius: 8,
+                borderWidth: 2.5
+            }]
+        },
+        options: {
+            ...chartOptions(),
+            onClick: clickDrill(
+                "suKienThang",
+                data.eventMonths,
+                "Sự kiện mới trong tháng"
+            ),
+            plugins: {
+                ...chartOptions().plugins,
+                legend: { display: false }
+            },
+            scales: {
+                x: horizontalAxis(),
+                y: axis()
+            }
+        }
+    });
+
+    // ==================================
+    // NGUOI DUNG: COT
+    // ==================================
+
+    graph("sdUserChart", {
+        type: "bar",
+        data: {
+            labels: data.userMonths.map(monthLabel),
+            datasets: [{
+                label: "Tài khoản mới",
+                data: data.userValues,
+                backgroundColor: C.blue,
+                borderRadius: 7
+            }]
+        },
+        options: {
+            ...chartOptions(),
+            onClick: clickDrill(
+                "nguoiDungThang",
+                data.userMonths,
+                "Người dùng mới trong tháng"
+            ),
+            plugins: {
+                ...chartOptions().plugins,
+                legend: { display: false }
+            },
+            scales: {
+                x: horizontalAxis(),
+                y: axis()
+            }
+        }
+    });
+
+    // ==================================
+    // TOP SU KIEN: COT NGANG
+    // ==================================
+
+    graph("sdTopChart", {
+        type: "bar",
+        data: {
+            labels: data.topNames,
+            datasets: [{
+                label: "Vé bán",
+                data: data.topValues,
+                backgroundColor: C.pink,
+                borderRadius: 7
+            }]
+        },
+        options: {
+            ...chartOptions(),
+            indexAxis: "y",
+            onClick: clickDrill(
+                "suKien",
+                data.topIds,
+                "Vé bán theo sự kiện"
+            ),
+            plugins: {
+                ...chartOptions().plugins,
+                legend: { display: false }
+            },
+            scales: {
+                x: axis(),
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        callback: function(value) {
+                            const name = this.getLabelForValue(value);
+                            return name.length > 22
+                                ? name.slice(0, 22) + "…"
+                                : name;
                         }
                     }
                 }
@@ -281,47 +1807,161 @@
         }
     });
 
-    new Chart(document.getElementById('eventTypeChart'), {
-        type: 'bar',
-        data: {
-            labels: eventTypeLabels,
-            datasets: [{
-                label: 'Số sự kiện',
-                data: eventTypeData,
-                backgroundColor: '#f97316',
-                borderRadius: 12
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { beginAtZero: true, ticks: { precision: 0 }, grid: commonGrid },
-                y: { grid: { display: false } }
-            }
-        }
-    });
+    // ==================================
+    // PHAN BO LOAI SU KIEN: COT NGANG
+    // ==================================
 
-    new Chart(document.getElementById('quickRadarChart'), {
-        type: 'radar',
+    graph("sdTypeChart", {
+        type: "bar",
         data: {
-            labels: ['Người dùng', 'Ban tổ chức', 'Sự kiện', 'Chờ duyệt', 'Đã duyệt'],
+            labels: data.typeNames,
             datasets: [{
-                label: 'Tổng quan',
-                data: [tongNguoiDung, tongBanToChuc, tongSuKien, choDuyet, daDuyet],
-                backgroundColor: 'rgba(99,102,241,.18)',
-                borderColor: '#6366f1',
-                pointBackgroundColor: '#6366f1'
+                label: "Sự kiện",
+                data: data.typeValues,
+                backgroundColor: data.typeValues.map((_, i) =>
+                    [
+                        C.purple,
+                        C.blue,
+                        C.green,
+                        C.orange,
+                        C.pink,
+                        C.red
+                    ][i % 6]
+                ),
+                borderRadius: 7
             }]
         },
         options: {
-            plugins: { legend: { display: false } },
+            ...chartOptions(),
+            indexAxis: "y",
+            plugins: {
+                ...chartOptions().plugins,
+                legend: { display: false },
+                tooltip: {
+                    ...chartOptions().plugins.tooltip,
+                    callbacks: {
+                        label(context) {
+                            const total = data.typeValues
+                                .reduce((a, b) => a + b, 0);
+
+                            const value = context.parsed.x;
+                            const pct = total
+                                ? (value * 100 / total).toFixed(1)
+                                : "0";
+
+                            return " " + fmt(value) +
+                                " sự kiện · " + pct + "%";
+                        }
+                    }
+                }
+            },
             scales: {
-                r: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 }
+                x: axis(),
+                y: {
+                    grid: { display: false }
                 }
             }
         }
     });
+
+    // ==================================
+    // HINH THUC: COT DUNG
+    // ==================================
+
+    graph("sdFormatChart", {
+        type: "bar",
+        data: {
+            labels: [
+                "Trực tiếp",
+                "Trực tuyến",
+                "Hybrid"
+            ],
+            datasets: [{
+                label: "Số sự kiện",
+                data: data.formatValues,
+                backgroundColor: [
+                    C.purple,
+                    C.blue,
+                    C.orange
+                ],
+                borderRadius: 8,
+                maxBarThickness: 75
+            }]
+        },
+        options: {
+            ...chartOptions(),
+            plugins: {
+                ...chartOptions().plugins,
+                legend: { display: false }
+            },
+            scales: {
+                x: horizontalAxis(),
+                y: axis()
+            }
+        }
+    });
+
+    // ==================================
+    // TY LE DUYET
+    // ==================================
+
+    const approved = data.statusValues[1];
+    const rejected = data.statusValues[2];
+
+    const decided = approved + rejected;
+
+    $("sdApprovalRate").textContent = decided
+        ? (approved * 100 / decided).toFixed(1) + "%"
+        : "Chưa có dữ liệu";
+
+    // ==================================
+    // LOC THOI GIAN, LAM MOI, DIEU HUONG
+    // ==================================
+
+    $("sdPeriod").addEventListener("change", function() {
+        window.location.href =
+            "/Admin/ThongKe?ky=" +
+            encodeURIComponent(this.value);
+    });
+
+    $("sdRefresh").addEventListener("click", () => {
+        window.location.reload();
+    });
+
+    document.querySelectorAll(".sd-kpi")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                const url = button.dataset.url;
+                const target = button.dataset.target;
+
+                if (url) {
+                    window.location.href = url;
+                    return;
+                }
+
+                if (target && $(target)) {
+                    $(target).scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+                }
+            });
+        });
+
+    // Chỉ tự làm mới khi chưa mở phần drill-through
+    // để không làm mất bảng Admin đang phân tích.
+    setInterval(() => {
+        if (
+            document.visibilityState === "visible" &&
+            activeDrill === null &&
+            !document.querySelector("select:focus") &&
+            window.scrollY < 350
+        ) {
+            window.location.reload();
+        }
+    }, 60000);
+
+    // Khởi tạo bảng mặc định.
+    resetDeep();
+})();
 </script>

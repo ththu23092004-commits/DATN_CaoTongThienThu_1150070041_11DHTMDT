@@ -1,77 +1,1416 @@
+
 @model VeSuKienWeb.Models.BanToChuc.DanhSachVeThamGiaBtcVM
+@using System.Linq
 
 @{
     Layout = "~/Views/Shared/_LayoutBanToChuc.cshtml";
-    ViewData["Title"] = "Danh sách vé / tham gia";
+    ViewData["Title"] = "Danh sách vé";
 
-    // ✅ Chỉ lấy vé đã đặt thật: Đã thanh toán hoặc đã check-in
-    var dsDaDat = (Model.DanhSach ?? new List<VeSuKienWeb.Models.BanToChuc.DanhSachVeThamGiaItemBtcVM>())
-        .Where(x => x.TrangThaiVe == "DaThanhToan" || x.TrangThaiVe == "DaCheckIn")
+    var danhSach = Model.DanhSach
+        .OrderByDescending(x => x.VeId)
         .ToList();
+var maDonHangTheoVe =
+    ViewBag.MaDonHangTheoVe
+    as Dictionary<int, int?>
+    ?? new Dictionary<int, int?>();
+        
+    var loaiVes = danhSach
+        .Select(x => x.TenLoaiVe)
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Distinct()
+        .OrderBy(x => x)
+        .ToList();
+
+    string TrangThaiVeText(string? status) => status switch
+    {
+        "DaThanhToan" => "Chưa check-in",
+        "DaCheckIn" => "Đã check-in",
+        "Huy" or "DaHuy" => "Đã hủy",
+        "ChuaThanhToan" => "Chưa thanh toán",
+        "ChoThanhToan" => "Chờ thanh toán",
+        _ => status ?? "Chưa xác định"
+    };
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="mb-0">Danh sách vé đã đặt</h2>
-        <div class="text-muted small">
-            Sự kiện: <strong>@Model.TenSuKien</strong>
-        </div>
-    </div>
-    <a asp-action="ChiTiet" asp-route-id="@Model.SuKienId" class="btn btn-outline-secondary">
-        &laquo; Quay lại chi tiết sự kiện
-    </a>
-</div>
+<style>
+    .dsve,
+    .dsve *,
+    .dsve-modal,
+    .dsve-modal * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        @if (dsDaDat.Any())
-        {
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="text-muted small">
-                    Tổng vé đã đặt: <strong>@dsDaDat.Count</strong>
+    .dsve {
+        min-width: 0;
+        padding: 0 0 28px;
+        color: #51405b;
+        font-size: 12px;
+    }
+
+    .dsve button,
+    .dsve input,
+    .dsve select {
+        font: inherit;
+    }
+
+    /* BANG CHINH */
+
+    .dsve-panel {
+        background: #fff;
+        border: 1px solid #eadced;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(83, 49, 99, .045);
+    }
+
+    .dsve-panel-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 19px 20px 16px;
+        border-bottom: 1px solid #f0e7f2;
+    }
+
+    .dsve-eyebrow {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .9px;
+        color: #b37abf;
+        margin-bottom: 7px;
+    }
+
+    .dsve-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: #45334e;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .dsve-subtitle {
+        font-size: 11.5px;
+        color: #9b8ba2;
+        line-height: 1.7;
+        margin: 5px 0 0;
+    }
+
+    .dsve-event-name {
+        color: #9b67ac;
+        font-weight: 750;
+    }
+
+    .dsve-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 12px;
+        border: 1px solid #e9d9ed;
+        border-radius: 9px;
+        background: #faf4fc;
+        font-size: 11.5px;
+        font-weight: 750;
+        color: #9d6bad;
+        white-space: nowrap;
+    }
+
+    /* THANH LOC */
+
+    .dsve-toolbar {
+        display: grid;
+        grid-template-columns: minmax(200px, 1fr) 170px 170px;
+        gap: 9px;
+        padding: 14px 20px;
+        border-bottom: 1px solid #f3ebf4;
+    }
+
+    .dsve-search-box {
+        position: relative;
+    }
+
+    .dsve-search-box > i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ae94b7;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .dsve-search,
+    .dsve-select {
+        width: 100%;
+        height: 39px;
+        padding: 0 12px;
+        border: 1px solid #e9dbea;
+        border-radius: 9px;
+        outline: none;
+        color: #67536f;
+        background: #fdfafd;
+        font-size: 11.5px;
+    }
+
+    .dsve-search {
+        padding-left: 36px;
+    }
+
+    .dsve-search:focus,
+    .dsve-select:focus {
+        border-color: #bb90ca;
+        box-shadow: 0 0 0 3px rgba(175, 119, 192, .1);
+    }
+
+    /* TABLE */
+
+    .dsve-table-wrap {
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    .dsve-table {
+        width: 100%;
+        min-width: 900px;
+        border-collapse: collapse;
+    }
+
+    .dsve-table thead {
+        background: #faf6fc;
+    }
+
+    .dsve-table th {
+        padding: 13px 14px;
+        text-align: left;
+        font-size: 10.5px;
+        color: #927b9c;
+        font-weight: 750;
+        white-space: nowrap;
+        border-bottom: 1px solid #eee3f0;
+    }
+
+    .dsve-table td {
+        padding: 13px 14px;
+        border-bottom: 1px solid #f2eaf3;
+        color: #75637f;
+        font-size: 11.5px;
+        vertical-align: middle;
+    }
+
+    .dsve-table tbody tr {
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+
+    .dsve-table tbody tr:hover,
+    .dsve-table tbody tr:focus-visible {
+        background: #fcf6fe;
+        outline: none;
+    }
+
+    .dsve-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dsve-code {
+        color: #9666ab;
+        font-weight: 800;
+        font-size: 11px;
+        overflow-wrap: anywhere;
+    }
+
+    .dsve-person {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .dsve-avatar {
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        width: 33px;
+        height: 33px;
+        border-radius: 10px;
+        background: #f3eafb;
+        color: #aa78bd;
+        font-size: 14px;
+    }
+
+    .dsve-person-name {
+        color: #51405b;
+        font-weight: 750;
+        font-size: 11.5px;
+        line-height: 1.5;
+    }
+
+    .dsve-person-email {
+        color: #aa99af;
+        font-size: 10px;
+        margin-top: 3px;
+        overflow-wrap: anywhere;
+    }
+
+    .dsve-type {
+        display: inline-flex;
+        padding: 6px 9px;
+        background: #f6eefa;
+        border-radius: 7px;
+        color: #a06cad;
+        font-size: 10.5px;
+        font-weight: 700;
+    }
+
+    .dsve-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 9px;
+        border-radius: 7px;
+        white-space: nowrap;
+        font-size: 10.5px;
+        font-weight: 750;
+    }
+
+    .dsve-badge.paid {
+        background: #e9f8f1;
+        color: #268a64;
+    }
+
+    .dsve-badge.unknown {
+        background: #f3eff7;
+        color: #86718f;
+    }
+
+    .dsve-badge.checked {
+        background: #e8f7f2;
+        color: #2a9476;
+    }
+
+    .dsve-badge.waiting {
+        background: #fff5e6;
+        color: #af7b37;
+    }
+
+    .dsve-badge.canceled {
+        background: #fff0f4;
+        color: #bf647c;
+    }
+
+    .dsve-date {
+        color: #85738e;
+        white-space: nowrap;
+        font-size: 11px;
+    }
+
+    .dsve-date.muted {
+        color: #b4a6ba;
+    }
+
+    .dsve-eye {
+        display: grid;
+        place-items: center;
+        width: 31px;
+        height: 31px;
+        margin: auto;
+        border: 1px solid #eadbec;
+        border-radius: 8px;
+        background: #fff;
+        color: #a16db4;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .dsve-eye:hover {
+        background: #f7eefb;
+    }
+
+    /* FOOTER */
+
+    .dsve-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 13px 20px;
+        border-top: 1px solid #f1e8f2;
+    }
+
+    .dsve-page-info {
+        font-size: 11px;
+        color: #9f8ea7;
+    }
+
+    .dsve-pages {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .dsve-page-btn {
+        min-width: 31px;
+        height: 31px;
+        border: 1px solid #e9dcec;
+        border-radius: 7px;
+        background: #fff;
+        color: #836d90;
+        font-size: 11px;
+        cursor: pointer;
+    }
+
+    .dsve-page-btn.active {
+        background: #ae79c0;
+        border-color: #ae79c0;
+        color: #fff;
+    }
+
+    .dsve-page-btn:disabled {
+        cursor: default;
+        opacity: .4;
+    }
+
+    .dsve-empty {
+        padding: 35px 18px;
+        color: #aa97b0;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    /* MODAL */
+
+    .dsve-modal[hidden] {
+        display: none !important;
+    }
+
+    .dsve-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 12000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 18px;
+        background: rgba(38, 24, 47, .57);
+        backdrop-filter: blur(4px);
+    }
+
+    .dsve-dialog {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 515px;
+        max-height: 90vh;
+        border-radius: 18px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 25px 75px rgba(33, 18, 46, .23);
+    }
+
+    .dsve-modal-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 20px 22px 18px;
+        background: linear-gradient(
+            135deg,
+            #faf0ff 0%,
+            #fff1f7 60%,
+            #fffafc 100%
+        );
+        border-bottom: 1px solid #f1e4f2;
+    }
+
+    .dsve-modal-eyebrow {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #ac73bb;
+        margin-bottom: 7px;
+    }
+
+    .dsve-modal-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #4a3554;
+        margin: 0;
+    }
+
+    .dsve-modal-subtitle {
+        color: #9883a0;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+
+    .dsve-close {
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        border: 1px solid #e9d8ed;
+        border-radius: 9px;
+        background: white;
+        color: #92739d;
+        cursor: pointer;
+    }
+
+    .dsve-modal-body {
+        padding: 20px 22px;
+        overflow-y: auto;
+    }
+
+    /* THE VE TRONG POPUP */
+
+    .dsve-ticket-card {
+        position: relative;
+        overflow: hidden;
+        padding: 19px;
+        border: 1px solid #e9d6ed;
+        border-radius: 14px;
+        background: linear-gradient(
+            135deg,
+            #f8eefd,
+            #fff9fc
+        );
+    }
+
+    .dsve-ticket-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .dsve-ticket-label {
+        color: #ac80b8;
+        font-size: 10px;
+        letter-spacing: .8px;
+        font-weight: 800;
+    }
+
+    .dsve-ticket-icon {
+        color: #b389c3;
+        font-size: 23px;
+    }
+
+    .dsve-ticket-event {
+        margin: 12px 0;
+        color: #513b5d;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.6;
+    }
+
+    .dsve-ticket-separator {
+        border-top: 1px dashed #dcbfe5;
+        margin: 16px 0;
+    }
+
+    .dsve-ticket-code-label {
+        color: #9d84a7;
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+
+    .dsve-ticket-code {
+        color: #925da7;
+        font-size: 16px;
+        font-weight: 850;
+        letter-spacing: .3px;
+        overflow-wrap: anywhere;
+    }
+
+    .dsve-ticket-decoration {
+        position: absolute;
+        right: -21px;
+        top: 50%;
+        width: 40px;
+        height: 40px;
+        border: 1px solid #e9d6ed;
+        border-radius: 50%;
+        background: #fff;
+    }
+
+    .dsve-detail-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 19px 0 7px;
+        color: #674d73;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .dsve-detail-heading i {
+        color: #ae78bd;
+        font-size: 14px;
+    }
+
+    .dsve-detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 11px 0;
+        border-bottom: 1px solid #f2ebf3;
+    }
+
+    .dsve-detail-row:last-child {
+        border-bottom: 0;
+    }
+
+    .dsve-detail-row span {
+        flex-shrink: 0;
+        color: #96839f;
+        font-size: 11.5px;
+    }
+
+    .dsve-detail-row strong {
+        text-align: right;
+        color: #53415e;
+        font-size: 11.5px;
+        font-weight: 750;
+        overflow-wrap: anywhere;
+    }
+
+    .dsve-status-card {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-top: 13px;
+    }
+
+    .dsve-status-box {
+        border: 1px solid #eadfed;
+        border-radius: 10px;
+        padding: 12px;
+        background: #fdfafd;
+    }
+
+    .dsve-status-box small {
+        display: block;
+        color: #9d89a6;
+        font-size: 10px;
+        margin-bottom: 7px;
+    }
+
+    .dsve-status-box strong {
+        display: block;
+        color: #634a6e;
+        font-size: 11.5px;
+        font-weight: 800;
+    }
+
+    .dsve-status-box strong.success {
+        color: #27936f;
+    }
+
+    .dsve-status-box strong.warning {
+        color: #b47b40;
+    }
+
+    .dsve-status-box strong.danger {
+        color: #bf627f;
+    }
+
+    .dsve-modal-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 15px;
+        padding: 11px 12px;
+        border-radius: 9px;
+        color: #947d9f;
+        background: #f9f2fb;
+        font-size: 10.5px;
+        line-height: 1.8;
+    }
+
+    .dsve-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 13px 22px;
+        border-top: 1px solid #f1e8f2;
+        background: #fff;
+    }
+
+    .dsve-done {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 19px;
+        border: none;
+        border-radius: 9px;
+        background: #ae79c0;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .dsve-done:hover {
+        background: #985ea9;
+    }
+
+    @@media (max-width: 1000px) {
+        .dsve-toolbar {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .dsve-search-box {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .dsve-panel-top {
+            padding: 16px;
+        }
+
+        .dsve-toolbar {
+            grid-template-columns: 1fr;
+            padding: 12px 16px;
+        }
+
+        .dsve-search-box {
+            grid-column: auto;
+        }
+
+        .dsve-modal-body {
+            padding: 15px;
+        }
+
+        .dsve-modal-header {
+            padding: 17px;
+        }
+    }
+</style>
+
+<div class="dsve">
+
+    <section class="dsve-panel">
+
+        <!-- DAU BANG -->
+        <div class="dsve-panel-top">
+
+            <div>
+                <div class="dsve-eyebrow">
+                    TICKET MANAGEMENT
                 </div>
+
+                <h1 class="dsve-title">
+                    Danh sách vé
+                </h1>
+
+                <p class="dsve-subtitle">
+                    Sự kiện:
+                    <span class="dsve-event-name">
+                        @Model.TenSuKien
+                    </span>
+                </p>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-sm align-middle">
-                    <thead>
-                        <tr>
-                            <th>Mã vé</th>
-                            <th>Khách hàng</th>
-                            <th>Email</th>
-                            <th>Loại vé</th>
-                            <th>Trạng thái vé</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in dsDaDat)
-                        {
-                            <tr>
-                                <td class="fw-semibold">@item.MaVe</td>
-                                <td>@item.HoTenKhach</td>
-                                <td class="text-muted">@item.EmailKhach</td>
-                                <td>@item.TenLoaiVe</td>
-                                <td>
-                                    @if (item.TrangThaiVe == "DaCheckIn")
+            <span class="dsve-count">
+                <i class="bi bi-ticket-perforated"></i>
+                @danhSach.Count vé
+            </span>
+
+        </div>
+
+        <!-- TIM KIEM + LOC -->
+        <div class="dsve-toolbar">
+
+            <div class="dsve-search-box">
+                <i class="bi bi-search"></i>
+
+                <input type="search"
+                       id="dsveSearch"
+                       class="dsve-search"
+                       placeholder="Tìm mã vé, tên hoặc email người mua..."
+                       autocomplete="off"
+                       aria-label="Tìm kiếm vé"/>
+            </div>
+
+            <select id="dsveStatusFilter"
+                    class="dsve-select"
+                    aria-label="Lọc trạng thái vé">
+
+                <option value="">Tất cả trạng thái</option>
+                <option value="DaThanhToan">Chưa check-in</option>
+                <option value="DaCheckIn">Đã check-in</option>
+                <option value="Huy">Đã hủy</option>
+                <option value="Khac">Trạng thái khác</option>
+
+            </select>
+
+            <select id="dsveTypeFilter"
+                    class="dsve-select"
+                    aria-label="Lọc loại vé">
+
+                <option value="">Tất cả loại vé</option>
+
+                @foreach (var loai in loaiVes)
+                {
+                    <option value="@loai">
+                        @loai
+                    </option>
+                }
+
+            </select>
+
+        </div>
+
+        <!-- BANG -->
+        <div class="dsve-table-wrap">
+
+            <table class="dsve-table">
+
+                <thead>
+                    <tr>
+                        <th>Mã vé</th>
+                        <th>Người mua</th>
+                        <th>Loại vé</th>
+                        <th>Thanh toán</th>
+                        <th>Trạng thái vé</th>
+                        <th>Thời gian check-in</th>
+                        <th style="text-align:center">Chi tiết</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var ve in danhSach)
+                    {
+                        bool checkedIn = ve.DaCheckIn ||
+                            ve.TrangThaiVe == "DaCheckIn";
+
+                        bool canceled = ve.TrangThaiVe == "Huy" ||
+                            ve.TrangThaiVe == "DaHuy";
+
+                        bool paymentConfirmed =
+                            ve.TrangThaiVe == "DaThanhToan" ||
+                            ve.TrangThaiVe == "DaCheckIn";
+
+                        string state = canceled
+                            ? "Huy"
+                            : checkedIn
+                                ? "DaCheckIn"
+                                : ve.TrangThaiVe ?? "";
+
+                        string stateText = canceled
+                            ? "Đã hủy"
+                            : checkedIn
+                                ? "Đã check-in"
+                                : TrangThaiVeText(ve.TrangThaiVe);
+
+                        string stateClass = canceled
+                            ? "canceled"
+                            : checkedIn
+                                ? "checked"
+                                : ve.TrangThaiVe == "DaThanhToan"
+                                    ? "waiting"
+                                    : "pending";
+
+                        string checkinTime =
+                            ve.ThoiGianCheckIn.HasValue
+                                ? ve.ThoiGianCheckIn.Value
+                                    .ToString("dd/MM/yyyy HH:mm")
+                                : "Chưa ghi nhận";
+
+                        <tr class="dsve-row"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Xem chi tiết vé @ve.MaVe"
+                            data-code="@ve.MaVe"
+                            data-order-id="@(maDonHangTheoVe.TryGetValue(ve.VeId, out var donHangId) && donHangId.HasValue ? "#" + donHangId.Value : "Chưa có đơn hàng")"
+                            data-name="@ve.HoTenKhach"
+                            data-email="@ve.EmailKhach"
+                            data-type="@ve.TenLoaiVe"
+                            data-state="@state"
+                            data-state-text="@stateText"
+                            data-payment="@(paymentConfirmed ? "paid" : "unknown")"
+                            data-checkin="@checkinTime">
+
+                            <td>
+                                <span class="dsve-code">
+                                    @ve.MaVe
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="dsve-person">
+
+                                    <span class="dsve-avatar">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+
+                                    <div>
+                                        <div class="dsve-person-name">
+                                            @ve.HoTenKhach
+                                        </div>
+
+                                        <div class="dsve-person-email">
+                                            @ve.EmailKhach
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="dsve-type">
+                                    @ve.TenLoaiVe
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (paymentConfirmed)
+                                {
+                                    <span class="dsve-badge paid">
+                                        <i class="bi bi-check-circle"></i>
+                                        Đã thanh toán
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="dsve-badge unknown">
+                                        <i class="bi bi-dash-circle"></i>
+                                        Chưa xác nhận
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                <span class="dsve-badge @stateClass">
+                                    @if (canceled)
                                     {
-                                        <span class="badge bg-primary">Đã check-in</span>
+                                        <i class="bi bi-x-circle"></i>
+                                    }
+                                    else if (checkedIn)
+                                    {
+                                        <i class="bi bi-check-circle"></i>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success">Đã thanh toán</span>
+                                        <i class="bi bi-clock-history"></i>
                                     }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+
+                                    @stateText
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="dsve-date @(ve.ThoiGianCheckIn.HasValue ? "" : "muted")">
+                                    @checkinTime
+                                </span>
+                            </td>
+
+                            <td style="text-align:center">
+                                <button type="button"
+                                        class="dsve-eye"
+                                        aria-label="Xem chi tiết vé @ve.MaVe">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+
+        <div class="dsve-empty"
+             id="dsveEmpty"
+             hidden>
+            <i class="bi bi-ticket-perforated"></i>
+            Không có vé phù hợp với bộ lọc.
+        </div>
+
+        <div class="dsve-footer">
+
+            <span class="dsve-page-info"
+                  id="dsvePageInfo"></span>
+
+            <div class="dsve-pages"
+                 id="dsvePagination"></div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<!-- CUA SO CHI TIET -->
+<div id="dsveModal"
+     class="dsve-modal"
+     hidden>
+
+    <div class="dsve-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="dsveModalTitle">
+
+        <div class="dsve-modal-header">
+
+            <div>
+                <div class="dsve-modal-eyebrow">
+                    TICKET INFORMATION
+                </div>
+
+                <h2 class="dsve-modal-title"
+                    id="dsveModalTitle">
+                    Chi tiết vé
+                </h2>
+
+                <div class="dsve-modal-subtitle">
+                    Thông tin vé và trạng thái tham gia
+                </div>
             </div>
-        }
-        else
-        {
-            <p class="text-muted mb-0">
-                <em>Chưa có vé đã thanh toán / check-in cho sự kiện này.</em>
-            </p>
-        }
+
+            <button type="button"
+                    class="dsve-close"
+                    id="dsveClose"
+                    aria-label="Đóng">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+        </div>
+
+        <div class="dsve-modal-body">
+
+            <!-- THE VE -->
+            <div class="dsve-ticket-card">
+
+                <div class="dsve-ticket-top">
+                    <span class="dsve-ticket-label">
+                        EVENT TICKET
+                    </span>
+
+                    <i class="bi bi-ticket-perforated dsve-ticket-icon"></i>
+                </div>
+
+                <div class="dsve-ticket-event">
+                    @Model.TenSuKien
+                </div>
+
+                <div class="dsve-ticket-separator"></div>
+
+                <div class="dsve-ticket-code-label">
+                    MÃ VÉ
+                </div>
+
+                <div class="dsve-ticket-code"
+                     id="dsveDetailCode">
+                    —
+                </div>
+
+                <div class="dsve-ticket-decoration"></div>
+
+            </div>
+<div class="dsve-detail-row">
+    <span>
+        <i class="bi bi-receipt me-1"></i>
+        Mã đơn hàng
+    </span>
+
+    <strong id="dsveDetailOrder">
+        —
+    </strong>
+</div>
+            <h3 class="dsve-detail-heading">
+                <i class="bi bi-person-lines-fill"></i>
+                Thông tin người mua
+            </h3>
+
+            <div class="dsve-detail-row">
+                <span>Họ và tên</span>
+                <strong id="dsveDetailName">—</strong>
+            </div>
+
+            <div class="dsve-detail-row">
+                <span>Email</span>
+                <strong id="dsveDetailEmail">—</strong>
+            </div>
+
+            <div class="dsve-detail-row">
+                <span>Loại vé</span>
+                <strong id="dsveDetailType">—</strong>
+            </div>
+
+            <h3 class="dsve-detail-heading">
+                <i class="bi bi-shield-check"></i>
+                Thanh toán và tham gia
+            </h3>
+
+            <div class="dsve-status-card">
+
+                <div class="dsve-status-box">
+                    <small>Thanh toán</small>
+                    <strong id="dsveDetailPayment">—</strong>
+                </div>
+
+                <div class="dsve-status-box">
+                    <small>Trạng thái vé</small>
+                    <strong id="dsveDetailState">—</strong>
+                </div>
+
+            </div>
+
+            <div class="dsve-detail-row">
+                <span>Thời gian check-in</span>
+                <strong id="dsveDetailCheckIn">—</strong>
+            </div>
+
+            <div class="dsve-modal-note">
+                <i class="bi bi-info-circle"></i>
+                <span>
+                    Trạng thái vé được lấy từ hệ thống.
+                    Những vé đã check-in được xem là
+                    đã thanh toán. Với vé hủy hoặc
+                    chưa xác định, cần đối chiếu giao dịch
+                    trước khi kết luận tình trạng thanh toán.
+                </span>
+            </div>
+
+        </div>
+
+        <div class="dsve-modal-footer">
+            <button type="button"
+                    class="dsve-done"
+                    id="dsveDismiss">
+                <i class="bi bi-check2"></i>
+                Hoàn tất
+            </button>
+        </div>
+
     </div>
 </div>
+
+<script>
+(function () {
+    "use strict";
+
+    const rows = Array.from(
+        document.querySelectorAll(".dsve-row")
+    );
+
+    const search = document.getElementById("dsveSearch");
+    const statusFilter = document.getElementById("dsveStatusFilter");
+    const typeFilter = document.getElementById("dsveTypeFilter");
+
+    const pagination = document.getElementById("dsvePagination");
+    const pageInfo = document.getElementById("dsvePageInfo");
+    const empty = document.getElementById("dsveEmpty");
+
+    const modal = document.getElementById("dsveModal");
+
+    const pageSize = 8;
+
+    let currentPage = 1;
+    let previousFocus = null;
+
+    function normalize(value) {
+        return String(value ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLocaleLowerCase("vi-VN")
+            .trim();
+    }
+
+    // TIM KIEM + LOC
+
+    function filteredRows() {
+        const keyword = normalize(search.value);
+        const status = statusFilter.value;
+        const type = typeFilter.value;
+
+        return rows.filter(row => {
+            const d = row.dataset;
+
+            const text = normalize([
+                d.code,
+                d.name,
+                d.email
+            ].join(" "));
+
+            const matchesSearch =
+                !keyword || text.includes(keyword);
+
+            let matchesStatus = !status;
+
+            if (status === "Khac") {
+                matchesStatus = ![
+                    "DaThanhToan",
+                    "DaCheckIn",
+                    "Huy"
+                ].includes(d.state);
+            } else if (status) {
+                matchesStatus = d.state === status;
+            }
+
+            const matchesType =
+                !type || d.type === type;
+
+            return matchesSearch &&
+                matchesStatus &&
+                matchesType;
+        });
+    }
+
+    function makeButton(text, target, active, disabled) {
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.className =
+            "dsve-page-btn" +
+            (active ? " active" : "");
+
+        button.textContent = text;
+        button.disabled = disabled;
+
+        if (active) {
+            button.setAttribute("aria-current", "page");
+        }
+
+        button.addEventListener("click", () => {
+            currentPage = target;
+            renderTable();
+        });
+
+        return button;
+    }
+
+    function renderTable() {
+        const filtered = filteredRows();
+
+        const totalPages = Math.max(
+            1,
+            Math.ceil(filtered.length / pageSize)
+        );
+
+        currentPage = Math.min(
+            currentPage,
+            totalPages
+        );
+
+        rows.forEach(row => {
+            row.hidden = true;
+            row.style.display = "none";
+        });
+
+        const start = (currentPage - 1) * pageSize;
+        const end = Math.min(
+            start + pageSize,
+            filtered.length
+        );
+
+        filtered.slice(start, end).forEach(row => {
+            row.hidden = false;
+            row.style.display = "";
+        });
+
+        empty.hidden = filtered.length > 0;
+
+        pageInfo.textContent = filtered.length
+            ? `Hiển thị ${start + 1}–${end} / ${filtered.length} vé`
+            : "Không có vé phù hợp";
+
+        pagination.replaceChildren();
+
+        if (totalPages <= 1) return;
+
+        pagination.appendChild(
+            makeButton(
+                "Trước",
+                Math.max(1, currentPage - 1),
+                false,
+                currentPage === 1
+            )
+        );
+
+        for (let i = 1; i <= totalPages; i++) {
+            pagination.appendChild(
+                makeButton(
+                    String(i),
+                    i,
+                    currentPage === i,
+                    false
+                )
+            );
+        }
+
+        pagination.appendChild(
+            makeButton(
+                "Sau",
+                Math.min(totalPages, currentPage + 1),
+                false,
+                currentPage === totalPages
+            )
+        );
+    }
+
+    function updateFilters() {
+        currentPage = 1;
+        renderTable();
+    }
+
+    search.addEventListener("input", updateFilters);
+    statusFilter.addEventListener("change", updateFilters);
+    typeFilter.addEventListener("change", updateFilters);
+
+    // CUA SO CHI TIET
+
+    function put(id, text) {
+        document.getElementById(id).textContent =
+            text || "—";
+    }
+
+    function setStatusClass(element, status) {
+        element.classList.remove(
+            "success",
+            "warning",
+            "danger"
+        );
+
+        if (status === "success") {
+            element.classList.add("success");
+        }
+
+        if (status === "warning") {
+            element.classList.add("warning");
+        }
+
+        if (status === "danger") {
+            element.classList.add("danger");
+        }
+    }
+
+    function openDetail(row) {
+        previousFocus = document.activeElement;
+
+        const d = row.dataset;
+
+        put("dsveDetailCode", d.code);
+        put("dsveDetailOrder", d.orderId);
+        put("dsveDetailName", d.name);
+        put("dsveDetailEmail", d.email);
+        put("dsveDetailType", d.type);
+        put("dsveDetailCheckIn", d.checkin);
+
+        const paymentText = d.payment === "paid"
+            ? "Đã thanh toán"
+            : "Chưa xác nhận";
+
+        put("dsveDetailPayment", paymentText);
+        put("dsveDetailState", d.stateText);
+
+        const paymentElement = document.getElementById(
+            "dsveDetailPayment"
+        );
+
+        const stateElement = document.getElementById(
+            "dsveDetailState"
+        );
+
+        setStatusClass(
+            paymentElement,
+            d.payment === "paid" ? "success" : "warning"
+        );
+
+        let stateColor = "warning";
+
+        if (d.state === "DaCheckIn") {
+            stateColor = "success";
+        } else if (d.state === "Huy") {
+            stateColor = "danger";
+        }
+
+        setStatusClass(stateElement, stateColor);
+
+        modal.hidden = false;
+        document.body.style.overflow = "hidden";
+
+        document.getElementById("dsveClose").focus();
+    }
+
+    function closeDetail() {
+        if (modal.hidden) return;
+
+        modal.hidden = true;
+        document.body.style.overflow = "";
+
+        if (previousFocus?.focus) {
+            previousFocus.focus();
+        }
+    }
+
+    rows.forEach(row => {
+        row.addEventListener("click", () => {
+            openDetail(row);
+        });
+
+        row.addEventListener("keydown", event => {
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+                event.preventDefault();
+                openDetail(row);
+            }
+        });
+    });
+
+    document.getElementById("dsveClose")
+        .addEventListener("click", closeDetail);
+
+    document.getElementById("dsveDismiss")
+        .addEventListener("click", closeDetail);
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
+            closeDetail();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (modal.hidden) return;
+
+        if (event.key === "Escape") {
+            closeDetail();
+            return;
+        }
+
+        if (event.key === "Tab") {
+            const first = document.getElementById(
+                "dsveClose"
+            );
+
+            const last = document.getElementById(
+                "dsveDismiss"
+            );
+
+            if (
+                event.shiftKey &&
+                document.activeElement === first
+            ) {
+                event.preventDefault();
+                last.focus();
+            } else if (
+                !event.shiftKey &&
+                document.activeElement === last
+            ) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    renderTable();
+
+})();
+</script>

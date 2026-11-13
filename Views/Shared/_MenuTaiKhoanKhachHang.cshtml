@@ -1,0 +1,428 @@
+
+@{
+    string tenKhach = User?.Identity?.Name ?? "Khách hàng";
+
+    string chuCai = string.IsNullOrWhiteSpace(tenKhach)
+        ? "K"
+        : tenKhach.Trim()[0].ToString().ToUpperInvariant();
+
+    string hoSoUrl = Url.Action(
+        "HoSo", "TaiKhoanKhachHang")
+        ?? "/tai-khoan-ca-nhan/ho-so";
+}
+
+<style>
+    .kh-account,
+    .kh-account * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .kh-account {
+        position: relative;
+        margin-right: 13px;
+    }
+
+    .kh-account-toggle {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 42px;
+        padding: 5px 10px 5px 5px;
+        border: 1px solid transparent;
+        border-radius: 11px;
+        background: transparent;
+        color: #765887;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .kh-account-toggle:hover,
+    .kh-account-toggle[aria-expanded="true"] {
+        background: #f0e1f6;
+        border-color: #e6d2ee;
+    }
+
+    .kh-account-avatar {
+        display: grid;
+        place-items: center;
+        flex: 0 0 35px;
+        width: 35px;
+        height: 35px;
+        border-radius: 10px;
+        background: linear-gradient(135deg,#b376c5,#d187bc);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .kh-account-label {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-width: 145px;
+    }
+
+    .kh-account-label small {
+        color: #a78cb1;
+        font-size: 9px;
+    }
+
+    .kh-account-label strong {
+        color: #765184;
+        font-size: 11px;
+        font-weight: 800;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kh-account-dropdown {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        width: 245px;
+        padding: 8px;
+        border: 1px solid #e8d9ed;
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 16px 40px rgba(72,42,88,.15);
+        z-index: 1200;
+    }
+
+    .kh-account-dropdown[hidden] {
+        display: none !important;
+    }
+
+    .kh-account-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        min-height: 43px;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: #786287;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .kh-account-menu-item:hover {
+        background: #f6ecfa;
+        color: #9460a8;
+    }
+
+    .kh-account-menu-item i {
+        width: 19px;
+        text-align: center;
+        color: #a478b4;
+        font-size: 16px;
+    }
+
+    .kh-account-divider {
+        height: 1px;
+        margin: 7px 6px;
+        background: #f1e7f3;
+    }
+
+    /* CUA SO HO SO */
+
+    .kh-account-modal[hidden] {
+        display: none !important;
+    }
+
+    .kh-account-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+    }
+
+    .kh-account-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(39,24,49,.52);
+        backdrop-filter: blur(4px);
+    }
+
+    .kh-account-dialog {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: min(940px,100%);
+        height: min(720px,calc(100vh - 36px));
+        overflow: hidden;
+        border: 1px solid #e8d9ed;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 25px 85px rgba(37,20,47,.24);
+    }
+
+    .kh-account-dialog-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 17px;
+        border-bottom: 1px solid #eee3f0;
+        background: #fdf9fe;
+    }
+
+    .kh-account-dialog-head strong {
+        color: #684b76;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .kh-account-close {
+        display: grid;
+        place-items: center;
+        width: 31px;
+        height: 31px;
+        border: 0;
+        border-radius: 8px;
+        background: #f3e8f7;
+        color: #9567a7;
+        cursor: pointer;
+    }
+
+    .kh-account-frame {
+        display: block;
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        border: 0;
+        background: white;
+    }
+
+    @@media(max-width:991px) {
+        .kh-account {
+            margin: 6px 0 12px 12px;
+        }
+
+        .kh-account-dropdown {
+            right: auto;
+            left: 0;
+        }
+    }
+
+    @@media(max-width:575px) {
+        .kh-account-modal {
+            padding: 8px;
+        }
+
+        .kh-account-dialog {
+            height: calc(100dvh - 16px);
+            border-radius: 12px;
+        }
+    }
+</style>
+
+<div class="kh-account" id="khAccountRoot">
+
+    <!-- NUT TAI KHOAN TREN HEADER -->
+
+    <button type="button"
+            class="kh-account-toggle"
+            id="khAccountToggle"
+            aria-expanded="false"
+            aria-controls="khAccountDropdown">
+
+        <span class="kh-account-avatar">
+            @chuCai
+        </span>
+
+        <span class="kh-account-label">
+            <small>Xin chào,</small>
+            <strong>@tenKhach</strong>
+        </span>
+
+        <i class="bi bi-chevron-down"></i>
+    </button>
+
+    <!-- MENU -->
+
+    <div class="kh-account-dropdown"
+         id="khAccountDropdown"
+         hidden>
+
+        <button type="button"
+                class="kh-account-menu-item"
+                data-kh-open="profile">
+            <i class="bi bi-person-vcard"></i>
+            Thông tin cá nhân
+        </button>
+
+        <button type="button"
+                class="kh-account-menu-item"
+                data-kh-open="preferences">
+            <i class="bi bi-heart"></i>
+            Sở thích của tôi
+        </button>
+
+        <a class="kh-account-menu-item"
+           href="@Url.Action("VeCuaToi","KhachHang")">
+            <i class="bi bi-ticket-perforated"></i>
+            Vé của tôi
+        </a>
+
+        <div class="kh-account-divider"></div>
+
+        <form action="@Url.Action("DangXuat","TaiKhoan")"
+              method="post">
+            @Html.AntiForgeryToken()
+
+            <button type="submit"
+                    class="kh-account-menu-item">
+                <i class="bi bi-box-arrow-right"></i>
+                Đăng xuất
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- CUA SO TAI KHOAN -->
+
+<div class="kh-account-modal"
+     id="khAccountModal"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Thông tin tài khoản"
+     hidden>
+
+    <div class="kh-account-backdrop"
+         id="khAccountBackdrop"></div>
+
+    <div class="kh-account-dialog">
+
+        <div class="kh-account-dialog-head">
+            <strong>
+                <i class="bi bi-person-circle me-2"></i>
+                Tài khoản của tôi
+            </strong>
+
+            <button type="button"
+                    id="khAccountClose"
+                    class="kh-account-close"
+                    aria-label="Đóng cửa sổ">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <iframe id="khAccountFrame"
+                class="kh-account-frame"
+                title="Quản lý tài khoản cá nhân">
+        </iframe>
+    </div>
+</div>
+
+<script>
+(() => {
+    const root = document.getElementById("khAccountRoot");
+    if (!root) return;
+
+    const toggle = document.getElementById("khAccountToggle");
+    const dropdown = document.getElementById("khAccountDropdown");
+    const modal = document.getElementById("khAccountModal");
+    const frame = document.getElementById("khAccountFrame");
+    const close = document.getElementById("khAccountClose");
+    const backdrop = document.getElementById("khAccountBackdrop");
+
+    const profileUrl =
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(hoSoUrl));
+
+    let previousFocus = null;
+
+    function openModal(tab) {
+        previousFocus = document.activeElement;
+        dropdown.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+
+        const url = new URL(profileUrl, window.location.origin);
+        url.searchParams.set("tab", tab);
+
+        frame.src = url.pathname + url.search;
+        modal.hidden = false;
+
+        document.body.style.overflow = "hidden";
+        close.focus();
+    }
+
+    function closeModal() {
+        modal.hidden = true;
+        document.body.style.overflow = "";
+
+        frame.removeAttribute("src");
+
+        if (previousFocus &&
+            typeof previousFocus.focus === "function") {
+            previousFocus.focus();
+        }
+    }
+
+function openModal(tab) {
+    previousFocus = document.activeElement;
+
+    dropdown.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+
+    const url = new URL(profileUrl, window.location.origin);
+    url.searchParams.set("tab", tab);
+
+    frame.src = url.pathname + url.search;
+    modal.hidden = false;
+
+    document.body.style.overflow = "hidden";
+    close.focus();
+}
+
+// Cho nut Xin chao tren header mo cua so
+window.openKhAccount = openModal;
+
+    toggle.addEventListener("click", () => {
+        const open = dropdown.hidden;
+        dropdown.hidden = !open;
+        toggle.setAttribute("aria-expanded", String(open));
+    });
+
+    root.querySelectorAll("[data-kh-open]")
+        .forEach(button => {
+            button.addEventListener("click", () => {
+                openModal(button.dataset.khOpen);
+            });
+        });
+
+    close.addEventListener("click", closeModal);
+    backdrop.addEventListener("click", closeModal);
+
+    document.addEventListener("click", event => {
+        if (!root.contains(event.target)) {
+            dropdown.hidden = true;
+            toggle.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            if (!modal.hidden) {
+                closeModal();
+            } else {
+                dropdown.hidden = true;
+                toggle.setAttribute("aria-expanded", "false");
+            }
+        }
+    });
+
+    // Đóng cửa sổ khi người dùng điều hướng về Vé của tôi
+    // từ bên trong iframe: link sử dụng target="_parent".
+})();
+</script>
+

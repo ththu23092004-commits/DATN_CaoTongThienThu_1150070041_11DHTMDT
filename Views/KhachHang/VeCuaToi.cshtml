@@ -1,461 +1,710 @@
+
 @model IEnumerable<VeSuKienWeb.Models.KhachHang.VeCuaToiItemVM>
 
 @{
     ViewData["Title"] = "Vé của tôi";
+
+    var danhSachVe = Model?.ToList()
+        ?? new List<VeSuKienWeb.Models.KhachHang.VeCuaToiItemVM>();
+
+    string taiKhoan = User.FindFirst(
+        System.Security.Claims.ClaimTypes.NameIdentifier
+    )?.Value ?? User.Identity?.Name ?? "guest";
 }
 
 <style>
+    /* TRANG VE CUA TOI */
+
+    .tickets-page,
+    .tickets-page * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
     .tickets-page {
-        background: #f6f8fb;
-        min-height: 100vh;
-        padding: 14px 0 36px;
+        min-height: calc(100vh - 170px);
+        padding: 22px 0 36px;
+        background: transparent;
     }
 
-    .tickets-container {
-        max-width: 1080px;
-        margin: 0 auto;
-        padding: 0 18px;
+.tickets-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+    /* HAI TAB */
+
+    .tickets-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 17px;
     }
 
-    .tickets-header {
-        margin-bottom: 22px;
+    .tickets-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-height: 40px;
+        padding: 10px 17px;
+        border: 1px solid #e2d5e8;
+        border-radius: 10px;
+        background: rgba(255,255,255,.92);
+        color: #302638;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .2s ease;
     }
 
-    .tickets-header h2 {
-        font-size: 28px;
-        font-weight: 850;
-        color: #0f172a;
-        margin-bottom: 4px;
+    .tickets-tab:hover {
+        background: #ffffff;
+        border-color: #c4a7d0;
     }
 
-    .tickets-header p {
-        color: #64748b;
-        margin: 0;
+    .tickets-tab.active {
+        background: #ffffff;
+        border-color: #b98eca;
+        color: #563469;
+        font-weight: 700;
+        box-shadow: 0 4px 13px rgba(70,40,90,.07);
+    }
+
+    .tickets-tab-icon {
         font-size: 15px;
     }
 
+    .tickets-tab-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #b35a89;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .tickets-tab-badge[hidden],
+    .tickets-panel[hidden] {
+        display: none !important;
+    }
+
+    /* KHUNG VE */
+
     .event-ticket {
         display: grid;
-        grid-template-columns: 1fr 185px;
-        background: #ffffff;
-        border: 1px solid #dbe4f0;
-        border-radius: 22px;
-        overflow: hidden;
-        margin-bottom: 18px;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
+        grid-template-columns: minmax(0, 1fr) 155px;
         position: relative;
-        transition: .2s ease;
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 16px;
+        overflow: hidden;
+        border: 1px solid #e9dfe8;
+        border-radius: 17px;
+        background: #fffdfb;
+        cursor: pointer;
+        box-shadow: 0 9px 23px rgba(65, 40, 85, .075);
+        transition:
+            transform .2s ease,
+            box-shadow .2s ease,
+            border-color .2s ease;
     }
 
     .event-ticket:hover {
         transform: translateY(-2px);
-        box-shadow: 0 16px 36px rgba(15, 23, 42, .11);
+        border-color: #cdb6d7;
+        box-shadow: 0 13px 28px rgba(65, 40, 85, .12);
     }
 
-    .event-ticket::before,
-    .event-ticket::after {
+    .event-ticket:focus-visible {
+        outline: 3px solid #b982ca;
+        outline-offset: 3px;
+    }
+
+    /* THAN VE: NEN ANH LOANG, CHU, POSTER */
+
+.ticket-main {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 245px;
+    align-items: center;
+    column-gap: 8px;
+    min-width: 0;
+    min-height: 205px;
+    padding: 15px 14px 15px 18px;
+    isolation: isolate;
+    overflow: hidden;
+    background: #fffaf9;
+}
+
+    /* ANH NEN PHU KIN THAN VE */
+
+    .ticket-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .ticket-bg img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 42%;
+        opacity: .42;
+        filter: blur(.65px) saturate(.75);
+        transform: scale(1.03);
+    }
+
+    /*
+       LOANG TU TRANG BEN TRAI SANG ANH MO BEN PHAI
+       BEN TRAI DOC CHU RO, BEN PHAI VAN THAY ANH
+    */
+
+    .ticket-main::before {
         content: "";
         position: absolute;
-        top: 50%;
-        width: 26px;
-        height: 26px;
-        background: #f6f8fb;
-        border-radius: 50%;
-        z-index: 5;
-        transform: translateY(-50%);
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(
+            90deg,
+            rgba(255,253,252,.99) 0%,
+            rgba(255,253,252,.97) 29%,
+            rgba(255,253,252,.92) 52%,
+            rgba(255,253,252,.70) 74%,
+            rgba(255,253,252,.40) 100%
+        );
     }
 
-    .event-ticket::before {
-        left: -13px;
-        box-shadow: inset -1px 0 0 #dbe4f0;
-    }
-
-    .event-ticket::after {
-        right: -13px;
-        box-shadow: inset 1px 0 0 #dbe4f0;
-    }
+    /* THONG TIN BEN TRAI */
 
     .ticket-content {
         position: relative;
-        padding: 18px 24px 17px 26px;
-        background:
-            radial-gradient(circle at 12px 12px, rgba(37, 99, 235, .06) 1px, transparent 1px),
-            linear-gradient(135deg, #ffffff, #f8fbff);
-        background-size: 18px 18px, auto;
-    }
-
-    .ticket-content::before,
-    .ticket-content::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        width: 10px;
-        height: 100%;
-        background:
-            radial-gradient(circle, #f6f8fb 6px, transparent 7px);
-        background-size: 10px 22px;
-        background-repeat: repeat-y;
         z-index: 2;
-    }
-
-    .ticket-content::before {
-        left: -5px;
-    }
-
-    .ticket-content::after {
-        right: -5px;
-    }
-
-    .ticket-stub {
-        background: linear-gradient(180deg, #334155, #1e293b);
-        color: #ffffff;
-        padding: 18px 16px;
-        border-left: 1.5px dashed rgba(255, 255, 255, .55);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: 14px;
+        min-width: 0;
+        color: #1f1923;
     }
 
     .ticket-status {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 5px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 800;
         width: fit-content;
-        margin-bottom: 10px;
+        padding: 5px 10px;
+        margin-bottom: 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 650;
+        line-height: 1.4;
     }
 
     .status-paid {
-        background: #dcfce7;
-        color: #166534;
+        background: #e6f7ec;
+        color: #176943;
     }
 
     .status-unpaid {
-        background: #fef3c7;
-        color: #92400e;
+        background: #fff3da;
+        color: #8f651c;
     }
 
     .status-cancel {
-        background: #f1f5f9;
-        color: #475569;
+        background: #eeedf0;
+        color: #625b67;
+    }
+
+    .status-refund {
+        background: #e7f1f7;
+        color: #43667c;
     }
 
     .status-default {
-        background: #e0e7ff;
-        color: #3730a3;
+        background: #f1eaf5;
+        color: #6e527f;
     }
 
     .ticket-title {
-        color: #0f172a;
-        font-size: 20px;
-        line-height: 1.25;
-        font-weight: 850;
-        margin-bottom: 4px;
+        margin: 0 0 4px;
+        color: #19141c;
+        font-size: 16.5px;
+        line-height: 1.4;
+        font-weight: 750;
+        overflow-wrap: anywhere;
     }
 
     .ticket-subtitle {
-        color: #2563eb;
-        font-size: 13px;
-        font-weight: 750;
-        margin-bottom: 12px;
+        margin-bottom: 11px;
+        color: #4c4352;
+        font-size: 11.5px;
+        font-weight: 500;
     }
 
-    .ticket-info-row {
-        display: grid;
-        grid-template-columns: 1fr 1.25fr;
-        gap: 16px;
-        margin-bottom: 12px;
+    .ticket-details {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
     }
 
     .ticket-line {
         display: flex;
-        gap: 8px;
         align-items: flex-start;
-        color: #334155;
-        font-size: 14px;
-        line-height: 1.45;
+        gap: 8px;
         min-width: 0;
+        color: #29212d;
+        font-size: 11px;
+        font-weight: 550;
+        line-height: 1.55;
     }
 
     .ticket-line i {
-        color: #2563eb;
-        margin-top: 2px;
-        font-size: 14px;
         flex: 0 0 auto;
+        margin-top: 2px;
+        color: #765d82;
+        font-size: 13px;
     }
 
-    .ticket-line div {
-        min-width: 0;
-    }
+.ticket-line span {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 
-    .ticket-line strong {
-        color: #0f172a;
-        font-weight: 750;
-    }
-
-    .text-one-line {
-        display: block;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .ticket-mini-grid {
-        display: grid;
-        grid-template-columns: 1fr 1.35fr 1fr 1fr;
-        gap: 10px;
+    .ticket-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 9px;
         margin-top: 12px;
-    }
-
-    .mini-box {
-        background: rgba(248, 250, 252, .92);
-        border: 1px solid #edf2f7;
-        border-radius: 13px;
-        padding: 9px 11px;
-        min-width: 0;
-    }
-
-    .mini-label {
-        color: #64748b;
+        color: #2b2330;
         font-size: 11px;
-        margin-bottom: 3px;
+        line-height: 1.5;
     }
 
-    .mini-value {
-        color: #0f172a;
-        font-size: 13.5px;
+    .ticket-meta-item {
+        font-weight: 600;
+    }
+
+    .ticket-meta-item.price {
+        color: #201725;
         font-weight: 800;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    .stub-label {
-        font-size: 11px;
-        color: rgba(255, 255, 255, .7);
-        text-transform: uppercase;
-        letter-spacing: .7px;
-        margin-bottom: 5px;
+    .ticket-meta-dot {
+        color: #98879c;
     }
 
-    .stub-code {
-        font-size: 12.5px;
-        font-weight: 900;
-        color: #ffffff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.35;
+    /* POSTER RO CUA SU KIEN */
+
+.ticket-photo {
+    position: relative;
+    z-index: 2;
+    width: 245px;
+    height: 155px;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, .96);
+    border-radius: 11px;
+    background: #f4edf5;
+    box-shadow: 0 5px 16px rgba(45, 28, 54, .12);
+}
+
+    .ticket-photo img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        transition: transform .25s ease;
     }
 
-    .stub-actions {
+    .event-ticket:hover .ticket-photo img {
+        transform: scale(1.04);
+    }
+
+    .ticket-photo-placeholder {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        height: 100%;
+        background: #f6f0f7;
+        color: #897891;
+        text-align: center;
+        font-size: 10.5px;
     }
 
-    .stub-actions .btn {
-        border-radius: 999px;
-        font-size: 12.5px;
-        font-weight: 800;
-        padding: 7px 10px;
+    .ticket-photo-placeholder i {
+        font-size: 25px;
     }
 
-    .btn-ticket-main {
+    /* CUONG VE NEN SIÊU NHAT */
+
+.ticket-stub {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 100%;
+    padding: 17px 14px;
+    background: linear-gradient(
+        145deg,
+        #f1e4f8 0%,
+        #f9eaf4 52%,
+        #fcefe9 100%
+    );
+}
+
+    /* RANG CUA O GIUA THAN VA CUONG VE */
+
+    .ticket-stub::before {
+        content: "";
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        bottom: 0;
+        left: -6px;
+        width: 12px;
+        background:
+            radial-gradient(
+                circle at center,
+                #fffdfb 5.5px,
+                transparent 6px
+            );
+        background-repeat: repeat-y;
+        background-size: 12px 18px;
+        pointer-events: none;
+    }
+
+    /* O QR CAN GIUA */
+
+    .stub-qr-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+        height: 70px;
+        border: 1px solid #e4d6ea;
+        border-radius: 15px;
         background: #ffffff;
-        color: #1e293b;
-        border: 1px solid #ffffff;
+        color: #815b91;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(92,58,107,.06);
+        transition:
+            background .2s,
+            color .2s,
+            transform .2s,
+            box-shadow .2s;
     }
 
-    .btn-ticket-main:hover {
-        background: #eef2ff;
-        color: #1e293b;
+    .stub-qr-link i {
+        font-size: 32px;
+        line-height: 1;
     }
 
-    .btn-ticket-outline {
-        background: transparent;
+    .stub-qr-link:hover,
+    .stub-qr-link:focus-visible {
+        background: #7e548f;
         color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, .72);
+        border-color: #7e548f;
+        transform: translateY(-2px);
+        box-shadow: 0 7px 15px rgba(92,58,107,.14);
     }
 
-    .btn-ticket-outline:hover {
-        background: #ffffff;
-        color: #1e293b;
+    /* VE KHONG CO QR */
+
+    .stub-no-qr {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+        height: 70px;
+        border: 1px solid #eadfea;
+        border-radius: 15px;
+        background: rgba(255,255,255,.75);
+        color: #c4b5c9;
     }
+
+    .stub-no-qr i {
+        font-size: 27px;
+        line-height: 1;
+    }
+
+    /* KHONG CO VE */
 
     .empty-ticket {
+        padding: 42px 24px;
+        border: 1px solid #e9ddea;
+        border-radius: 17px;
         background: #ffffff;
-        border: 1px solid #dbe4f0;
-        border-radius: 20px;
-        padding: 36px;
         text-align: center;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, .07);
+        box-shadow: 0 8px 20px rgba(62,37,80,.05);
     }
 
-    @@media (max-width: 900px) {
+    .empty-ticket i {
+        display: block;
+        margin-bottom: 11px;
+        color: #ac87bc;
+        font-size: 28px;
+    }
+
+    .empty-ticket h3 {
+        margin: 0 0 7px;
+        color: #211a28;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .empty-ticket p {
+        margin: 0;
+        color: #736879;
+        font-size: 12px;
+    }
+
+    /* POPUP LOI QR */
+
+    .qr-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(28,22,35,.65);
+        backdrop-filter: blur(4px);
+    }
+
+    .qr-modal {
+        width: 100%;
+        max-width: 420px;
+        padding: 26px;
+        border-radius: 20px;
+        background: #ffffff;
+        text-align: center;
+        box-shadow: 0 24px 60px rgba(0,0,0,.22);
+    }
+
+    .qr-modal-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        background: #f7edf8;
+        color: #9858a1;
+        font-size: 28px;
+        font-weight: 800;
+    }
+
+    .qr-modal-title {
+        margin-bottom: 8px;
+        color: #241d2a;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .qr-modal-text {
+        margin-bottom: 16px;
+        color: #665b6c;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .qr-modal-btn {
+        padding: 10px 20px;
+        border: 0;
+        border-radius: 999px;
+        background: #9558aa;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    /* RESPONSIVE */
+
+@@media (max-width: 840px) {
+    .ticket-main {
+        grid-template-columns: minmax(0, 1fr) 170px;
+        gap: 10px;
+    }
+
+    .ticket-photo {
+        width: 170px;
+        height: 132px;
+    }
+}
+
+    @@media (max-width: 650px) {
         .event-ticket {
+            grid-template-columns: minmax(0, 1fr) 85px;
+        }
+
+        .ticket-main {
             grid-template-columns: 1fr;
+            gap: 11px;
+            padding: 15px;
+        }
+
+        .ticket-photo {
+            width: 100%;
+            height: 125px;
+        }
+
+        .ticket-main::before {
+            background: linear-gradient(
+                90deg,
+                rgba(255,253,252,.97),
+                rgba(255,253,252,.77)
+            );
         }
 
         .ticket-stub {
-            border-left: none;
-            border-top: 1.5px dashed rgba(255, 255, 255, .55);
+            padding: 10px;
         }
 
-        .ticket-info-row {
-            grid-template-columns: 1fr;
+        .stub-qr-link,
+        .stub-no-qr {
+            width: 57px;
+            height: 57px;
+            border-radius: 12px;
         }
 
-        .ticket-mini-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .stub-actions {
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-
-        .stub-code {
-            max-width: 100%;
+        .stub-qr-link i {
+            font-size: 26px;
         }
     }
 
-    @@media (max-width: 576px) {
+    @@media (max-width: 480px) {
         .tickets-page {
-            padding-top: 24px;
+            padding-top: 16px;
         }
 
-        .ticket-content {
-            padding: 17px;
+        .tickets-container {
+            padding: 0 11px;
+        }
+
+        .tickets-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .tickets-tab {
+            padding: 9px 7px;
+            font-size: 11px;
         }
 
         .ticket-title {
-            font-size: 18px;
+            font-size: 15px;
         }
 
-        .ticket-mini-grid {
-            grid-template-columns: 1fr;
+        .ticket-line,
+        .ticket-meta {
+            font-size: 10.5px;
         }
 
-        .ticket-stub {
-            padding: 16px;
+        .ticket-photo {
+            height: 108px;
         }
-        
     }
-    .qr-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, .65);
-    backdrop-filter: blur(4px);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.qr-modal {
-    width: 100%;
-    max-width: 420px;
-    background: #fff;
-    border-radius: 22px;
-    padding: 28px;
-    text-align: center;
-    box-shadow: 0 25px 60px rgba(0,0,0,.25);
-    animation: modalShow .2s ease;
-}
-
-.qr-modal-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #fff7ed;
-    color: #ea580c;
-    font-size: 30px;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 16px;
-}
-
-.qr-modal-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #0f172a;
-    margin-bottom: 8px;
-}
-
-.qr-modal-text {
-    color: #64748b;
-    margin-bottom: 18px;
-    line-height: 1.5;
-}
-
-.qr-modal-btn {
-    border: none;
-    background: #2563eb;
-    color: #fff;
-    padding: 10px 22px;
-    border-radius: 999px;
-    font-weight: 700;
-}
-
-.qr-modal-btn:hover {
-    background: #1d4ed8;
-}
-
-@@keyframes modalShow {
-    from {
-        opacity: 0;
-        transform: scale(.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-    .btn-qr-ticket {
-    background: transparent;
-    color: #ffffff;
-    border: 1px solid rgba(255,255,255,.72);
-}
-
-.btn-qr-ticket:hover {
-    background: #ffffff;
-    color: #1e293b;
-}
+    .ticket-line-address span {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.6;
 }
 </style>
 
-<div class="tickets-page">
+<div class="tickets-page"
+     id="ticketsPage"
+     data-owner="@taiKhoan">
+
     <div class="tickets-container">
-        <div class="tickets-header">
-            <h2>Vé của tôi</h2>
-            <p>Quản lý vé đã đặt, xem chi tiết sự kiện và mã QR tham gia.</p>
+
+        <!-- HAI TAB -->
+
+        <div class="tickets-tabs"
+             role="tablist"
+             aria-label="Phân loại vé">
+
+            <button type="button"
+                    class="tickets-tab active"
+                    id="tabActive"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="panelActive"
+                    data-tab="active">
+
+                <i class="bi bi-ticket-perforated tickets-tab-icon"></i>
+                <span>Vé của tôi</span>
+
+                <span class="tickets-tab-badge"
+                      id="badgeActive"
+                      hidden>0</span>
+            </button>
+
+            <button type="button"
+                    class="tickets-tab"
+                    id="tabHistory"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="panelHistory"
+                    data-tab="history">
+
+                <i class="bi bi-clock-history tickets-tab-icon"></i>
+                <span>Lịch sử vé</span>
+
+                <span class="tickets-tab-badge"
+                      id="badgeHistory"
+                      hidden>0</span>
+            </button>
         </div>
 
-        @if (Model == null || !Model.Any())
-        {
-            <div class="empty-ticket">
-                <h5 class="fw-bold mb-2">Bạn chưa có vé nào</h5>
-                <p class="text-muted mb-0">Sau khi đặt vé thành công, thông tin vé sẽ được hiển thị tại đây.</p>
-            </div>
-        }
-        else
-        {
-            @foreach (var ve in Model)
+        <section class="tickets-panel"
+                 id="panelActive"
+                 role="tabpanel"
+                 aria-labelledby="tabActive">
+        </section>
+
+        <section class="tickets-panel"
+                 id="panelHistory"
+                 role="tabpanel"
+                 aria-labelledby="tabHistory"
+                 hidden>
+        </section>
+
+        <!-- DANH SACH VE -->
+
+        <div id="ticketsSource" hidden>
+
+            @foreach (var ve in danhSachVe)
             {
-                string statusClass = ve.TrangThaiVe switch
+                string trangThaiClass = ve.TrangThaiVe switch
                 {
-                    "DaThanhToan" => "ticket-status status-paid",
-                    "ChuaThanhToan" => "ticket-status status-unpaid",
-                    "Huy" => "ticket-status status-cancel",
-                    _ => "ticket-status status-default"
+                    "DaThanhToan" => "status-paid",
+                    "ChuaThanhToan" => "status-unpaid",
+                    "Huy" => "status-cancel",
+                    "DaHuy" => "status-cancel",
+                    "HoanTien" => "status-refund",
+                    "DaHoanTien" => "status-refund",
+                    _ => "status-default"
                 };
 
                 string trangThaiHienThi = ve.TrangThaiVe switch
@@ -463,165 +712,481 @@
                     "DaThanhToan" => "Đã thanh toán",
                     "ChuaThanhToan" => "Chưa thanh toán",
                     "Huy" => "Đã hủy",
+                    "DaHuy" => "Đã hủy",
+                    "HoanTien" => "Đã hoàn tiền",
+                    "DaHoanTien" => "Đã hoàn tiền",
                     _ => ve.TrangThaiVe
                 };
 
-                string viTriGhe = !string.IsNullOrWhiteSpace(ve.DanhSachGhe)
-                    ? ve.DanhSachGhe
-                    : (ve.Hang != null && ve.Cot.HasValue ? $"{ve.Hang}{ve.Cot}" : "Ghế tự do");
+                string viTriGhe =
+                    !string.IsNullOrWhiteSpace(ve.DanhSachGhe)
+                        ? ve.DanhSachGhe
+                        : (ve.Hang != null && ve.Cot.HasValue
+                            ? $"{ve.Hang}{ve.Cot}"
+                            : "Ghế tự do");
 
-                <div class="event-ticket">
-                    <div class="ticket-content">
-                        <span class="@statusClass">
-                            <i class="bi bi-circle-fill" style="font-size: 6px;"></i>
-                            @trangThaiHienThi
-                        </span>
+                bool laLichSu =
+                    ve.SuKienDaKetThuc ||
+                    ve.TrangThaiVe == "Huy" ||
+                    ve.TrangThaiVe == "DaHuy" ||
+                    ve.TrangThaiVe == "HoanTien" ||
+                    ve.TrangThaiVe == "DaHoanTien";
 
-                        <div class="ticket-title">@ve.TenSuKien</div>
-                        <div class="ticket-subtitle">@ve.TenLoaiSuKien</div>
+                string nhomVe = laLichSu ? "history" : "active";
 
-                        <div class="ticket-info-row">
-                            <div class="ticket-line">
-                                <i class="bi bi-calendar3"></i>
-                                <div>
-                                    <strong>Thời gian</strong><br />
-                                    <span class="text-one-line">
-                                        @ve.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
-                                        -
-                                        @ve.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
-                                    </span>
-                                </div>
+                bool cungNgay =
+                    ve.ThoiGianBatDau.Date == ve.ThoiGianKetThuc.Date;
+
+                string thoiGianDienRa = cungNgay
+                    ? $"{ve.ThoiGianBatDau:dd/MM/yyyy} | {ve.ThoiGianBatDau:HH:mm} – {ve.ThoiGianKetThuc:HH:mm}"
+                    : $"{ve.ThoiGianBatDau:dd/MM/yyyy HH:mm} – {ve.ThoiGianKetThuc:dd/MM/yyyy HH:mm}";
+
+                string chiTietUrl = Url.Action(
+                    "ChiTietVe",
+                    "KhachHang",
+                    new { veId = ve.VeId }
+                ) ?? "";
+
+                bool coQrHopLe =
+                    ve.LaTrucTiep && ve.DuocXemQr;
+
+                string? anhSuKien = ve.AnhSuKien;
+
+                if (!string.IsNullOrWhiteSpace(anhSuKien))
+                {
+                    anhSuKien = anhSuKien.Trim().Replace("\\", "/");
+
+                    if (!Uri.TryCreate(
+                            anhSuKien,
+                            UriKind.Absolute,
+                            out var uriAnh) ||
+                        (uriAnh.Scheme != Uri.UriSchemeHttp &&
+                         uriAnh.Scheme != Uri.UriSchemeHttps))
+                    {
+                        anhSuKien = Url.Content(
+                            anhSuKien.StartsWith("~/")
+                                ? anhSuKien
+                                : "~/" + anhSuKien.TrimStart('/')
+                        );
+                    }
+                }
+
+                <article class="event-ticket"
+                         tabindex="0"
+                         role="link"
+                         aria-label="Xem chi tiết vé @ve.TenSuKien"
+                         title="Bấm để xem chi tiết vé"
+                         data-ticket-id="@ve.VeId"
+                         data-group="@nhomVe"
+                         data-detail-url="@chiTietUrl">
+
+                    <!-- THAN VE -->
+
+                    <div class="ticket-main">
+
+                        <!-- ANH NEN MO -->
+
+                        @if (!string.IsNullOrWhiteSpace(anhSuKien))
+                        {
+                            <div class="ticket-bg"
+                                 aria-hidden="true">
+
+                                <img src="@anhSuKien"
+                                     alt=""
+                                     loading="lazy" />
+                            </div>
+                        }
+
+                        <!-- THONG TIN -->
+
+                        <div class="ticket-content">
+
+                            <span class="ticket-status @trangThaiClass">
+                                <i class="bi bi-circle-fill"
+                                   style="font-size:6px;"></i>
+                                @trangThaiHienThi
+                            </span>
+
+                            <h3 class="ticket-title">
+                                @ve.TenSuKien
+                            </h3>
+
+                            <div class="ticket-subtitle">
+                                @(ve.LaTrucTiep
+                                    ? "Trực tiếp"
+                                    : ve.LaTrucTuyen
+                                        ? "Trực tuyến"
+                                        : ve.TenLoaiSuKien)
                             </div>
 
-                            @if (ve.LaTrucTiep)
-                            {
-                                <div class="ticket-line">
-                                    <i class="bi bi-geo-alt"></i>
-                                    <div>
-                                        <strong>@ve.DiaDiem</strong><br />
-                                        <span class="text-one-line" title="@ve.DiaChi">@ve.DiaChi</span>
-                                    </div>
-                                </div>
-                            }
-                            else if (ve.LaTrucTuyen)
-                            {
-                                <div class="ticket-line">
-                                    <i class="bi bi-camera-video"></i>
-                                    <div>
-                                        <strong>Sự kiện trực tuyến</strong><br />
-                                        <span class="text-one-line">
-                                            @if (!string.IsNullOrEmpty(ve.OnlineNenTang))
-                                            {
-                                                @ve.OnlineNenTang
-                                            }
+                            <div class="ticket-details">
 
-                                            @if (!string.IsNullOrEmpty(ve.OnlineLinkXem))
+                                <div class="ticket-line">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span>@thoiGianDienRa</span>
+                                </div>
+
+                                @if (ve.LaTrucTiep)
+                                {
+<div class="ticket-line ticket-line-address">
+    <i class="bi bi-geo-alt"></i>
+    <span>
+        @ve.DiaDiem
+        @if (!string.IsNullOrWhiteSpace(ve.DiaChi))
+        {
+            <text> · @ve.DiaChi</text>
+        }
+    </span>
+</div>
+                                }
+                                else if (ve.LaTrucTuyen)
+                                {
+                                    <div class="ticket-line">
+                                        <i class="bi bi-camera-video"></i>
+
+                                        <span>
+                                            Trực tuyến
+
+                                            @if (!string.IsNullOrWhiteSpace(ve.OnlineNenTang))
                                             {
-                                                <span> · </span>
-                                                <a href="@ve.OnlineLinkXem" target="_blank">Vào phòng</a>
+                                                <text> · @ve.OnlineNenTang</text>
                                             }
                                         </span>
                                     </div>
+                                }
+
+                            </div>
+
+                            <div class="ticket-meta">
+
+                                @if (!string.IsNullOrWhiteSpace(ve.TenLoaiVe))
+                                {
+                                    <span class="ticket-meta-item">
+                                        @ve.TenLoaiVe
+                                    </span>
+
+                                    <span class="ticket-meta-dot">•</span>
+                                }
+
+                                @if (ve.LaTrucTiep)
+                                {
+                                    <span class="ticket-meta-item">
+                                        @(viTriGhe == "Ghế tự do"
+                                            ? "Ghế tự do"
+                                            : $"Ghế {viTriGhe}")
+                                    </span>
+
+                                    <span class="ticket-meta-dot">•</span>
+                                }
+
+                                <span class="ticket-meta-item price">
+                                    @ve.GiaVe.ToString("N0") đ
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- POSTER RO -->
+
+                        <div class="ticket-photo">
+                            @if (!string.IsNullOrWhiteSpace(anhSuKien))
+                            {
+                                <img src="@anhSuKien"
+                                     alt="Ảnh sự kiện @ve.TenSuKien"
+                                     loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="ticket-photo-placeholder">
+                                    <i class="bi bi-image"></i>
+                                    <span>Ảnh sự kiện</span>
                                 </div>
                             }
                         </div>
 
-                        <div class="ticket-mini-grid">
-                            <div class="mini-box">
-                                <div class="mini-label">Loại vé</div>
-                                <div class="mini-value" title="@ve.TenLoaiVe">@ve.TenLoaiVe</div>
-                            </div>
-
-                            <div class="mini-box">
-                                <div class="mini-label">Ghế</div>
-                                <div class="mini-value" title="@viTriGhe">@viTriGhe</div>
-                            </div>
-
-                            <div class="mini-box">
-                                <div class="mini-label">Tổng tiền</div>
-                                <div class="mini-value">@ve.GiaVe.ToString("N0") đ</div>
-                            </div>
-
-                            <div class="mini-box">
-                                <div class="mini-label">Ngày đặt</div>
-                                <div class="mini-value">@ve.NgayDat.ToString("dd/MM/yyyy")</div>
-                            </div>
-                        </div>
                     </div>
+
+                    <!-- CUONG VE NEN NHAT -->
 
                     <div class="ticket-stub">
-                        <div>
-                            <div class="stub-label">Mã vé</div>
-                            <div class="stub-code" title="@ve.MaVe">@ve.MaVe</div>
-                        </div>
 
-                        <div class="stub-actions">
+                        @if (coQrHopLe)
+                        {
                             <a asp-controller="KhachHang"
-                               asp-action="ChiTietVe"
+                               asp-action="XemMaQr"
                                asp-route-veId="@ve.VeId"
-                               class="btn btn-ticket-main btn-sm">
-                                Chi tiết vé
+                               class="stub-qr-link"
+                               title="Xem mã QR"
+                               aria-label="Xem mã QR vé @ve.TenSuKien">
+
+                                <i class="bi bi-qr-code"></i>
+
                             </a>
+                        }
+                        else
+                        {
+                            <div class="stub-no-qr"
+                                 title="Vé không có mã QR khả dụng"
+                                 aria-hidden="true">
 
-@if (ve.LaTrucTiep && ve.DuocXemQr)
-{
-    <a asp-controller="KhachHang"
-       asp-action="XemMaQr"
-       asp-route-veId="@ve.VeId"
-       class="btn btn-ticket-outline btn-sm">
-        Mã QR
-    </a>
-}
+                                <i class="bi bi-ticket-perforated"></i>
 
-                            @if (ve.CoTheHuy)
-                            {
-                                <a asp-controller="KhachHang"
-                                   asp-action="YeuCauHoanHuy"
-                                   asp-route-veId="@ve.VeId"
-                                   class="btn btn-ticket-outline btn-sm">
-                                    Hoàn vé
-                                </a>
-                            }
-                        </div>
+                            </div>
+                        }
+
                     </div>
-                </div>
+
+                </article>
             }
-        }
-    </div>
-    @if (TempData["QrError"] != null)
-{
-    <div class="qr-modal-backdrop" id="qrModal">
-        <div class="qr-modal">
-
-            <div class="qr-modal-icon">
-                !
-            </div>
-
-            <div class="qr-modal-title">
-                Không thể xem mã QR
-            </div>
-
-            <div class="qr-modal-text">
-                @TempData["QrError"]
-            </div>
-
-            @if (TempData["QrMaVe"] != null)
-            {
-                <div class="mini-box mb-3">
-                    <div class="mini-label">Mã vé</div>
-                    <div class="mini-value">
-                        @TempData["QrMaVe"]
-                    </div>
-                </div>
-            }
-
-            <button type="button"
-                    class="qr-modal-btn"
-                    onclick="document.getElementById('qrModal').style.display='none'">
-                Đã hiểu
-            </button>
-
         </div>
     </div>
-}
+
+    @if (TempData["QrError"] != null)
+    {
+        <div class="qr-modal-backdrop"
+             id="qrModal">
+
+            <div class="qr-modal">
+
+                <div class="qr-modal-icon">!</div>
+
+                <div class="qr-modal-title">
+                    Không thể xem mã QR
+                </div>
+
+                <div class="qr-modal-text">
+                    @TempData["QrError"]
+                </div>
+
+                <button type="button"
+                        class="qr-modal-btn"
+                        onclick="document.getElementById('qrModal').style.display='none'">
+                    Đã hiểu
+                </button>
+
+            </div>
+        </div>
+    }
+
 </div>
+
+<script>
+(function () {
+    "use strict";
+
+    const page = document.getElementById("ticketsPage");
+    if (!page) return;
+
+    const source = document.getElementById("ticketsSource");
+
+    const panelActive = document.getElementById("panelActive");
+    const panelHistory = document.getElementById("panelHistory");
+
+    const tabActive = document.getElementById("tabActive");
+    const tabHistory = document.getElementById("tabHistory");
+
+    const badgeActive = document.getElementById("badgeActive");
+    const badgeHistory = document.getElementById("badgeHistory");
+
+    const owner = page.dataset.owner || "guest";
+    const storageKey = "ve_cua_toi_da_xem_v1_" + owner;
+
+    let seen = {};
+
+    try {
+        const saved = localStorage.getItem(storageKey);
+
+        if (saved) {
+            const parsed = JSON.parse(saved);
+
+            if (
+                parsed &&
+                typeof parsed === "object" &&
+                !Array.isArray(parsed)
+            ) {
+                seen = parsed;
+            }
+        }
+    } catch (error) {
+        seen = {};
+    }
+
+    function saveSeen() {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(seen));
+        } catch (error) {
+            // Storage khong kha dung van chuyen tab duoc.
+        }
+    }
+
+    const tickets = Array.from(
+        source.querySelectorAll(".event-ticket")
+    );
+
+    const activeTickets = [];
+    const historyTickets = [];
+
+    tickets.forEach(function (ticket) {
+        const group = ticket.dataset.group;
+        const id = ticket.dataset.ticketId;
+
+        ticket.dataset.seenKey = group + "_" + id;
+
+        if (group === "history") {
+            panelHistory.appendChild(ticket);
+            historyTickets.push(ticket);
+        } else {
+            panelActive.appendChild(ticket);
+            activeTickets.push(ticket);
+        }
+
+        /* BAM THAN VE MO CHI TIET */
+
+        ticket.addEventListener("click", function (event) {
+            if (event.target.closest(
+                "a, button, input, select, textarea"
+            )) {
+                return;
+            }
+
+            const url = ticket.dataset.detailUrl;
+
+            if (url) {
+                window.location.assign(url);
+            }
+        });
+
+        ticket.addEventListener("keydown", function (event) {
+            if (event.target !== ticket) return;
+
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+                event.preventDefault();
+
+                const url = ticket.dataset.detailUrl;
+
+                if (url) {
+                    window.location.assign(url);
+                }
+            }
+        });
+    });
+
+    source.remove();
+
+    /* KHONG CO VE */
+
+    function createEmptyMessage(title, description) {
+        const empty = document.createElement("div");
+        empty.className = "empty-ticket";
+
+        const icon = document.createElement("i");
+        icon.className = "bi bi-ticket-perforated";
+        icon.setAttribute("aria-hidden", "true");
+
+        const heading = document.createElement("h3");
+        heading.textContent = title;
+
+        const text = document.createElement("p");
+        text.textContent = description;
+
+        empty.append(icon, heading, text);
+        return empty;
+    }
+
+    if (activeTickets.length === 0) {
+        panelActive.appendChild(
+            createEmptyMessage(
+                "Bạn chưa có vé đang sử dụng",
+                "Những vé còn hiệu lực sẽ hiển thị tại đây."
+            )
+        );
+    }
+
+    if (historyTickets.length === 0) {
+        panelHistory.appendChild(
+            createEmptyMessage(
+                "Chưa có lịch sử vé",
+                "Vé đã hủy, hoàn tiền hoặc sự kiện đã kết thúc sẽ hiển thị tại đây."
+            )
+        );
+    }
+
+    /* SO THONG BAO */
+
+    function updateBadges() {
+        const activeUnread = activeTickets.filter(
+            function (ticket) {
+                return !seen[ticket.dataset.seenKey];
+            }
+        ).length;
+
+        const historyUnread = historyTickets.filter(
+            function (ticket) {
+                return !seen[ticket.dataset.seenKey];
+            }
+        ).length;
+
+        badgeActive.textContent =
+            activeUnread > 99 ? "99+" : String(activeUnread);
+
+        badgeHistory.textContent =
+            historyUnread > 99 ? "99+" : String(historyUnread);
+
+        badgeActive.hidden = activeUnread === 0;
+        badgeHistory.hidden = historyUnread === 0;
+    }
+
+    function markGroupAsSeen(group) {
+        const list =
+            group === "history"
+                ? historyTickets
+                : activeTickets;
+
+        list.forEach(function (ticket) {
+            seen[ticket.dataset.seenKey] = true;
+        });
+
+        saveSeen();
+        updateBadges();
+    }
+
+    /* CHUYEN TAB */
+
+    function showTab(group, markSeen) {
+        const isActive = group === "active";
+
+        panelActive.hidden = !isActive;
+        panelHistory.hidden = isActive;
+
+        tabActive.classList.toggle("active", isActive);
+        tabHistory.classList.toggle("active", !isActive);
+
+        tabActive.setAttribute(
+            "aria-selected",
+            String(isActive)
+        );
+
+        tabHistory.setAttribute(
+            "aria-selected",
+            String(!isActive)
+        );
+
+        if (markSeen) {
+            markGroupAsSeen(group);
+        }
+    }
+
+    tabActive.addEventListener("click", function () {
+        showTab("active", true);
+    });
+
+    tabHistory.addEventListener("click", function () {
+        showTab("history", true);
+    });
+
+    showTab("active", false);
+    updateBadges();
+})();
+</script>

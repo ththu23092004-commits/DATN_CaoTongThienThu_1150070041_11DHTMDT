@@ -1,195 +1,658 @@
+
 @using Microsoft.AspNetCore.Mvc.Rendering
+
 @{
     Layout = "_Layout";
-    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string currentAction =
+        ViewContext.RouteData.Values["action"]?.ToString()
+        ?? "";
+
+    bool isEventPage =
+        currentAction == "Index" ||
+        currentAction == "ChiTiet" ||
+        currentAction == "ChiTietSuKien" ||
+        currentAction == "Duyet" ||
+        currentAction == "TuChoi";
+
+    bool isUserPage =
+        currentAction == "NguoiDung" ||
+        currentAction == "TaoBanToChuc" ||
+        currentAction == "SuaNguoiDung";
+
+    bool isCancelPage =
+        currentAction == "YeuCauHoanHuy";
+
+    bool isStatisticsPage =
+        currentAction == "ThongKe" ||
+        currentAction == "ThongKeChiTiet";
 }
 
 <style>
-.admin-page {
-    background: #f5f7fb;
-    min-height: calc(100vh - 130px);
-    padding: 24px;
-    width: 100%;
-}
+    /* ======================================
+       ADMIN LAYOUT
+       ====================================== */
 
-.admin-page .admin-layout {
-    width: 100%;
-    max-width: none;
-}
+    .admin-page,
+    .admin-page * {
+        box-sizing: border-box;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .admin-page {
+        width: 100%;
+        min-height: calc(100vh - 130px);
+        padding: 23px 20px 35px;
+        background: linear-gradient(
+            135deg,
+            #FAF6FC 0%,
+            #F6EFFA 52%,
+            #FAF5FB 100%
+        ) !important;
+    }
 
     .admin-layout {
         display: flex;
         align-items: flex-start;
-        gap: 24px;
+        gap: 20px;
+        width: 100%;
+        max-width: none;
+        margin: 0 auto;
     }
 
+    /* ======================================
+       SIDEBAR
+       ====================================== */
+
+
 .admin-sidebar-wrap {
-    width: 250px;
-    flex: 0 0 250px;
+    width: 245px;
+    flex: 0 0 245px;
+    min-width: 0;
+
+    position: sticky !important;
+    top: 16px;
+    align-self: flex-start;
+
+    height: fit-content;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+    scrollbar-color: #ddc7e5 transparent;
+
+    z-index: 20;
 }
 
-    .admin-sidebar-card {
-        background: #fff;
-        border-radius: 24px;
-        padding: 28px;
-        box-shadow: 0 12px 35px rgba(0,0,0,.06);
-        border: 1px solid #eef2f7;
+.admin-sidebar-card {
+    position: relative !important;
+    width: 100%;
+    height: auto;
+
+    background: #ffffff;
+    border: 1px solid #eadded;
+    border-radius: 17px;
+    padding: 17px 12px 15px;
+    box-shadow: 0 6px 25px rgba(88, 51, 104, .055);
+}
+
+
+    /* ======================================
+       SIDEBAR BRAND
+       ====================================== */
+
+    .admin-sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        padding: 8px 9px 18px;
+        margin-bottom: 14px;
+
+        border-bottom: 1px solid #F0E8F2;
+    }
+
+    .admin-brand-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+
+        border-radius: 12px;
+
+        background: linear-gradient(
+            135deg,
+            #AD76BE 0%,
+            #CF93C2 100%
+        );
+
+        box-shadow:
+            0 5px 13px rgba(170, 108, 188, .15);
+    }
+
+    .admin-brand-icon i {
+        font-size: 19px;
+        color: white;
+    }
+
+    .admin-brand-info {
+        min-width: 0;
     }
 
     .admin-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #111827;
+        margin: 0;
+
+        color: #584164;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.55;
     }
 
     .admin-subtitle {
-        color: #6b7280;
-        font-size: 13px;
-        margin-top: 6px;
-        margin-bottom: 28px;
+        margin: 4px 0 0;
+
+        color: #A18EAA;
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1.7;
     }
 
-    .admin-menu .nav-link {
-        color: #4b5563;
-        padding: 14px 18px;
-        border-radius: 14px;
-        font-weight: 600;
-        font-size: 15px;
-        margin-bottom: 10px;
-        transition: all .2s ease;
+    /* ======================================
+       LABEL NHOM MENU
+       ====================================== */
+
+    .admin-menu-label {
+        margin: 0 0 8px;
+        padding: 0 12px;
+
+        color: #B09CB8;
+
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: .8px;
+        text-transform: uppercase;
     }
 
-    .admin-menu .nav-link:hover {
-        background: #f3f4f6;
-        color: #6366f1;
+    /* ======================================
+       DANH SACH MENU
+       ====================================== */
+
+    .admin-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+
+        width: 100%;
+        padding: 0;
     }
 
-    .admin-menu .nav-link.active {
-        background: #eef2ff;
-        color: #4f46e5;
-        font-weight: 700;
+    .admin-menu .admin-nav-link {
+        position: relative;
+
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        width: 100%;
+        min-height: 45px;
+
+        margin: 0;
+        padding: 10px 12px;
+
+        border: 1px solid transparent;
+        border-radius: 10px;
+
+        background: transparent;
+        color: #796783;
+
+        font-size: 11.5px;
+        font-weight: 650;
+        line-height: 1.6;
+
+        text-decoration: none;
+
+        transition:
+            background .2s ease,
+            color .2s ease,
+            border-color .2s ease,
+            transform .2s ease;
     }
 
-    .admin-main {
+    /* Icon menu */
+
+    .admin-nav-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        flex: 0 0 34px;
+
+        width: 34px;
+        height: 34px;
+
+        background: #F7F1F9;
+        border-radius: 9px;
+
+        color: #A07CAF;
+        font-size: 16px;
+
+        transition:
+            background .2s ease,
+            color .2s ease;
+    }
+
+    .admin-nav-text {
         flex: 1;
         min-width: 0;
     }
 
-    .admin-content {
-        padding: 0;
+    .admin-nav-arrow {
+        color: #C0AFC8;
+        font-size: 12px;
+        transition: transform .2s ease;
+    }
+
+    /* Hover */
+
+    .admin-menu .admin-nav-link:hover {
+        background: #FBF5FD;
+        border-color: #F0E1F4;
+        color: #875D9A;
+        transform: translateX(2px);
+    }
+
+    .admin-menu .admin-nav-link:hover
+    .admin-nav-icon {
+        background: #F0E2F5;
+        color: #9668AA;
+    }
+
+    .admin-menu .admin-nav-link:hover
+    .admin-nav-arrow {
+        transform: translateX(2px);
+        color: #9668AA;
+    }
+
+    /* Trang đang được chọn */
+
+    .admin-menu .admin-nav-link.active {
+        background: linear-gradient(
+            100deg,
+            #F3E8F8 0%,
+            #FBF6FD 100%
+        );
+
+        border-color: #E9D6F0;
+
+        color: #8B55A2;
+        font-weight: 800;
+    }
+
+    .admin-menu .admin-nav-link.active::before {
+        content: "";
+
+        position: absolute;
+        left: 0;
+        top: 11px;
+        bottom: 11px;
+
+        width: 3px;
+
+        border-radius: 0 4px 4px 0;
+        background: #B17AC2;
+    }
+
+    .admin-menu .admin-nav-link.active
+    .admin-nav-icon {
+        background: #EAD6F1;
+        color: #9358AD;
+    }
+
+    .admin-menu .admin-nav-link.active
+    .admin-nav-arrow {
+        color: #9D6BB1;
+    }
+
+    .admin-menu .admin-nav-link:focus-visible {
+        outline: 2px solid #B882CA;
+        outline-offset: 2px;
+    }
+
+    /* ======================================
+       CHI TIET CAC NHOM
+       ====================================== */
+
+    .admin-menu-divider {
+        height: 1px;
+        margin: 17px 8px;
+        background: #F1E8F3;
+    }
+
+    .admin-menu-secondary .admin-nav-link {
+        min-height: 42px;
+        font-size: 11px;
+    }
+
+    /* ======================================
+       SIDEBAR FOOTER
+       ====================================== */
+
+    .admin-sidebar-footer {
+        margin-top: 19px;
+        padding: 16px 10px 2px;
+
+        border-top: 1px solid #F0E8F2;
+    }
+
+    .admin-footer-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        margin-bottom: 12px;
+        padding: 10px 11px;
+
+        border: 1px solid #E8F2E9;
+        border-radius: 9px;
+
+        background: #F7FBF8;
+
+        color: #69977B;
+        font-size: 10px;
+        font-weight: 650;
+    }
+
+    .admin-footer-dot {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 7px;
+
+        border-radius: 50%;
+        background: #75BE91;
     }
 
     .admin-footer {
-        margin-top: 20px;
-        padding-top: 16px;
-        border-top: 1px solid #eef2f7;
-        color: #9ca3af;
-        font-size: 12px;
-    }
-    
-    
-.admin-main {
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-}
+        margin: 0;
+        padding: 0;
 
-.admin-content {
-    width: 100%;
-    min-width: 0;
-    padding: 0;
-}
+        border: none;
 
-@@media (max-width: 991px) {
-    .admin-layout {
-        flex-direction: column;
-        gap: 18px;
+        color: #AD9CB5;
+        font-size: 10px;
+        line-height: 1.9;
+        text-align: center;
     }
 
-    .admin-sidebar-wrap {
-        width: 100%;
-        flex: none;
-    }
-
-    .admin-sidebar-card {
-        padding: 20px;
-    }
+    /* ======================================
+       MAIN CONTENT
+       ====================================== */
 
     .admin-main {
+        flex: 1;
         width: 100%;
+        min-width: 0;
+
+        background: transparent !important;
     }
+
+    .admin-content {
+        width: 100%;
+        min-width: 0;
+        padding: 0;
+
+        background: transparent !important;
+    }
+
+    .admin-layout main {
+        background: transparent !important;
+    }
+
+    /* ======================================
+       RESPONSIVE - TABLET
+       ====================================== */
+
+    @@media (max-width: 1100px) {
+        .admin-layout {
+            gap: 15px;
+        }
+
+        .admin-sidebar-wrap {
+            width: 220px;
+            flex-basis: 220px;
+        }
+
+        .admin-sidebar-card {
+            padding: 13px 9px;
+        }
+    }
+
+    @@media (max-width: 991px) {
+        .admin-page {
+            padding: 16px;
+        }
+
+        .admin-layout {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 16px;
+        }
+
+
+.admin-sidebar-wrap {
+    position: relative !important;
+    top: auto;
+
+    width: 100%;
+    flex: none;
+
+    height: auto;
+    max-height: none;
+    overflow: visible;
 }
 
-@@media (max-width: 575px) {
-    .admin-page {
-        padding: 12px;
+
+        .admin-sidebar-card {
+            padding: 15px;
+        }
+
+        .admin-sidebar-brand {
+            margin-bottom: 12px;
+            padding-bottom: 13px;
+        }
+
+        .admin-menu {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 7px;
+        }
+
+        .admin-menu .admin-nav-link {
+            margin: 0;
+        }
+
+        .admin-main {
+            width: 100%;
+        }
     }
-}
 
+    /* ======================================
+       RESPONSIVE - MOBILE
+       ====================================== */
 
+    @@media (max-width: 575px) {
+        .admin-page {
+            padding: 11px;
+        }
+
+        .admin-sidebar-card {
+            padding: 12px 10px;
+            border-radius: 13px;
+        }
+
+        .admin-menu {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-menu .admin-nav-link {
+            min-height: 43px;
+        }
+
+        .admin-sidebar-footer {
+            margin-top: 13px;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .admin-page .admin-nav-link,
+        .admin-page .admin-nav-icon,
+        .admin-page .admin-nav-arrow {
+            transition: none;
+        }
+    }
 </style>
 
 <div class="admin-page">
 
     <div class="admin-layout">
 
-        <!-- SIDEBAR -->
-        <div class="admin-sidebar-wrap">
+        <!-- ====================================
+             SIDEBAR ADMIN
+             ==================================== -->
+
+        <aside class="admin-sidebar-wrap"
+               aria-label="Điều hướng quản trị">
 
             <div class="admin-sidebar-card">
 
-                <div class="admin-title">
-                    Quản trị hệ thống
+                <!-- BRAND -->
+
+                <div class="admin-sidebar-brand">
+
+                    <div class="admin-brand-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+
+                    <div class="admin-brand-info">
+                        <h2 class="admin-title">
+                            Quản trị hệ thống
+                        </h2>
+
+                        <p class="admin-subtitle">
+                            Trung tâm quản lý sự kiện
+                        </p>
+                    </div>
+
                 </div>
 
-                <div class="admin-subtitle">
-                    Hệ thống đặt vé sự kiện
+                <!-- MENU CHINH -->
+
+                <div class="admin-menu-label">
+                    Quản lý hệ thống
                 </div>
 
-                <div class="nav flex-column admin-menu">
+                <nav class="admin-menu"
+                     aria-label="Menu Admin">
+
+                    <!-- DUYET SU KIEN -->
 
                     <a asp-controller="Admin"
                        asp-action="Index"
-                       class="nav-link @(currentAction == "Index" ? "active" : "")">
-                        Duyệt sự kiện
+                       class="admin-nav-link @(isEventPage ? "active" : "")"
+                       aria-current="@(isEventPage ? "page" : null)">
+
+                        <span class="admin-nav-icon">
+                            <i class="bi bi-calendar2-check"></i>
+                        </span>
+
+                        <span class="admin-nav-text">
+                            Duyệt sự kiện
+                        </span>
+
+                        <i class="bi bi-chevron-right admin-nav-arrow"></i>
+
                     </a>
 
-
+                    <!-- QUAN LY NGUOI DUNG -->
 
                     <a asp-controller="Admin"
                        asp-action="NguoiDung"
-                       class="nav-link @(currentAction == "NguoiDung" || currentAction == "TaoBanToChuc" ? "active" : "")">
-                        Quản lý người dùng
-                    </a>
-                                        <a asp-controller="Admin"
-                       asp-action="YeuCauHoanHuy"
-                       class="nav-link @(currentAction == "YeuCauHoanHuy" ? "active" : "")">
-                        Yêu cầu hủy/hoàn vé
-                    </a>
-<a asp-controller="Admin"
-   asp-action="ThongKe"
-   class="nav-link @(currentAction == "ThongKe" ? "active" : "")">
-    Thống kê hệ thống
-</a>
-                </div>
+                       class="admin-nav-link @(isUserPage ? "active" : "")"
+                       aria-current="@(isUserPage ? "page" : null)">
 
-                <div class="admin-footer">
-                    © @DateTime.Now.Year<br />
-                    Đặt Vé Sự Kiện
-                </div>
+                        <span class="admin-nav-icon">
+                            <i class="bi bi-people"></i>
+                        </span>
+
+                        <span class="admin-nav-text">
+                            Quản lý người dùng
+                        </span>
+
+                        <i class="bi bi-chevron-right admin-nav-arrow"></i>
+
+                    </a>
+
+                    <!-- YEU CAU HUY VE -->
+
+                    <a asp-controller="Admin"
+                       asp-action="YeuCauHoanHuy"
+                       class="admin-nav-link @(isCancelPage ? "active" : "")"
+                       aria-current="@(isCancelPage ? "page" : null)">
+
+                        <span class="admin-nav-icon">
+                            <i class="bi bi-ticket-detailed"></i>
+                        </span>
+
+                        <span class="admin-nav-text">
+                            Theo dõi hủy vé
+                        </span>
+
+                        <i class="bi bi-chevron-right admin-nav-arrow"></i>
+
+                    </a>
+
+                    <!-- THONG KE HE THONG -->
+
+                    <a asp-controller="Admin"
+                       asp-action="ThongKe"
+                       class="admin-nav-link @(isStatisticsPage ? "active" : "")"
+                       aria-current="@(isStatisticsPage ? "page" : null)">
+
+                        <span class="admin-nav-icon">
+                            <i class="bi bi-bar-chart-line"></i>
+                        </span>
+
+                        <span class="admin-nav-text">
+                            Thống kê hệ thống
+                        </span>
+
+                        <i class="bi bi-chevron-right admin-nav-arrow"></i>
+
+                    </a>
+
+                </nav>
+
+
 
             </div>
 
-        </div>
+        </aside>
 
-        <!-- CONTENT -->
-        <div class="admin-main">
+        <!-- ====================================
+             MAIN CONTENT
+             ==================================== -->
+
+        <main class="admin-main">
 
             <div class="admin-content">
                 @RenderBody()
             </div>
 
-        </div>
+        </main>
 
     </div>
 

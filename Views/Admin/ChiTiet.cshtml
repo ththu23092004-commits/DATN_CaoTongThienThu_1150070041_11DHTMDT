@@ -45,6 +45,22 @@
       href="~/css/so-do-xem-chi-tiet.css"
       asp-append-version="true" />
 
+
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet" />
+
+
+<style>
+    .admin-event-detail,
+    .admin-event-detail *:not(.bi):not(svg):not(svg *) {
+        font-family: "Be Vietnam Pro", sans-serif !important;
+    }
+
+    .admin-event-detail .bi {
+        font-family: "bootstrap-icons" !important;
+    }
+</style>
+
 <div class="admin-event-detail">
     <div class="aed-heading">
         <div>
@@ -370,7 +386,9 @@
 
                     <div class="aed-card-body">
                         <div class="aed-review">
-                            @if (trangThai == "ChoDuyet")
+                            @if (trangThai == "ChoDuyet"
+    && sk != null
+    && sk.ThoiGianKetThuc > DateTime.Now)
                             {
                                 <p>
                                     Vui lòng kiểm tra ảnh sự kiện,
