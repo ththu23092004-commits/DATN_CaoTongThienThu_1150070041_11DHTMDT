@@ -17,10 +17,6 @@
 }
 
 <style>
-    /* ============================================
-       ONBOARDING POPUP - LAVENDER / PASTEL
-       ============================================ */
-
     .svy-overlay,
     .svy-overlay * {
         box-sizing: border-box;
@@ -98,9 +94,15 @@
         width: 34px;
         height: 34px;
         border-radius: 11px;
-        background: linear-gradient(135deg,#a977be,#ce8fca);
+        background: linear-gradient(135deg, #a977be, #ce8fca);
         color: #fff;
         font-size: 16px;
+    }
+
+    .svy-top-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
     .svy-step-indicator {
@@ -111,6 +113,36 @@
         color: #9977aa;
         font-size: 10px;
         font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .svy-close {
+        display: grid;
+        place-items: center;
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ead9ee;
+        border-radius: 10px;
+        background: #fff;
+        color: #9877a8;
+        font-size: 19px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .15s;
+    }
+
+    .svy-close:hover {
+        border-color: #d6b8df;
+        background: #f4e9f8;
+        color: #78518b;
+    }
+
+    .svy-close:focus-visible,
+    .svy-btn:focus-visible,
+    .svy-location-option:focus-visible {
+        outline: 3px solid rgba(177, 119, 194, .28);
+        outline-offset: 3px;
     }
 
     .svy-heading {
@@ -157,7 +189,7 @@
     }
 
     .svy-progress-part.active {
-        background: linear-gradient(90deg,#a877bf,#ca8bc2);
+        background: linear-gradient(90deg, #a877bf, #ca8bc2);
     }
 
     .svy-progress-labels {
@@ -175,21 +207,19 @@
         font-weight: 800;
     }
 
-    /* CONTENT */
+    #surveyForm {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
 
-#surveyForm {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-#surveyScroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-}
+    #surveyScroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+    }
 
     .svy-scroll {
         flex: 1;
@@ -238,8 +268,6 @@
         line-height: 1.8;
     }
 
-    /* TOPICS */
-
     .svy-topic-count {
         display: inline-flex;
         align-items: center;
@@ -255,7 +283,7 @@
 
     .svy-topic-grid {
         display: grid;
-        grid-template-columns: repeat(2,minmax(0,1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 11px;
     }
 
@@ -314,8 +342,6 @@
         overflow-wrap: anywhere;
     }
 
-    /* LOCATION */
-
     .svy-field {
         display: flex;
         flex-direction: column;
@@ -348,7 +374,7 @@
 
     .svy-input:focus {
         border-color: #b983c8;
-        box-shadow: 0 0 0 3px rgba(178,112,196,.11);
+        box-shadow: 0 0 0 3px rgba(178, 112, 196, .11);
     }
 
     .svy-input::placeholder {
@@ -399,11 +425,9 @@
         margin-top: 1px;
     }
 
-    /* FORMATS */
-
     .svy-format-grid {
         display: grid;
-        grid-template-columns: repeat(2,minmax(0,1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
     }
 
@@ -504,6 +528,8 @@
         display: flex;
         gap: 9px;
         flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
     }
 
     .svy-btn {
@@ -520,31 +546,46 @@
         color: #8b6b9c;
         font-size: 11px;
         font-weight: 750;
+        text-decoration: none;
         cursor: pointer;
         transition: .15s;
     }
 
     .svy-btn:hover {
         background: #f6eef8;
+        color: #78518b;
+        text-decoration: none;
     }
 
     .svy-btn-primary {
         border: 0;
-        background: linear-gradient(110deg,#a56ab8,#cc83c0);
+        background: linear-gradient(110deg, #a56ab8, #cc83c0);
         color: #fff;
-        box-shadow: 0 5px 13px rgba(158,95,181,.14);
+        box-shadow: 0 5px 13px rgba(158, 95, 181, .14);
     }
 
     .svy-btn-primary:hover {
-        background: linear-gradient(110deg,#9855ad,#be71b5);
+        background: linear-gradient(110deg, #9855ad, #be71b5);
         color: #fff;
+    }
+
+    .svy-btn-skip {
+        min-width: 92px;
+        border-color: transparent;
+        background: transparent;
+        color: #a28bad;
+    }
+
+    .svy-btn-skip:hover {
+        background: #f8f1fa;
+        color: #866495;
     }
 
     .svy-btn[hidden] {
         display: none !important;
     }
 
-    @@media(max-width:650px) {
+    @@media (max-width: 650px) {
         .svy-overlay {
             padding: 8px;
         }
@@ -568,6 +609,10 @@
             flex-direction: column;
         }
 
+        .svy-footer-info {
+            justify-content: center;
+        }
+
         .svy-footer-actions {
             justify-content: flex-end;
         }
@@ -584,9 +629,14 @@
         .svy-heading h1 {
             font-size: 20px;
         }
+
+        .svy-btn {
+            min-width: 88px;
+            padding: 10px 12px;
+        }
     }
 
-    @@media(prefers-reduced-motion:reduce) {
+    @@media (prefers-reduced-motion: reduce) {
         .svy-dialog {
             animation: none;
         }
@@ -607,6 +657,7 @@
         <div class="svy-top">
 
             <div class="svy-topline">
+
                 <div class="svy-brand">
                     <span class="svy-brand-icon">
                         <i class="bi bi-stars"></i>
@@ -614,12 +665,27 @@
                     Khám phá sở thích
                 </div>
 
-                <span class="svy-step-indicator" id="surveyStepBadge">
-                    Bước 1 / 3
-                </span>
+                <div class="svy-top-actions">
+
+                    <span class="svy-step-indicator"
+                          id="surveyStepBadge">
+                        Bước 1 / 3
+                    </span>
+
+                    <a asp-controller="KhachHang"
+                       asp-action="Index"
+                       class="svy-close"
+                       id="surveyClose"
+                       aria-label="Đóng khảo sát và để sau"
+                       title="Để sau">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+
+                </div>
             </div>
 
             <div class="svy-heading">
+
                 <span class="svy-eyebrow">
                     DÀNH RIÊNG CHO BẠN
                 </span>
@@ -632,6 +698,7 @@
                     Chỉ vài lựa chọn nhỏ để trải nghiệm
                     khám phá sự kiện trở nên thú vị hơn.
                 </p>
+
             </div>
 
             <div class="svy-progress-track"
@@ -640,6 +707,7 @@
                 <span class="svy-progress-part active"></span>
                 <span class="svy-progress-part"></span>
                 <span class="svy-progress-part"></span>
+
             </div>
 
             <div class="svy-progress-labels">
@@ -659,11 +727,11 @@
 
             <div class="svy-scroll" id="surveyScroll">
 
-                <!-- BUOC 1: CHU DE -->
                 <section class="svy-step"
                          data-survey-step="1">
 
                     <div class="svy-step-heading">
+
                         <h2 class="svy-step-title">
                             <span class="svy-step-icon">
                                 <i class="bi bi-heart"></i>
@@ -674,6 +742,7 @@
                         <p class="svy-step-description">
                             Có thể chọn nhiều chủ đề theo sở thích của bạn.
                         </p>
+
                     </div>
 
                     <div class="svy-topic-count">
@@ -701,6 +770,7 @@
                                        checked="@selected" />
 
                                 <span class="svy-topic-body">
+
                                     <strong class="svy-topic-name">
                                         @item.TenChuDe
                                     </strong>
@@ -711,6 +781,7 @@
                                             @item.MoTa
                                         </small>
                                     }
+
                                 </span>
 
                             </label>
@@ -737,12 +808,12 @@
 
                 </section>
 
-                <!-- BUOC 2: DIA DIEM -->
                 <section class="svy-step"
                          data-survey-step="2"
                          hidden>
 
                     <div class="svy-step-heading">
+
                         <h2 class="svy-step-title">
                             <span class="svy-step-icon">
                                 <i class="bi bi-geo-alt"></i>
@@ -754,9 +825,11 @@
                             Nhập khu vực bạn quan tâm để ưu tiên
                             các sự kiện thuận tiện hơn.
                         </p>
+
                     </div>
 
                     <div class="svy-field">
+
                         <label for="surveyLocation">
                             <i class="bi bi-pin-map"></i>
                             Địa điểm ưu tiên
@@ -770,6 +843,7 @@
 
                         <span asp-validation-for="DiaDiemUuTien"
                               class="svy-error"></span>
+
                     </div>
 
                     <div class="svy-location-example">
@@ -797,6 +871,7 @@
                                 data-location="Cần Thơ">
                             Cần Thơ
                         </button>
+
                     </div>
 
                     <div class="svy-note">
@@ -808,12 +883,12 @@
 
                 </section>
 
-                <!-- BUOC 3: HINH THUC -->
                 <section class="svy-step"
                          data-survey-step="3"
                          hidden>
 
                     <div class="svy-step-heading">
+
                         <h2 class="svy-step-title">
                             <span class="svy-step-icon">
                                 <i class="bi bi-calendar-event"></i>
@@ -824,11 +899,13 @@
                         <p class="svy-step-description">
                             Chọn hình thức phù hợp nhất với bạn.
                         </p>
+
                     </div>
 
                     <div class="svy-format-grid">
 
                         <label class="svy-format-card">
+
                             <input type="radio"
                                    name="HinhThucUuTien"
                                    value="KhongGioiHan"
@@ -842,9 +919,11 @@
                                 <strong>Không giới hạn</strong>
                                 <small>Mọi hình thức sự kiện</small>
                             </span>
+
                         </label>
 
                         <label class="svy-format-card">
+
                             <input type="radio"
                                    name="HinhThucUuTien"
                                    value="TrucTiep"
@@ -858,9 +937,11 @@
                                 <strong>Trực tiếp</strong>
                                 <small>Tham gia tại địa điểm tổ chức</small>
                             </span>
+
                         </label>
 
                         <label class="svy-format-card">
+
                             <input type="radio"
                                    name="HinhThucUuTien"
                                    value="TrucTuyen"
@@ -874,9 +955,11 @@
                                 <strong>Trực tuyến</strong>
                                 <small>Tham gia qua Internet</small>
                             </span>
+
                         </label>
 
                         <label class="svy-format-card">
+
                             <input type="radio"
                                    name="HinhThucUuTien"
                                    value="Hybrid"
@@ -890,6 +973,7 @@
                                 <strong>Kết hợp (Hybrid)</strong>
                                 <small>Trực tiếp và trực tuyến</small>
                             </span>
+
                         </label>
 
                     </div>
@@ -918,7 +1002,6 @@
 
             </div>
 
-            <!-- FOOTER -->
             <div class="svy-footer">
 
                 <div class="svy-footer-info">
@@ -927,6 +1010,13 @@
                 </div>
 
                 <div class="svy-footer-actions">
+
+                    <a asp-controller="KhachHang"
+                       asp-action="Index"
+                       class="svy-btn svy-btn-skip"
+                       id="surveySkip">
+                        Để sau
+                    </a>
 
                     <button type="button"
                             class="svy-btn"
@@ -960,116 +1050,120 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    "use strict";
+    document.addEventListener("DOMContentLoaded", function () {
+        "use strict";
 
-    const form = document.getElementById("surveyForm");
-    const steps = Array.from(
-        document.querySelectorAll("[data-survey-step]")
-    );
+        const form = document.getElementById("surveyForm");
 
-    const progress = Array.from(
-        document.querySelectorAll(".svy-progress-part")
-    );
-
-    const progressLabels = Array.from(
-        document.querySelectorAll(".svy-progress-labels span")
-    );
-
-    const stepBadge = document.getElementById("surveyStepBadge");
-    const previous = document.getElementById("surveyPrevious");
-    const next = document.getElementById("surveyNext");
-    const submit = document.getElementById("surveySubmit");
-    const scrollBox = document.getElementById("surveyScroll");
-
-    const topicInputs = Array.from(
-        document.querySelectorAll(".svy-topic-input")
-    );
-
-    const count = document.getElementById("selectedTopicCount");
-    const locationInput = document.getElementById("surveyLocation");
-
-    let currentStep = 1;
-
-    function updateSelectedTopics() {
-        const selected = topicInputs.filter(x => x.checked);
-        count.textContent = selected.length;
-    }
-
-    function goToStep(step) {
-        currentStep = Math.max(1, Math.min(3, step));
-
-        steps.forEach((section, index) => {
-            section.hidden = index + 1 !== currentStep;
-        });
-
-        progress.forEach((part, index) => {
-            part.classList.toggle(
-                "active",
-                index + 1 <= currentStep
-            );
-        });
-
-        progressLabels.forEach((label, index) => {
-            label.classList.toggle(
-                "active",
-                index + 1 === currentStep
-            );
-        });
-
-        stepBadge.textContent =
-            "Bước " + currentStep + " / 3";
-
-        previous.hidden = currentStep === 1;
-        next.hidden = currentStep === 3;
-        submit.hidden = currentStep !== 3;
-
-        scrollBox.scrollTop = 0;
-    }
-
-    topicInputs.forEach(input => {
-        input.addEventListener(
-            "change",
-            updateSelectedTopics
-        );
-    });
-
-    document.querySelectorAll("[data-location]")
-        .forEach(button => {
-            button.addEventListener("click", function () {
-                locationInput.value = this.dataset.location;
-                locationInput.dispatchEvent(
-                    new Event("change", { bubbles: true })
-                );
-            });
-        });
-
-    previous.addEventListener("click", function () {
-        goToStep(currentStep - 1);
-    });
-
-    next.addEventListener("click", function () {
-        goToStep(currentStep + 1);
-    });
-
-    // Giữ đúng các trường dữ liệu hiện tại.
-    // Không thay đổi action POST hoặc cách lưu SQL.
-    form.addEventListener("submit", function (event) {
-        if (currentStep !== 3) {
-            event.preventDefault();
-            goToStep(3);
+        if (!form) {
             return;
         }
 
-        // Tránh gửi form lặp nếu người dùng nhấn nhanh.
-        submit.disabled = true;
-        submit.textContent = "Đang lưu...";
+        const steps = Array.from(
+            document.querySelectorAll("[data-survey-step]")
+        );
 
-        // Nếu trình duyệt chặn submit vì lỗi validation,
-        // sự kiện submit không chạy và nút vẫn có thể bấm.
+        const progress = Array.from(
+            document.querySelectorAll(".svy-progress-part")
+        );
+
+        const progressLabels = Array.from(
+            document.querySelectorAll(".svy-progress-labels span")
+        );
+
+        const stepBadge = document.getElementById("surveyStepBadge");
+        const previous = document.getElementById("surveyPrevious");
+        const next = document.getElementById("surveyNext");
+        const submit = document.getElementById("surveySubmit");
+        const scrollBox = document.getElementById("surveyScroll");
+
+        const topicInputs = Array.from(
+            document.querySelectorAll(".svy-topic-input")
+        );
+
+        const count = document.getElementById("selectedTopicCount");
+        const locationInput = document.getElementById("surveyLocation");
+
+        let currentStep = 1;
+
+        function updateSelectedTopics() {
+            const selected = topicInputs.filter(input => input.checked);
+            count.textContent = selected.length;
+        }
+
+        function goToStep(step) {
+            currentStep = Math.max(1, Math.min(3, step));
+
+            steps.forEach((section, index) => {
+                section.hidden = index + 1 !== currentStep;
+            });
+
+            progress.forEach((part, index) => {
+                part.classList.toggle(
+                    "active",
+                    index + 1 <= currentStep
+                );
+            });
+
+            progressLabels.forEach((label, index) => {
+                label.classList.toggle(
+                    "active",
+                    index + 1 === currentStep
+                );
+            });
+
+            stepBadge.textContent =
+                "Bước " + currentStep + " / 3";
+
+            previous.hidden = currentStep === 1;
+            next.hidden = currentStep === 3;
+            submit.hidden = currentStep !== 3;
+
+            scrollBox.scrollTop = 0;
+        }
+
+        topicInputs.forEach(input => {
+            input.addEventListener(
+                "change",
+                updateSelectedTopics
+            );
+        });
+
+        document.querySelectorAll("[data-location]")
+            .forEach(button => {
+                button.addEventListener("click", function () {
+                    locationInput.value = this.dataset.location;
+
+                    locationInput.dispatchEvent(
+                        new Event("change", { bubbles: true })
+                    );
+                });
+            });
+
+        previous.addEventListener("click", function () {
+            goToStep(currentStep - 1);
+        });
+
+        next.addEventListener("click", function () {
+            goToStep(currentStep + 1);
+        });
+
+        form.addEventListener("submit", function (event) {
+            if (currentStep !== 3) {
+                event.preventDefault();
+                goToStep(3);
+                return;
+            }
+
+            if (!form.checkValidity()) {
+                return;
+            }
+
+            submit.disabled = true;
+            submit.textContent = "Đang lưu...";
+        });
+
+        updateSelectedTopics();
+        goToStep(1);
     });
-
-    updateSelectedTopics();
-    goToStep(1);
-});
 </script>
