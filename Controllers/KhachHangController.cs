@@ -196,8 +196,42 @@ if (User.Identity?.IsAuthenticated == true &&
     await _db.SaveChangesAsync();
 }
 
-    var now = DateTime.Now;
-    bool coTheDatVe = sk.ThoiGianKetThuc > now;
+var now = DateTime.Now;
+
+bool laSuKienTrucTuyen =
+    (sk.LoaiSuKien?.TenLoai ?? "")
+    .ToLower()
+    .Contains("trực tuyến")
+    || (sk.LoaiSuKien?.TenLoai ?? "")
+    .ToLower()
+    .Contains("truc tuyen")
+    || (sk.LoaiSuKien?.TenLoai ?? "")
+    .ToLower()
+    .Contains("online");
+
+bool daMuaVeTrucTuyen = false;
+
+if (laSuKienTrucTuyen &&
+    User.Identity?.IsAuthenticated == true &&
+    User.IsInRole("KhachHang") &&
+    int.TryParse(
+        User.FindFirstValue(ClaimTypes.NameIdentifier),
+        out int userIdMuaVe))
+{
+    daMuaVeTrucTuyen = await _db.Ve.AnyAsync(v =>
+        v.NguoiDungId == userIdMuaVe &&
+        v.SuKienId == sk.SuKienId &&
+        (
+            v.TrangThai == "DaThanhToan" ||
+            v.TrangThai == "DaCheckIn"
+        ));
+}
+
+bool coTheDatVe = sk.ThoiGianKetThuc > now;
+
+ViewBag.DaMuaVeTrucTuyen = daMuaVeTrucTuyen;
+
+ViewBag.DaMuaVeTrucTuyen = daMuaVeTrucTuyen;
 
     var diaDiem = await _db.DiaDiem
         .FirstOrDefaultAsync(d => d.SuKienId == sk.SuKienId);
@@ -337,13 +371,93 @@ public async Task<IActionResult> DatVe(int id)
     bool laWorkshop = loaiTenLower.Contains("workshop");
     bool laSuKienCoSoDoGhe = laTrucTiep || laWorkshop;
 
+    bool laSuKienTrucTuyen =
+        loaiTenLower.Contains("trực tuyến") ||
+        loaiTenLower.Contains("truc tuyen") ||
+        loaiTenLower.Contains("online");
+
+
+ViewBag.DaMuaVeTrucTuyen = false;
+ViewBag.VeDaMua = null;
+ViewBag.DangGiuVeTrucTuyen = false;
+ViewBag.DonHangDangGiuTrucTuyen = null;
+
+if (laSuKienTrucTuyen)
+{
+    int userId = GetCurrentUserId();
+
+    var veDaMua = await _db.Ve
+        .AsNoTracking()
+        .Where(v =>
+            v.NguoiDungId == userId &&
+            v.SuKienId == sk.SuKienId &&
+            (
+                v.TrangThai == "DaThanhToan" ||
+                v.TrangThai == "DaCheckIn"
+            ))
+        .OrderByDescending(v => v.NgayDat)
+        .Select(v => new
+        {
+            v.VeId,
+            v.MaVe,
+            TenSuKien = v.SuKien.TenSuKien,
+            TenLoaiVe = v.LoaiVe.TenLoai,
+            GiaVe = v.LoaiVe.GiaVe,
+            v.NgayDat,
+            v.TrangThai
+        })
+        .FirstOrDefaultAsync();
+
+    ViewBag.DaMuaVeTrucTuyen = veDaMua != null;
+    ViewBag.VeDaMua = veDaMua;
+
+    if (veDaMua == null)
+    {
+        var mocGiuVe = now.AddMinutes(-5);
+
+        var donHangDangGiu = await (
+            from v in _db.Ve.AsNoTracking()
+            join d in _db.DonHang.AsNoTracking()
+                on v.DonHangId equals (int?)d.DonHangId
+            where v.NguoiDungId == userId
+                && v.SuKienId == sk.SuKienId
+                && v.TrangThai == "ChuaThanhToan"
+                && d.NguoiDungId == userId
+                && d.TrangThai == "DangXuLy"
+                && d.NgayDat > mocGiuVe
+            orderby d.NgayDat descending
+            select new
+            {
+                d.DonHangId,
+                d.NgayDat,
+                HetHanLuc = d.NgayDat.AddMinutes(5)
+            }
+        ).FirstOrDefaultAsync();
+
+        ViewBag.DangGiuVeTrucTuyen = donHangDangGiu != null;
+        ViewBag.DonHangDangGiuTrucTuyen = donHangDangGiu;
+    }
+}
+
+
     var vm = new DatVeKhVM
     {
         SuKienId = sk.SuKienId,
         TenSuKien = sk.TenSuKien,
         LaSuKienTrucTiep = laSuKienCoSoDoGhe,
-        LaWorkshop = laWorkshop
+        LaWorkshop = laWorkshop,
+        SoLuong = 1
     };
+
+
+ViewBag.OnlineTongSoVe = 0;
+ViewBag.OnlineSoVeDaDat = 0;
+ViewBag.OnlineSoVeDaBan = 0;
+ViewBag.OnlineSoVeDangGiu = 0;
+ViewBag.OnlineSoVeConLai = 0;
+ViewBag.OnlineHetVe = false;
+ViewBag.OnlineSapHetVe = false;
+
 
     DiaDiem? diaDiem = null;
 
@@ -402,8 +516,6 @@ public async Task<IActionResult> DatVe(int id)
     }
     else
     {
-        vm.LaSuKienTrucTiep = false;
-
         var loaiVeMacDinh = await _db.LoaiVe
             .Where(l => l.SuKienId == sk.SuKienId)
             .OrderBy(l => l.GiaVe)
@@ -418,6 +530,60 @@ public async Task<IActionResult> DatVe(int id)
         }
 
         vm.LoaiVeId = loaiVeMacDinh.LoaiVeId;
+        vm.SoLuong = 1;
+
+        if (laSuKienTrucTuyen)
+        {
+            int tongSoVe = Math.Max(0, loaiVeMacDinh.SoLuong);
+
+            int soVeDaDat = await (
+                from veHienTai in _db.Ve
+                join donHangHienTai in _db.DonHang
+                    on veHienTai.DonHangId equals (int?)donHangHienTai.DonHangId into donHangJoin
+                from donHangHienTai in donHangJoin.DefaultIfEmpty()
+                where veHienTai.LoaiVeId == loaiVeMacDinh.LoaiVeId
+                    && veHienTai.TrangThai != "Huy"
+                    && !(veHienTai.TrangThai == "ChuaThanhToan"
+                        && donHangHienTai != null
+                        && (
+                            donHangHienTai.TrangThai == "Huy"
+                            ||
+                            (
+                                donHangHienTai.TrangThai == "DangXuLy"
+                                && donHangHienTai.NgayDat.AddMinutes(5) <= now
+                            )
+                        ))
+                select veHienTai.VeId
+            ).CountAsync();
+
+
+int soVeDaBan = await _db.Ve.CountAsync(v =>
+    v.LoaiVeId == loaiVeMacDinh.LoaiVeId &&
+    (
+        v.TrangThai == "DaThanhToan" ||
+        v.TrangThai == "DaCheckIn"
+    ));
+
+int soVeDangGiu = Math.Max(
+    0,
+    soVeDaDat - soVeDaBan
+);
+
+int soVeConLai = Math.Max(
+    0,
+    tongSoVe - soVeDaDat
+);
+
+ViewBag.OnlineTongSoVe = tongSoVe;
+ViewBag.OnlineSoVeDaDat = soVeDaDat;
+ViewBag.OnlineSoVeDaBan = soVeDaBan;
+ViewBag.OnlineSoVeDangGiu = soVeDangGiu;
+ViewBag.OnlineSoVeConLai = soVeConLai;
+ViewBag.OnlineHetVe = soVeConLai <= 0;
+ViewBag.OnlineSapHetVe =
+    soVeConLai > 0 && soVeConLai <= 5;
+
+        }
     }
 
     ViewBag.SoDoJson = "null";
@@ -482,6 +648,7 @@ public async Task<IActionResult> DatVe(int id)
     return View(vm);
 }
 
+
 [Authorize(Roles = "KhachHang")]
 [HttpPost]
 [ValidateAntiForgeryToken]
@@ -510,7 +677,10 @@ public async Task<IActionResult> DatVe(DatVeKhVM model)
 
     bool laWorkshop = loaiTenLower.Contains("workshop");
     bool laSuKienCoSoDoGhe = laTrucTiep || laWorkshop;
-
+bool laSuKienTrucTuyen =
+    loaiTenLower.Contains("trực tuyến") ||
+    loaiTenLower.Contains("truc tuyen") ||
+    loaiTenLower.Contains("online");
     int userId = GetCurrentUserId();
 
     List<int> gheIds = new();
@@ -535,11 +705,15 @@ public async Task<IActionResult> DatVe(DatVeKhVM model)
     }
     else
     {
-        if (model.SoLuong < 1 || model.SoLuong > 10)
-        {
-            TempData["ThongBao"] = "Số lượng vé phải từ 1 đến 10.";
-            return RedirectToAction("DatVe", new { id = model.SuKienId });
-        }
+if (laSuKienTrucTuyen)
+{
+    model.SoLuong = 1;
+}
+else if (model.SoLuong < 1 || model.SoLuong > 10)
+{
+    TempData["ThongBao"] = "Số lượng vé phải từ 1 đến 10.";
+    return RedirectToAction("DatVe", new { id = model.SuKienId });
+}
 
         if (!model.LoaiVeId.HasValue)
         {
@@ -573,6 +747,72 @@ public async Task<IActionResult> DatVe(DatVeKhVM model)
     try
     {
         var now = DateTime.Now;
+
+if (laSuKienTrucTuyen)
+{
+    var suKienKhoa = await _db.SuKien
+        .FromSqlInterpolated($@"
+            SELECT *
+            FROM dbo.SuKien WITH (UPDLOCK, HOLDLOCK)
+            WHERE SuKienId = {sk.SuKienId}
+        ")
+        .AsNoTracking()
+        .FirstOrDefaultAsync();
+
+    if (suKienKhoa == null)
+    {
+        await transaction.RollbackAsync();
+        return NotFound();
+    }
+
+    bool daMuaVe = await _db.Ve.AnyAsync(v =>
+        v.NguoiDungId == userId &&
+        v.SuKienId == sk.SuKienId &&
+        (
+            v.TrangThai == "DaThanhToan" ||
+            v.TrangThai == "DaCheckIn"
+        ));
+
+if (daMuaVe)
+{
+    await transaction.RollbackAsync();
+
+    TempData["ThongBao"] =
+        "Bạn đã mua vé cho sự kiện trực tuyến này. Mỗi tài khoản chỉ được sở hữu một vé.";
+
+    return RedirectToAction(
+        "DatVe",
+        new { id = sk.SuKienId });
+}
+
+    var mocGiuVe = now.AddMinutes(-5);
+
+    bool dangGiuVe = await (
+        from v in _db.Ve
+        join d in _db.DonHang
+            on v.DonHangId equals (int?)d.DonHangId
+        where v.NguoiDungId == userId
+            && v.SuKienId == sk.SuKienId
+            && v.TrangThai == "ChuaThanhToan"
+            && d.NguoiDungId == userId
+            && d.TrangThai == "DangXuLy"
+            && d.NgayDat > mocGiuVe
+        select v.VeId
+    ).AnyAsync();
+
+    if (dangGiuVe)
+    {
+        await transaction.RollbackAsync();
+
+        TempData["ThongBao"] =
+            "Bạn đang có đơn giữ vé cho sự kiện này. Không thể đặt thêm vé trong thời gian giữ 5 phút.";
+
+        return RedirectToAction(
+            "ChiTiet",
+            new { id = sk.SuKienId });
+    }
+}
+
         var hetHan = now.AddMinutes(5);
 
         var donHang = new DonHang
@@ -716,42 +956,73 @@ public async Task<IActionResult> DatVe(DatVeKhVM model)
                 tongTien += ghe.LoaiVe.GiaVe;
             }
         }
-        else
+
+else
+{
+var loaiVe = await _db.LoaiVe
+    .FromSqlInterpolated($@"
+        SELECT *
+        FROM dbo.LoaiVe WITH (UPDLOCK, HOLDLOCK)
+        WHERE LoaiVeId = {model.LoaiVeId!.Value}
+          AND SuKienId = {sk.SuKienId}
+    ")
+    .AsTracking()
+    .FirstOrDefaultAsync();
+
+    if (loaiVe == null)
+    {
+        await transaction.RollbackAsync();
+        TempData["ThongBao"] = "Loại vé không hợp lệ.";
+        return RedirectToAction("DatVe", new { id = model.SuKienId });
+    }
+
+    var soLuongDaDat = await (
+        from veHienTai in _db.Ve
+        join donHangHienTai in _db.DonHang
+            on veHienTai.DonHangId equals (int?)donHangHienTai.DonHangId into donHangJoin
+        from donHangHienTai in donHangJoin.DefaultIfEmpty()
+        where veHienTai.LoaiVeId == loaiVe.LoaiVeId
+            && veHienTai.TrangThai != "Huy"
+            && !(veHienTai.TrangThai == "ChuaThanhToan"
+                && donHangHienTai != null
+                && (donHangHienTai.TrangThai == "Huy"
+                    || (donHangHienTai.TrangThai == "DangXuLy"
+                        && donHangHienTai.NgayDat.AddMinutes(5) <= now)))
+        select veHienTai.VeId
+    ).CountAsync();
+
+    int soLuongConLai = Math.Max(0, loaiVe.SoLuong - soLuongDaDat);
+
+    if (model.SoLuong > soLuongConLai)
+    {
+        await transaction.RollbackAsync();
+
+        TempData["ThongBao"] = soLuongConLai > 0
+            ? $"Loại vé này chỉ còn {soLuongConLai} vé. Vui lòng chọn lại số lượng."
+            : "Loại vé này đã hết. Vui lòng chọn loại vé khác.";
+
+        return RedirectToAction("DatVe", new { id = model.SuKienId });
+    }
+
+    for (int i = 0; i < model.SoLuong; i++)
+    {
+        var ve = new Ve
         {
-            // =========================================
-            // ĐẶT VÉ TRỰC TUYẾN
-            // =========================================
+            NguoiDungId = userId,
+            LoaiVeId = loaiVe.LoaiVeId,
+            SuKienId = sk.SuKienId,
+            ChoNgoiId = null,
+            MaVe = $"V{DateTime.Now:yyyyMMddHHmmss}{Guid.NewGuid().ToString("N")[..4]}",
+            NgayDat = now,
+            TrangThai = "ChuaThanhToan",
+            DonHangId = donHang.DonHangId
+        };
 
-            var loaiVe = await _db.LoaiVe
-                .FirstOrDefaultAsync(l =>
-                    l.LoaiVeId == model.LoaiVeId!.Value &&
-                    l.SuKienId == sk.SuKienId);
+        _db.Ve.Add(ve);
+        tongTien += loaiVe.GiaVe;
+    }
+}
 
-            if (loaiVe == null)
-            {
-                await transaction.RollbackAsync();
-                TempData["ThongBao"] = "Loại vé không hợp lệ.";
-                return RedirectToAction("DatVe", new { id = model.SuKienId });
-            }
-
-            for (int i = 0; i < model.SoLuong; i++)
-            {
-                var ve = new Ve
-                {
-                    NguoiDungId = userId,
-                    LoaiVeId = loaiVe.LoaiVeId,
-                    SuKienId = sk.SuKienId,
-                    ChoNgoiId = null,
-                    MaVe = $"V{DateTime.Now:yyyyMMddHHmmss}{Guid.NewGuid().ToString("N")[..4]}",
-                    NgayDat = now,
-                    TrangThai = "ChuaThanhToan",
-                    DonHangId = donHang.DonHangId
-                };
-
-                _db.Ve.Add(ve);
-                tongTien += loaiVe.GiaVe;
-            }
-        }
 
         if (tongTien <= 0)
         {
@@ -840,7 +1111,36 @@ public async Task<IActionResult> ThanhToan(int id)
             TempData["ThongBao"] = "Đơn hàng không có vé hợp lệ.";
             return RedirectToAction("VeCuaToi");
         }
+if (donHang.NgayDat.AddMinutes(5) <= DateTime.Now)
+{
+    foreach (var ve in donHang.Ves)
+    {
+        if (ve.TrangThai == "ChuaThanhToan")
+        {
+            ve.TrangThai = "Huy";
+        }
+    }
 
+    donHang.TrangThai = "Huy";
+
+    var gheDangGiu = await _db.SoDoChoNgoi
+        .Where(g => g.DonHangGiuId == donHang.DonHangId)
+        .ToListAsync();
+
+    foreach (var ghe in gheDangGiu)
+    {
+        ghe.DonHangGiuId = null;
+        ghe.ThoiGianHetHanGiu = null;
+    }
+
+    await _db.SaveChangesAsync();
+    await transaction.CommitAsync();
+
+    TempData["ThongBao"] =
+        "Đơn hàng đã hết thời gian giữ vé 5 phút. Vui lòng đặt vé lại.";
+
+    return RedirectToAction("VeCuaToi");
+}
         var veCoGhe = donHang.Ves
             .Where(v => v.ChoNgoiId.HasValue)
             .ToList();
@@ -1528,8 +1828,12 @@ public async Task<IActionResult> ThanhToanXacNhan(int id)
         {
             int userId = GetCurrentUserId();
 
-            var donHang = await _db.DonHang
-                .FirstOrDefaultAsync(d => d.DonHangId == id && d.NguoiDungId == userId);
+var donHang = await _db.DonHang
+    .Include(d => d.Ves)
+        .ThenInclude(v => v.SuKien)
+    .FirstOrDefaultAsync(d =>
+        d.DonHangId == id &&
+        d.NguoiDungId == userId);
 
             if (donHang == null) return NotFound();
 

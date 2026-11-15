@@ -24,48 +24,48 @@ namespace VeSuKienWeb.Services
             _goiY = goiY;
         }
 
-public async Task<KetQuaKhamPha> TimKiemAsync(
-    NhuCauKhamPha nhuCau,
-    int? nguoiDungId = null,
-    int? gioiHanKetQua = 3)
+        public async Task<KetQuaKhamPha> TimKiemAsync(
+            NhuCauKhamPha nhuCau,
+            int? nguoiDungId = null,
+            int? gioiHanKetQua = 3)
         {
             var ketQua = new KetQuaKhamPha
             {
                 NhuCau = nhuCau
             };
 
+            int gioiHan = Math.Clamp(gioiHanKetQua ?? 3, 1, 3);
             DateTime hienTai = DateTime.Now;
 
             string chuDeCanTim = ChuanHoa(nhuCau.ChuDe);
-            string diaDiemCanTim =
-                ChuanHoaDiaDiem(nhuCau.DiaDiem);
+            string diaDiemCanTim = ChuanHoaDiaDiem(nhuCau.DiaDiem);
             string tuKhoa = ChuanHoa(nhuCau.TuKhoa);
+
+            bool timTenRieng = LaTruyVanTenRieng(nhuCau.TuKhoa);
+
+            if (!timTenRieng && LaTruyVanTenRieng(nhuCau.ChuDe))
+            {
+                timTenRieng = true;
+
+                if (tuKhoa.Length == 0)
+                {
+                    tuKhoa = chuDeCanTim;
+                }
+
+                if (chuDeCanTim == tuKhoa)
+                {
+                    chuDeCanTim = "";
+                }
+            }
+
+            if (timTenRieng && chuDeCanTim == tuKhoa)
+            {
+                chuDeCanTim = "";
+            }
 
             DateTime? tuNgay = DocNgay(nhuCau.TuNgay);
             DateTime? denNgay = DocNgay(nhuCau.DenNgay);
 
-            // Tránh trả về sự kiện bất kỳ khi câu hỏi
-            // không chứa một điều kiện tìm kiếm nào.
-            bool coDieuKien =
-                chuDeCanTim.Length > 0 ||
-                diaDiemCanTim.Length > 0 ||
-                tuKhoa.Length > 0 ||
-                tuNgay.HasValue ||
-                denNgay.HasValue ||
-                nhuCau.NganSachToiDa.HasValue ||
-                !string.IsNullOrWhiteSpace(nhuCau.HinhThuc);
-
-            if (!coDieuKien)
-            {
-                ketQua.ThongBao =
-                    "Bạn hãy cho biết chủ đề, địa điểm, " +
-                    "thời gian hoặc ngân sách muốn tìm.";
-                return ketQua;
-            }
-
-            // ======================================
-            // 1. SỰ KIỆN ĐÃ DUYỆT, CHƯA KẾT THÚC
-            // ======================================
             var suKiens = await _db.SuKien
                 .AsNoTracking()
                 .Where(x =>
@@ -86,8 +86,9 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
             if (suKiens.Count == 0)
             {
                 ketQua.ThongBao =
-                    "Hiện chưa có sự kiện đã duyệt " +
-                    "và còn hiệu lực.";
+                    "Hiện chưa có sự kiện phù hợp để khám phá. " +
+                    "Bạn có thể thử lại khi hệ thống có sự kiện mới.";
+
                 return ketQua;
             }
 
@@ -95,9 +96,6 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                 .Select(x => x.SuKienId)
                 .ToList();
 
-            // ======================================
-            // 2. ĐỊA ĐIỂM VÀ ĐỊA CHỈ
-            // ======================================
             var diaDiems = await _db.DiaDiem
                 .AsNoTracking()
                 .Where(x => ids.Contains(x.SuKienId))
@@ -117,20 +115,15 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                     {
                         Ten = string.Join("; ",
                             g.Select(x => x.TenDiaDiem)
-                             .Where(x =>
-                                 !string.IsNullOrWhiteSpace(x))
+                             .Where(x => !string.IsNullOrWhiteSpace(x))
                              .Distinct()),
 
                         DiaChi = string.Join("; ",
                             g.Select(x => x.DiaChi)
-                             .Where(x =>
-                                 !string.IsNullOrWhiteSpace(x))
+                             .Where(x => !string.IsNullOrWhiteSpace(x))
                              .Distinct())
                     });
 
-            // ======================================
-            // 3. CHỦ ĐỀ SỰ KIỆN
-            // ======================================
             var lienKetChuDe = await (
                 from lk in _db.SuKienChuDe.AsNoTracking()
                 join cd in _db.ChuDeSuKien.AsNoTracking()
@@ -148,13 +141,8 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                 .ToDictionary(
                     g => g.Key,
                     g => string.Join(", ",
-                        g.Select(x => x.TenChuDe)
-                         .Distinct())
-                );
+                        g.Select(x => x.TenChuDe).Distinct()));
 
-            // ======================================
-            // 4. HÌNH THỨC TỔ CHỨC
-            // ======================================
             var trucTuyenIds = (await _db.SuKienTrucTuyen
                 .AsNoTracking()
                 .Where(x => ids.Contains(x.SuKienId))
@@ -166,9 +154,6 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                 .Select(x => x.SuKienId)
                 .ToHashSet();
 
-            // ======================================
-            // 5. GIÁ VÉ
-            // ======================================
             var loaiVes = await _db.LoaiVe
                 .AsNoTracking()
                 .Where(x => ids.Contains(x.SuKienId))
@@ -195,26 +180,17 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                 })
                 .ToListAsync();
 
-            // LoaiVeId trong Models/Ve.cs là int.
             var daBanMap = daBan.ToDictionary(
                 x => x.LoaiVeId,
-                x => x.SoLuongDaBan
-            );
+                x => x.SoLuongDaBan);
 
             var loaiVeMap = loaiVes
                 .GroupBy(x => x.SuKienId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.ToList()
-                );
+                .ToDictionary(g => g.Key, g => g.ToList());
 
-            // ======================================
-            // 6. ĐIỂM COSINE CÁ NHÂN HÓA
-            // ======================================
             var diemCaNhan = new Dictionary<int, double>();
 
-            if (nguoiDungId.HasValue &&
-                nguoiDungId.Value > 0)
+            if (nguoiDungId.HasValue && nguoiDungId.Value > 0)
             {
                 var baoCao = await _goiY.LayBaoCaoAsync(
                     nguoiDungId.Value);
@@ -222,53 +198,35 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                 diemCaNhan = baoCao.DanhSach
                     .ToDictionary(
                         x => x.SuKienId,
-                        x => Math.Clamp(x.Cosine, 0, 1)
-                    );
+                        x => Math.Clamp(x.Cosine, 0, 1));
             }
 
-            // ======================================
-            // 7. TÌM KIẾM VÀ ĐÁNH GIÁ
-            // ======================================
-            var danhSach = new List<SuKienPhuHop>();
+            var chinhXac = new List<SuKienPhuHop>();
+            var ganDung = new List<SuKienPhuHop>();
+            var duPhong = new List<SuKienPhuHop>();
 
             foreach (var sk in suKiens)
             {
-                // Sự kiện giao với khoảng ngày yêu cầu.
+                bool coTrucTiep = trucTiepIds.Contains(sk.SuKienId);
+                bool coTrucTuyen = trucTuyenIds.Contains(sk.SuKienId);
+
+                bool khopHinhThuc =
+                    string.IsNullOrWhiteSpace(nhuCau.HinhThuc) ||
+                    (nhuCau.HinhThuc == "TrucTiep" && coTrucTiep) ||
+                    (nhuCau.HinhThuc == "TrucTuyen" && coTrucTuyen) ||
+                    (nhuCau.HinhThuc == "Hybrid" &&
+                     coTrucTiep && coTrucTuyen);
+
                 bool khopThoiGian =
                     (!tuNgay.HasValue ||
-                        sk.ThoiGianKetThuc.Date >=
-                        tuNgay.Value.Date) &&
+                     sk.ThoiGianKetThuc.Date >= tuNgay.Value.Date) &&
                     (!denNgay.HasValue ||
-                        sk.ThoiGianBatDau.Date <=
-                        denNgay.Value.Date);
+                     sk.ThoiGianBatDau.Date <= denNgay.Value.Date);
 
-                bool coTrucTiep =
-                    trucTiepIds.Contains(sk.SuKienId);
-
-                bool coTrucTuyen =
-                    trucTuyenIds.Contains(sk.SuKienId);
-
-                // Hình thức được giữ là điều kiện bắt buộc.
-                if (nhuCau.HinhThuc == "TrucTiep" &&
-                    !coTrucTiep)
-                    continue;
-
-                if (nhuCau.HinhThuc == "TrucTuyen" &&
-                    !coTrucTuyen)
-                    continue;
-
-                if (nhuCau.HinhThuc == "Hybrid" &&
-                    !(coTrucTiep && coTrucTuyen))
-                    continue;
-
-                // ==================================
-                // 8. THÔNG TIN ĐỊA ĐIỂM
-                // ==================================
                 string tenDiaDiem = "";
                 string diaChi = "";
 
-                if (diaDiemMap.TryGetValue(
-                    sk.SuKienId, out var dd))
+                if (diaDiemMap.TryGetValue(sk.SuKienId, out var dd))
                 {
                     tenDiaDiem = dd.Ten;
                     diaChi = dd.DiaChi;
@@ -279,68 +237,51 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
 
                 bool khopDiaDiem =
                     diaDiemCanTim.Length == 0 ||
-                    ChuanHoaDiaDiem(diaDiemDayDu)
-                        .Contains(diaDiemCanTim);
+                    ChuaCumTu(
+                        ChuanHoaDiaDiem(diaDiemDayDu),
+                        diaDiemCanTim);
 
-                // ==================================
-                // 9. NỘI DUNG SỰ KIỆN
-                // ==================================
                 string chuDe = chuDeMap.GetValueOrDefault(
                     sk.SuKienId, "");
 
-                string tenChuanHoa =
-                    ChuanHoa(sk.TenSuKien);
+                string tenChuanHoa = ChuanHoa(sk.TenSuKien);
+                string chuDeChuanHoa = ChuanHoa(chuDe);
+                string moTaChuanHoa = ChuanHoa(sk.MoTaChiTiet);
 
-                string chuDeChuanHoa =
-                    ChuanHoa(chuDe);
-
-                string moTaChuanHoa =
-                    ChuanHoa(sk.MoTaChiTiet);
-
-                // Tìm trong cả tên, chủ đề, mô tả.
                 string noiDungTimKiem = ChuanHoa(
-                    $"{sk.TenSuKien} {chuDe} " +
-                    $"{sk.MoTaChiTiet}");
+                    $"{sk.TenSuKien} {chuDe} {sk.MoTaChiTiet}");
 
-                bool coYeuCauChuDe =
-                    chuDeCanTim.Length > 0;
+                bool coChuDe = chuDeCanTim.Length > 0;
+                bool coTuKhoa = tuKhoa.Length > 0;
 
                 bool khopChuDeChinhXac =
-                    !coYeuCauChuDe ||
+                    !coChuDe ||
                     ChuaCumTu(noiDungTimKiem, chuDeCanTim);
 
-                double diemLienQuan = coYeuCauChuDe
+                double diemChuDe = coChuDe
                     ? TinhDiemLienQuan(
-                        chuDeCanTim, noiDungTimKiem)
+                        chuDeCanTim,
+                        noiDungTimKiem)
                     : 0;
 
-                // Bắt buộc có liên quan về nội dung,
-                // không lấy sự kiện bất kỳ cho đủ 3.
-                if (coYeuCauChuDe &&
-                    !khopChuDeChinhXac &&
-                    diemLienQuan < 12.5)
-                {
-                    continue;
-                }
+                bool khopTuKhoaChinhXac =
+                    !coTuKhoa ||
+                    ChuaCumTu(noiDungTimKiem, tuKhoa);
 
-                // Nếu chỉ có từ khóa bổ sung thì
-                // từ khóa cũng phải thực sự liên quan.
-                bool khopTuKhoa =
-                    tuKhoa.Length == 0 ||
-                    ChuaCumTu(noiDungTimKiem, tuKhoa) ||
-                    TinhDiemLienQuan(
-                        tuKhoa, noiDungTimKiem) >= 12.5;
+                double diemTuKhoa = coTuKhoa
+                    ? TinhDiemLienQuan(
+                        tuKhoa,
+                        noiDungTimKiem)
+                    : 0;
 
-                if (!coYeuCauChuDe &&
-                    tuKhoa.Length > 0 &&
-                    !khopTuKhoa)
-                {
-                    continue;
-                }
+                bool khopTuKhoaGanDung =
+                    coTuKhoa &&
+                    diemTuKhoa > 0;
 
-                // ==================================
-                // 10. GIÁ VÉ THẤP NHẤT
-                // ==================================
+                bool khopChuDeGanDung =
+                    coChuDe &&
+                    diemChuDe >= 12.5;
+
                 decimal? giaThapNhat = null;
 
                 if (loaiVeMap.TryGetValue(
@@ -349,279 +290,385 @@ public async Task<KetQuaKhamPha> TimKiemAsync(
                     var veConSoLuong = cacLoaiVe
                         .Where(v =>
                             v.SoLuong >
-                            daBanMap.GetValueOrDefault(
-                                v.LoaiVeId))
+                            daBanMap.GetValueOrDefault(v.LoaiVeId))
                         .ToList();
 
                     if (veConSoLuong.Count == 0)
+                    {
                         continue;
+                    }
 
-                    giaThapNhat = veConSoLuong
-                        .Min(v => v.GiaVe);
+                    giaThapNhat = veConSoLuong.Min(v => v.GiaVe);
                 }
                 else
                 {
                     giaThapNhat = sk.GiaVeMacDinh;
                 }
 
-                // Ngân sách là giới hạn cứng.
-                if (nhuCau.NganSachToiDa.HasValue)
+                bool khopNganSach =
+                    !nhuCau.NganSachToiDa.HasValue ||
+                    (giaThapNhat.HasValue &&
+                     giaThapNhat.Value <=
+                     nhuCau.NganSachToiDa.Value);
+
+                bool khopNoiDungChinhXac =
+                    khopChuDeChinhXac &&
+                    khopTuKhoaChinhXac;
+
+                bool khopTatCa =
+                    khopNoiDungChinhXac &&
+                    khopDiaDiem &&
+                    khopThoiGian &&
+                    khopHinhThuc &&
+                    khopNganSach;
+
+                bool coLienQuan;
+
+                if (timTenRieng)
                 {
-                    if (!giaThapNhat.HasValue ||
-                        giaThapNhat.Value >
-                        nhuCau.NganSachToiDa.Value)
-                    {
-                        continue;
-                    }
+                    coLienQuan =
+                        khopTuKhoaChinhXac ||
+                        khopTuKhoaGanDung;
+                }
+                else
+                {
+                    coLienQuan =
+                        (coChuDe &&
+                         (khopChuDeChinhXac ||
+                          khopChuDeGanDung)) ||
+                        (coTuKhoa &&
+                         (khopTuKhoaChinhXac ||
+                          khopTuKhoaGanDung)) ||
+                        (!coChuDe && !coTuKhoa &&
+                         (khopDiaDiem ||
+                          khopThoiGian ||
+                          khopHinhThuc ||
+                          khopNganSach));
                 }
 
-                // ==================================
-                // 11. PHÂN LOẠI KHỚP / MỞ RỘNG
-                // ==================================
-                bool khopChuDe =
-                    khopChuDeChinhXac && khopTuKhoa;
-
-                bool laGoiYMoRong =
-                    !khopChuDe ||
-                    !khopDiaDiem ||
-                    !khopThoiGian;
-
-                var dieuKienChuaKhop =
-                    new List<string>();
-
-                if (!khopChuDe)
-                {
-                    dieuKienChuaKhop.Add(
-                        "Nội dung chỉ liên quan một phần");
-                }
-
-                if (!khopDiaDiem)
-                {
-                    dieuKienChuaKhop.Add(
-                        "Khác địa điểm yêu cầu");
-                }
-
-                if (!khopThoiGian)
-                {
-                    dieuKienChuaKhop.Add(
-                        "Ngoài khoảng thời gian yêu cầu");
-                }
-
-                // Không có chủ đề/từ khóa liên quan và
-                // sai địa điểm: không lấy làm gợi ý mở rộng.
-                if (!coYeuCauChuDe &&
-                    tuKhoa.Length == 0 &&
-                    !khopDiaDiem)
-                {
-                    continue;
-                }
-
-                // ==================================
-                // 12. CHẤM ĐIỂM
-                // ==================================
-                double diem = 0;
+                var dieuKienChuaKhop = new List<string>();
                 var lyDo = new List<string>();
 
-                if (coYeuCauChuDe)
+                double diemNoiDung = 0;
+
+                if (coChuDe)
                 {
                     if (khopChuDeChinhXac)
                     {
-                        diem += 50;
+                        diemNoiDung += 50;
                         lyDo.Add("Khớp chủ đề/nội dung");
 
-                        if (ChuaCumTu(
-                            tenChuanHoa, chuDeCanTim))
+                        if (ChuaCumTu(tenChuanHoa, chuDeCanTim))
                         {
-                            diem += 20;
+                            diemNoiDung += 20;
                         }
                         else if (ChuaCumTu(
-                            chuDeChuanHoa, chuDeCanTim))
+                            chuDeChuanHoa,
+                            chuDeCanTim))
                         {
-                            diem += 15;
+                            diemNoiDung += 15;
                         }
                         else if (ChuaCumTu(
-                            moTaChuanHoa, chuDeCanTim))
+                            moTaChuanHoa,
+                            chuDeCanTim))
                         {
-                            diem += 10;
+                            diemNoiDung += 10;
                         }
                     }
                     else
                     {
-                        diem += Math.Min(diemLienQuan, 25);
-                        lyDo.Add(
-                            "Có nội dung liên quan");
+                        diemNoiDung += Math.Min(diemChuDe, 25);
+                        dieuKienChuaKhop.Add(
+                            "Chủ đề chỉ liên quan một phần");
                     }
                 }
 
-                if (tuKhoa.Length > 0 && khopTuKhoa)
+                if (coTuKhoa)
                 {
-                    diem += ChuaCumTu(
-                        noiDungTimKiem, tuKhoa) ? 8 : 4;
+                    if (khopTuKhoaChinhXac)
+                    {
+                        diemNoiDung += timTenRieng ? 60 : 8;
 
-                    lyDo.Add("Có từ khóa phù hợp");
+                        lyDo.Add(
+                            timTenRieng
+                                ? "Có đầy đủ tên được tìm kiếm trong nội dung sự kiện"
+                                : "Có từ khóa phù hợp");
+                    }
+                    else if (khopTuKhoaGanDung)
+                    {
+                        diemNoiDung += Math.Min(diemTuKhoa, 20);
+
+                        dieuKienChuaKhop.Add(
+                            timTenRieng
+                                ? "Chỉ trùng một phần tên, chưa xác nhận đúng nghệ sĩ"
+                                : "Từ khóa chỉ trùng một phần");
+                    }
+                    else
+                    {
+                        dieuKienChuaKhop.Add(
+                            timTenRieng
+                                ? "Không tìm thấy tên nghệ sĩ được yêu cầu trong nội dung"
+                                : "Không khớp từ khóa");
+                    }
                 }
 
-                if (diaDiemCanTim.Length > 0 &&
-                    khopDiaDiem)
+                if (diaDiemCanTim.Length > 0)
                 {
-                    diem += 15;
-                    lyDo.Add("Đúng địa điểm");
+                    if (khopDiaDiem)
+                    {
+                        diemNoiDung += 15;
+                        lyDo.Add("Đúng địa điểm");
+                    }
+                    else
+                    {
+                        dieuKienChuaKhop.Add(
+                            "Khác địa điểm yêu cầu");
+                    }
                 }
 
-                if ((tuNgay.HasValue ||
-                     denNgay.HasValue) &&
-                    khopThoiGian)
+                if (tuNgay.HasValue || denNgay.HasValue)
                 {
-                    diem += 10;
-                    lyDo.Add("Đúng thời gian");
+                    if (khopThoiGian)
+                    {
+                        diemNoiDung += 10;
+                        lyDo.Add("Đúng thời gian");
+                    }
+                    else
+                    {
+                        dieuKienChuaKhop.Add(
+                            "Ngoài khoảng thời gian yêu cầu");
+                    }
                 }
 
                 if (nhuCau.NganSachToiDa.HasValue)
                 {
-                    diem += 10;
-                    lyDo.Add("Trong ngân sách");
+                    if (khopNganSach)
+                    {
+                        diemNoiDung += 10;
+                        lyDo.Add("Trong ngân sách");
+                    }
+                    else
+                    {
+                        dieuKienChuaKhop.Add(
+                            "Vượt ngân sách yêu cầu");
+                    }
                 }
 
-                if (!string.IsNullOrWhiteSpace(
-                    nhuCau.HinhThuc))
+                if (!string.IsNullOrWhiteSpace(nhuCau.HinhThuc))
                 {
-                    diem += 5;
-                    lyDo.Add("Đúng hình thức");
+                    if (khopHinhThuc)
+                    {
+                        diemNoiDung += 5;
+                        lyDo.Add("Đúng hình thức");
+                    }
+                    else
+                    {
+                        dieuKienChuaKhop.Add(
+                            "Khác hình thức tổ chức");
+                    }
                 }
 
-                // Cosine chỉ được cộng tối đa 10 điểm.
+                double cosine = Math.Clamp(
+                    diemCaNhan.GetValueOrDefault(sk.SuKienId, 0),
+                    0,
+                    1);
 
- // Điểm nội dung đã bao gồm:
- // chủ đề, tên, mô tả, địa điểm,
- // thời gian, hình thức và ngân sách.
- double diemNoiDung = diem;
-
- // Cosine nằm trong khoảng 0 đến 1.
- double cosine = Math.Clamp(
-     diemCaNhan.GetValueOrDefault(sk.SuKienId, 0),
-     0,
-     1
- );
-
- // Giữ tổng điểm để theo dõi nội bộ.
- // Cosine đóng góp tối đa 10 điểm.
- diem = diemNoiDung + cosine * 10;
-
-
-                danhSach.Add(new SuKienPhuHop
+                var item = new SuKienPhuHop
                 {
                     SuKienId = sk.SuKienId,
                     TenSuKien = sk.TenSuKien,
                     AnhSuKien = sk.AnhSuKien,
                     MoTaChiTiet = sk.MoTaChiTiet,
-
-                    ThoiGianBatDau =
-                        sk.ThoiGianBatDau,
-
-                    ThoiGianKetThuc =
-                        sk.ThoiGianKetThuc,
-
+                    ThoiGianBatDau = sk.ThoiGianBatDau,
+                    ThoiGianKetThuc = sk.ThoiGianKetThuc,
                     TenDiaDiem = tenDiaDiem,
                     DiaChi = diaChi,
 
-                    DiaDiem =
-                        diaDiemDayDu.Length > 0
-                            ? diaDiemDayDu
-                            : (coTrucTuyen
-                                ? "Trực tuyến"
-                                : "Chưa cập nhật"),
+                    DiaDiem = diaDiemDayDu.Length > 0
+                        ? diaDiemDayDu
+                        : (coTrucTuyen
+                            ? "Trực tuyến"
+                            : "Chưa cập nhật"),
 
                     ChuDe = chuDe,
                     GiaVeThapNhat = giaThapNhat,
                     DiemNoiDung = diemNoiDung,
                     DiemCosine = cosine,
-                    DiemPhuHop = diem,
+                    DiemPhuHop = diemNoiDung + cosine * 10,
+                    LaGoiYMoRong = !khopTatCa,
+                    DieuKienChuaKhop = string.Join(
+                        "; ",
+                        dieuKienChuaKhop),
+                    LyDoPhuHop = lyDo.Count > 0
+                        ? string.Join("; ", lyDo)
+                        : "Sự kiện đang được mở bán"
+                };
 
-                    LaGoiYMoRong = laGoiYMoRong,
-
-                    DieuKienChuaKhop =
-                        string.Join("; ",
-                            dieuKienChuaKhop),
-
-                    LyDoPhuHop =
-                        lyDo.Count > 0
-                            ? string.Join("; ", lyDo)
-                            : "Sự kiện còn hiệu lực"
-                });
+                if (khopTatCa)
+                {
+                    chinhXac.Add(item);
+                }
+                else if (coLienQuan)
+                {
+                    if (timTenRieng &&
+                        !khopTuKhoaChinhXac &&
+                        !khopTuKhoaGanDung)
+                    {
+                        duPhong.Add(item);
+                    }
+                    else
+                    {
+                        item.LaGoiYMoRong = true;
+                        ganDung.Add(item);
+                    }
+                }
+                else
+                {
+                    duPhong.Add(item);
+                }
             }
 
-            // ======================================
-            // 13. XẾP HẠNG VÀ CHỌN TOP-3
-            // ======================================
-            // Khớp đầy đủ luôn đứng trước gợi ý mở rộng.
+            var danhSach = new List<SuKienPhuHop>();
 
- // Thứ tự ưu tiên:
- // 1. Đáp ứng đầy đủ điều kiện tìm kiếm.
- // 2. Điểm phù hợp với nội dung câu hỏi.
- // 3. Điểm Cosine theo sở thích người dùng.
- // 4. Sự kiện diễn ra sớm hơn.
- ketQua.DanhSach = danhSach
-     .OrderBy(x => x.LaGoiYMoRong)
-     .ThenByDescending(x => x.DiemNoiDung)
-     .ThenByDescending(x => x.DiemCosine)
-     .ThenBy(x => x.ThoiGianBatDau)
-.ThenBy(x => x.SuKienId)
-.Take(gioiHanKetQua ?? int.MaxValue)
-.ToList();
+            void ThemKetQua(IEnumerable<SuKienPhuHop> danhSachNguon)
+            {
+                foreach (var item in danhSachNguon)
+                {
+                    if (danhSach.Count >= gioiHan)
+                    {
+                        break;
+                    }
 
+                    if (danhSach.All(
+                        x => x.SuKienId != item.SuKienId))
+                    {
+                        danhSach.Add(item);
+                    }
+                }
+            }
+
+            var xepHangChinhXac = chinhXac
+                .OrderByDescending(x => x.DiemNoiDung)
+                .ThenByDescending(x => x.DiemCosine)
+                .ThenBy(x => x.ThoiGianBatDau)
+                .ThenBy(x => x.SuKienId);
+
+            ThemKetQua(xepHangChinhXac);
+
+            var xepHangGanDung = ganDung
+                .OrderByDescending(x => x.DiemNoiDung)
+                .ThenByDescending(x => x.DiemCosine)
+                .ThenBy(x => x.ThoiGianBatDau)
+                .ThenBy(x => x.SuKienId);
+
+            ThemKetQua(xepHangGanDung);
+
+            int soGoiYDuPhong = 0;
+
+            if (danhSach.Count < 2)
+            {
+                int soCanThem = Math.Min(
+                    2 - danhSach.Count,
+                    gioiHan - danhSach.Count);
+
+                bool coHoSoCaNhan =
+                    diemCaNhan.Values.Any(x => x > 0);
+
+                var xepHangDuPhong = duPhong
+                    .Where(x =>
+                        !danhSach.Any(
+                            y => y.SuKienId == x.SuKienId))
+                    .OrderByDescending(x =>
+                        coHoSoCaNhan ? x.DiemCosine : 0)
+                    .ThenBy(x => x.ThoiGianBatDau)
+                    .ThenBy(x => x.SuKienId)
+                    .Take(soCanThem)
+                    .ToList();
+
+                foreach (var item in xepHangDuPhong)
+                {
+                    item.LaGoiYMoRong = true;
+
+                    item.DieuKienChuaKhop =
+                        coHoSoCaNhan
+                            ? "Gợi ý dự phòng dựa trên sở thích và lịch sử tương tác; không xác nhận đáp ứng yêu cầu tìm kiếm"
+                            : "Gợi ý khám phá sự kiện sắp diễn ra; không xác nhận đáp ứng yêu cầu tìm kiếm";
+
+                    item.LyDoPhuHop =
+                        coHoSoCaNhan && item.DiemCosine > 0
+                            ? "Được lựa chọn theo mức độ phù hợp với sở thích tài khoản"
+                            : "Sự kiện còn hiệu lực, được đề xuất để tham khảo";
+
+                    danhSach.Add(item);
+                    soGoiYDuPhong++;
+                }
+            }
+
+            ketQua.DanhSach = danhSach;
 
 #if DEBUG
-if (nguoiDungId.HasValue)
-{
-    Console.WriteLine();
-    Console.WriteLine("===== KIEM TRA COSINE TOP-3 =====");
+            if (nguoiDungId.HasValue)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "===== KIEM TRA COSINE TOP-3 =====");
 
-    foreach (var sk in ketQua.DanhSach)
-    {
-        Console.WriteLine(
-            $"SuKienId: {sk.SuKienId} | " +
-            $"Ten: {sk.TenSuKien} | " +
-            $"NoiDung: {sk.DiemNoiDung:F2} | " +
-            $"Cosine: {sk.DiemCosine:F4} | " +
-            $"Tong: {sk.DiemPhuHop:F2}"
-        );
-    }
+                foreach (var sk in ketQua.DanhSach)
+                {
+                    Console.WriteLine(
+                        $"SuKienId: {sk.SuKienId} | " +
+                        $"Ten: {sk.TenSuKien} | " +
+                        $"NoiDung: {sk.DiemNoiDung:F2} | " +
+                        $"Cosine: {sk.DiemCosine:F4} | " +
+                        $"Tong: {sk.DiemPhuHop:F2} | " +
+                        $"MoRong: {sk.LaGoiYMoRong}");
+                }
 
-    Console.WriteLine("===============================");
-}
+                Console.WriteLine(
+                    "===============================");
+            }
 #endif
-
 
             if (ketQua.DanhSach.Count == 0)
             {
                 ketQua.ThongBao =
-                    "Chưa tìm thấy sự kiện có nội dung " +
-                    "liên quan và đáp ứng các giới hạn " +
-                    "bắt buộc. Bạn có thể thử chủ đề " +
-                    "rộng hơn hoặc điều chỉnh ngân sách.";
+                    "Hiện chưa có sự kiện đang mở bán phù hợp để giới thiệu. " +
+                    "Bạn có thể thử một chủ đề khác nhé.";
             }
-            else if (ketQua.DanhSach.Any(
-                x => x.LaGoiYMoRong))
+            else if (chinhXac.Count > 0)
             {
                 ketQua.ThongBao =
-                    "Đây là các sự kiện phù hợp hoặc " +
-                    "có nội dung liên quan nhất. " +
-                    "Một số kết quả khác địa điểm " +
-                    "hoặc thời gian bạn yêu cầu.";
+                    $"Mình tìm được {Math.Min(chinhXac.Count, gioiHan)} " +
+                    "sự kiện đáp ứng yêu cầu của bạn.";
+
+                if (ketQua.DanhSach.Any(x => x.LaGoiYMoRong))
+                {
+                    ketQua.ThongBao +=
+                        " Ngoài ra còn có những gợi ý liên quan để tham khảo.";
+                }
+            }
+            else if (ganDung.Count > 0)
+            {
+                ketQua.ThongBao =
+                    "Mình chưa tìm thấy sự kiện đáp ứng đầy đủ yêu cầu, " +
+                    "nhưng có một số kết quả gần đúng để bạn tham khảo. " +
+                    "Các kết quả này chưa được xác nhận khớp hoàn toàn.";
+            }
+            else if (soGoiYDuPhong > 0)
+            {
+                ketQua.ThongBao =
+                    "Mình chưa tìm thấy sự kiện đáp ứng đúng yêu cầu. " +
+                    "Dưới đây là một vài sự kiện khác có thể phù hợp " +
+                    "với sở thích của bạn hoặc đáng để khám phá.";
             }
             else
             {
                 ketQua.ThongBao =
-                    $"Tìm thấy {ketQua.DanhSach.Count} " +
-                    "sự kiện phù hợp nhất.";
+                    "Mình chưa tìm thấy sự kiện đáp ứng đầy đủ yêu cầu.";
             }
 
             return ketQua;
         }
-
-        // ==========================================
-        // CÁC HÀM HỖ TRỢ
-        // ==========================================
 
         private static DateTime? DocNgay(string? value)
         {
@@ -638,104 +685,158 @@ if (nguoiDungId.HasValue)
             return null;
         }
 
-        // So khớp cả cụm từ, tránh khớp một phần chữ.
+        private static bool LaTruyVanTenRieng(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string text = value.Trim();
+            string chuanHoa = ChuanHoa(text);
+
+            string[] chuDeChung =
+            {
+                "su kien",
+                "am nhac",
+                "san khau",
+                "workshop",
+                "cong nghe",
+                "thu cong",
+                "lam banh",
+                "nghe nghiep",
+                "ca nhac",
+                "hoa nhac",
+                "hoi thao",
+                "truc tiep",
+                "truc tuyen"
+            };
+
+            if (chuDeChung.Any(x =>
+                ChuaCumTu(chuanHoa, x)))
+            {
+                return false;
+            }
+
+            var words = text.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries);
+
+            if (words.Length < 2 || words.Length > 7)
+            {
+                return false;
+            }
+
+            int soTuVietHoa = words.Count(
+                x => x.Length > 0 && char.IsUpper(x[0]));
+
+            bool coTuVietHoaToanBo = words.Any(
+                x => x.Length >= 2 &&
+                     x.All(c =>
+                         !char.IsLetter(c) ||
+                         char.IsUpper(c)));
+
+            return soTuVietHoa >= 2 ||
+                   coTuVietHoaToanBo;
+        }
+
         private static bool ChuaCumTu(
             string noiDung,
             string cumTu)
         {
             if (string.IsNullOrWhiteSpace(cumTu))
+            {
                 return true;
+            }
 
             string a = " " + ChuanHoa(noiDung) + " ";
             string b = " " + ChuanHoa(cumTu) + " ";
 
-            return a.Contains(
-                b,
-                StringComparison.Ordinal);
+            return a.Contains(b, StringComparison.Ordinal);
         }
 
-        // Điểm liên quan theo tỷ lệ từ khóa trùng.
-        // Đây là so khớp từ khóa, chưa phải embedding.
-  
-private static double TinhDiemLienQuan(
-    string chuDeCanTim,
-    string noiDungSuKien)
-{
-    // Bỏ các từ chung chung, không đại diện
-    // cho chủ đề thực sự của khách hàng.
-    var tuChung = new HashSet<string>
-    {
-        "su", "kien", "tim", "kiem",
-        "cho", "toi", "muon", "tham",
-        "gia", "cac", "tai", "trong",
-        "ve", "co", "mot", "workshop",
-        "lam", "duoc", "nhung", "nay",
-        "nao", "giup", "hoc"
-    };
+        private static double TinhDiemLienQuan(
+            string tuKhoa,
+            string noiDungSuKien)
+        {
+            var tuChung = new HashSet<string>
+            {
+                "su", "kien", "tim", "kiem",
+                "cho", "toi", "muon", "tham",
+                "gia", "cac", "tai", "trong",
+                "ve", "co", "mot", "workshop",
+                "lam", "duoc", "nhung", "nay",
+                "nao", "giup", "hoc", "nghe",
+                "si", "dien", "vien", "ca",
+                "hat", "ten", "nao"
+            };
 
-    // Ví dụ "làm bánh" -> chỉ giữ "banh".
-    var tuQuanTrong = ChuanHoa(chuDeCanTim)
-        .Split(' ',
-            StringSplitOptions.RemoveEmptyEntries)
-        .Where(x =>
-            x.Length >= 2 &&
-            !tuChung.Contains(x))
-        .Distinct()
-        .ToList();
+            var tuQuanTrong = ChuanHoa(tuKhoa)
+                .Split(
+                    ' ',
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Where(x =>
+                    x.Length >= 2 &&
+                    !tuChung.Contains(x))
+                .Distinct()
+                .ToList();
 
-    if (tuQuanTrong.Count == 0)
-        return 0;
+            if (tuQuanTrong.Count == 0)
+            {
+                return 0;
+            }
 
-    // Đọc toàn bộ tên, chủ đề và mô tả sự kiện.
-    var tuTrongSuKien = ChuanHoa(noiDungSuKien)
-        .Split(' ',
-            StringSplitOptions.RemoveEmptyEntries)
-        .ToHashSet();
+            var tuTrongSuKien = ChuanHoa(noiDungSuKien)
+                .Split(
+                    ' ',
+                    StringSplitOptions.RemoveEmptyEntries)
+                .ToHashSet();
 
-    int soTuKhop = tuQuanTrong.Count(
-        x => tuTrongSuKien.Contains(x));
+            int soTuKhop = tuQuanTrong.Count(
+                x => tuTrongSuKien.Contains(x));
 
-    if (soTuKhop == 0)
-        return 0;
+            if (soTuKhop == 0)
+            {
+                return 0;
+            }
 
-    double tyLe =
-        (double)soTuKhop / tuQuanTrong.Count;
+            double tyLe =
+                (double)soTuKhop / tuQuanTrong.Count;
 
-    return Math.Round(25 * tyLe, 2);
-}
+            return Math.Round(25 * tyLe, 2);
+        }
 
-
-        private static string ChuanHoaDiaDiem(
-            string? value)
+        private static string ChuanHoaDiaDiem(string? value)
         {
             string s = ChuanHoa(value);
 
-            // Đồng nhất các cách gọi TP.HCM.
             s = s.Replace(
                     "thanh pho ho chi minh",
                     "ho chi minh")
-                 .Replace("tp ho chi minh",
+                 .Replace(
+                    "tp ho chi minh",
                     "ho chi minh")
-                 .Replace("tp hcm",
+                 .Replace(
+                    "tp hcm",
                     "ho chi minh")
-                 .Replace("tphcm",
+                 .Replace(
+                    "tphcm",
                     "ho chi minh")
-                 .Replace("sai gon",
+                 .Replace(
+                    "sai gon",
                     "ho chi minh");
 
-            // Chỉ thay từ HCM độc lập.
-            s = (" " + s + " ")
+            return (" " + s + " ")
                 .Replace(" hcm ", " ho chi minh ")
                 .Trim();
-
-            return s;
         }
 
-        // Chuẩn hóa tiếng Việt và dấu câu để tìm kiếm.
         private static string ChuanHoa(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
+            {
                 return "";
+            }
 
             string text = value
                 .Trim()
@@ -749,16 +850,14 @@ private static double TinhDiemLienQuan(
 
             foreach (char c in decomposed)
             {
-                if (CharUnicodeInfo.GetUnicodeCategory(c)
-                    == UnicodeCategory.NonSpacingMark)
+                if (CharUnicodeInfo.GetUnicodeCategory(c) ==
+                    UnicodeCategory.NonSpacingMark)
                 {
                     continue;
                 }
 
                 sb.Append(
-                    char.IsLetterOrDigit(c)
-                        ? c
-                        : ' ');
+                    char.IsLetterOrDigit(c) ? c : ' ');
             }
 
             return string.Join(

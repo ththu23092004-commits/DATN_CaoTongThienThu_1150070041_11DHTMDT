@@ -155,6 +155,76 @@ namespace VeSuKienWeb.Migrations
                     b.ToTable("HoSoSoThich", (string)null);
                 });
 
+            modelBuilder.Entity("VeSuKienWeb.Models.KhamPhaSuKien.KhamPhaHoiThoai", b =>
+                {
+                    b.Property<long>("HoiThoaiId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("HoiThoaiId"));
+
+                    b.Property<DateTime>("NgayCapNhat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NguCanhJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("NguoiDungId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TieuDe")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("HoiThoaiId");
+
+                    b.HasIndex("NguoiDungId", "NgayCapNhat");
+
+                    b.ToTable("KhamPhaHoiThoai", (string)null);
+                });
+
+            modelBuilder.Entity("VeSuKienWeb.Models.KhamPhaSuKien.KhamPhaTinNhan", b =>
+                {
+                    b.Property<long>("TinNhanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("TinNhanId"));
+
+                    b.Property<string>("DuLieuKetQuaJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("HoiThoaiId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("NgayGui")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NoiDung")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VaiTro")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("TinNhanId");
+
+                    b.HasIndex("HoiThoaiId", "NgayGui");
+
+                    b.ToTable("KhamPhaTinNhan", (string)null);
+                });
+
             modelBuilder.Entity("VeSuKienWeb.Models.KhuVucChoNgoi", b =>
                 {
                     b.Property<int>("KhuVucId")
@@ -830,6 +900,28 @@ namespace VeSuKienWeb.Migrations
                     b.Navigation("NguoiDung");
                 });
 
+            modelBuilder.Entity("VeSuKienWeb.Models.KhamPhaSuKien.KhamPhaHoiThoai", b =>
+                {
+                    b.HasOne("VeSuKienWeb.Models.NguoiDung", "NguoiDung")
+                        .WithMany()
+                        .HasForeignKey("NguoiDungId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("NguoiDung");
+                });
+
+            modelBuilder.Entity("VeSuKienWeb.Models.KhamPhaSuKien.KhamPhaTinNhan", b =>
+                {
+                    b.HasOne("VeSuKienWeb.Models.KhamPhaSuKien.KhamPhaHoiThoai", "HoiThoai")
+                        .WithMany("TinNhans")
+                        .HasForeignKey("HoiThoaiId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HoiThoai");
+                });
+
             modelBuilder.Entity("VeSuKienWeb.Models.KhuVucChoNgoi", b =>
                 {
                     b.HasOne("VeSuKienWeb.Models.LoaiVe", "LoaiVe")
@@ -1108,6 +1200,11 @@ namespace VeSuKienWeb.Migrations
             modelBuilder.Entity("VeSuKienWeb.Models.DonHang", b =>
                 {
                     b.Navigation("Ves");
+                });
+
+            modelBuilder.Entity("VeSuKienWeb.Models.KhamPhaSuKien.KhamPhaHoiThoai", b =>
+                {
+                    b.Navigation("TinNhans");
                 });
 
             modelBuilder.Entity("VeSuKienWeb.Models.KhuVucChoNgoi", b =>

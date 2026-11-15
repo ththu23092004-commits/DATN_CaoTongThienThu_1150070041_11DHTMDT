@@ -1,106 +1,237 @@
+
 @model VeSuKienWeb.Models.KhachHang.ThanhToanKhVM
 
 @{
     ViewData["Title"] = "Thanh toán đơn hàng";
 }
 
-<h2 class="mb-3">Thanh toán đơn hàng #@Model.DonHangId</h2>
+<link rel="stylesheet"
+      href="~/css/khachhang-thanh-toan.css"
+      asp-append-version="true" />
 
-@if (TempData["ThongBao"] != null)
-{
-    <div class="alert alert-info">@TempData["ThongBao"]</div>
-}
+<div class="payment-page">
 
-<div class="row">
-    <div class="col-lg-7">
-        <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
-                <strong>Chi tiết vé</strong>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm align-middle">
-                    <thead>
-                        <tr>
-                            <th>Mã vé</th>
-                            <th>Sự kiện</th>
-                            <th>Loại vé</th>
-                            <th>Ghế</th>
-                            <th class="text-end">Giá</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var v in Model.Ves)
-                        {
-                            <tr>
-                                <td>@v.MaVe</td>
-                                <td>@v.TenSuKien</td>
-                                <td>@v.TenLoaiVe</td>
-                                <td>
+<header class="payment-header">
+    <div class="payment-order-chip">
+        <div class="payment-order-icon">
+            <i class="bi bi-receipt"></i>
+        </div>
+
+        <div>
+            <span>Mã đơn hàng</span>
+            <strong>#@Model.DonHangId</strong>
+        </div>
+    </div>
+</header>
+
+    @if (TempData["ThongBao"] != null)
+    {
+        <div class="payment-alert">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>@TempData["ThongBao"]</span>
+        </div>
+    }
+
+    <main class="payment-layout">
+
+        <section class="payment-order-column">
+
+            <div class="payment-card payment-order-card">
+
+                <div class="payment-section-heading">
+                    <div class="payment-heading-icon">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </div>
+
+                    <div>
+                        <h3>Thông tin đơn hàng</h3>
+                        <p>Danh sách vé bạn đã đăng ký.</p>
+                    </div>
+                </div>
+
+                <div class="payment-ticket-list">
+
+                    @foreach (var v in Model.Ves)
+                    {
+                        <article class="payment-ticket-item">
+
+                            <div class="payment-ticket-icon">
+                                <i class="bi bi-ticket-perforated-fill"></i>
+                            </div>
+
+                            <div class="payment-ticket-info">
+
+                                <strong class="payment-event-name">
+                                    @v.TenSuKien
+                                </strong>
+
+                                <span class="payment-ticket-type">
+                                    @v.TenLoaiVe
+                                </span>
+
+                                <div class="payment-ticket-meta">
+                                    <span>
+                                        <i class="bi bi-upc"></i>
+                                        @v.MaVe
+                                    </span>
+
                                     @if (!string.IsNullOrEmpty(v.Hang))
                                     {
-                                        <text>@v.Hang@v.Cot</text>
+                                        <span>
+                                            <i class="bi bi-geo-alt"></i>
+                                            Ghế @v.Hang@v.Cot
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted small">Không áp dụng</span>
+                                        <span>
+                                            <i class="bi bi-globe2"></i>
+                                            Sự kiện trực tuyến
+                                        </span>
                                     }
-                                </td>
-                                <td class="text-end">@v.GiaVe.ToString("N0") đ</td>
-                            </tr>
-                        }
-                        <tr>
-                            <td colspan="4" class="text-end fw-semibold">
-                                Tổng cộng
-                            </td>
-                            <td class="text-end fw-bold">
-                                @Model.TongTien.ToString("N0") đ
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                                </div>
 
-    <div class="col-lg-5">
-        <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
-                <strong>Chọn hình thức thanh toán</strong>
+                            </div>
+
+                            <div class="payment-ticket-price">
+                                @v.GiaVe.ToString("N0") đ
+                            </div>
+
+                        </article>
+                    }
+
+                </div>
+
+                <div class="payment-order-summary">
+
+                    <div class="payment-summary-row">
+                        <span>Số lượng vé</span>
+                        <strong>@Model.Ves.Count vé</strong>
+                    </div>
+
+                    <div class="payment-summary-total">
+                        <div>
+                            <span>Tổng thanh toán</span>
+                            <small>Đã bao gồm toàn bộ vé trong đơn hàng</small>
+                        </div>
+
+                        <strong>
+                            @Model.TongTien.ToString("N0") đ
+                        </strong>
+                    </div>
+
+                </div>
+
             </div>
-            <div class="card-body text-center">
-                <p class="mb-2">Bạn có thể thanh toán qua VNPAY hoặc quét mã QR .</p>
+
+            <div class="payment-reminder">
+                <i class="bi bi-lightbulb"></i>
+                <span>Vui lòng kiểm tra đúng thông tin đơn hàng trước khi thanh toán.</span>
+            </div>
+
+        </section>
+
+        <aside class="payment-method-column">
+
+
+
+            <section class="payment-method-card payment-vnpay-card">
+
+                <div class="payment-method-card-header">
+
+                    <div class="payment-method-icon vnpay-icon">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+
+                    <div class="payment-method-title">
+                        <strong>Thanh toán qua VNPay</strong>
+                        <span>Nhanh chóng và thuận tiện</span>
+                    </div>
+
+                    <span class="payment-method-tag">
+                        Phổ biến
+                    </span>
+
+                </div>
+
+                <p class="payment-method-description">
+                    Chuyển đến cổng thanh toán VNPay để hoàn tất giao dịch trực tuyến.
+                </p>
+
+                <div class="payment-method-price">
+                    <span>Số tiền thanh toán</span>
+                    <strong>@Model.TongTien.ToString("N0") đ</strong>
+                </div>
 
                 <a asp-controller="ThanhToan"
                    asp-action="VnPay"
                    asp-route-donHangId="@Model.DonHangId"
-                   class="btn btn-primary w-100 mb-3">
-                    Thanh toán qua VNPAY
+                   class="payment-vnpay-button">
+                    Thanh toán ngay
+                    <i class="bi bi-arrow-right"></i>
                 </a>
 
-                <div class="text-muted small mb-2">Quét mã QR:</div>
+            </section>
 
-<div class="d-flex justify-content-center mb-3">
-    <div class="border rounded p-3 d-inline-block">
-        <img src="~/qr/maQR.jpg"
-             alt="QR thanh toán"
-             class="img-fluid"
-             style="width:220px;height:220px;object-fit:cover;" />
-    </div>
-</div>
+            <section class="payment-method-card payment-qr-card">
 
+                <div class="payment-method-card-header">
 
+                    <div class="payment-method-icon qr-icon">
+                        <i class="bi bi-qr-code"></i>
+                    </div>
 
+                    <div class="payment-method-title">
+                        <strong>Thanh toán bằng mã QR</strong>
+                        <span>Sử dụng ứng dụng ngân hàng</span>
+                    </div>
 
-                <!-- Luồng QR demo cũ -->
-                <form asp-action="ThanhToanXacNhan" method="post" class="mt-2">
+                </div>
+
+                <div class="payment-qr-content">
+
+                    <div class="payment-qr-image">
+                        <img src="~/qr/maQR.jpg"
+                             alt="Mã QR thanh toán" />
+                    </div>
+
+                    <div class="payment-qr-instructions">
+                        <strong>Quét mã để thanh toán</strong>
+
+                        <p>
+                            Mở ứng dụng ngân hàng và sử dụng chức năng quét mã QR.
+                        </p>
+
+                        <div class="payment-qr-amount">
+                            <span>Số tiền</span>
+                            <strong>@Model.TongTien.ToString("N0") đ</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+                <form asp-action="ThanhToanXacNhan"
+                      method="post"
+                      class="payment-qr-form">
+
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@Model.DonHangId" />
-                    <button type="submit" class="btn btn-outline-success w-100">
-                        Xác nhận thanh toán QR demo
+
+                    <input type="hidden"
+                           name="id"
+                           value="@Model.DonHangId" />
+
+                    <button type="submit"
+                            class="payment-qr-button">
+                        <i class="bi bi-check-circle"></i>
+                        Xác nhận thanh toán QR
                     </button>
+
                 </form>
 
-            </div>
-        </div>
-    </div>
+            </section>
+
+        </aside>
+
+    </main>
+
 </div>

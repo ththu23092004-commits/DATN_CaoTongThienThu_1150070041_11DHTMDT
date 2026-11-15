@@ -18,7 +18,8 @@ namespace VeSuKienWeb.Services
             HttpContext httpContext,
             int donHangId,
             decimal amount,
-            string orderDesc);
+            string orderDesc,
+            DateTime? expireAt = null);
 
         VnPayReturnResult ParseReturn(IQueryCollection query);
     }
@@ -35,6 +36,7 @@ namespace VeSuKienWeb.Services
         public string TmnCode { get; set; } = string.Empty;
 
         public decimal? Amount { get; set; }
+        public DateTime? PayDate { get; set; }
 
         public string Message { get; set; } = string.Empty;
     }
@@ -56,7 +58,8 @@ namespace VeSuKienWeb.Services
             HttpContext httpContext,
             int donHangId,
             decimal amount,
-            string orderDesc)
+            string orderDesc,
+            DateTime? expireAt = null)
         {
             if (string.IsNullOrWhiteSpace(_settings.TmnCode) ||
                 string.IsNullOrWhiteSpace(_settings.HashSecret) ||
@@ -71,6 +74,15 @@ namespace VeSuKienWeb.Services
             {
                 throw new ArgumentException(
                     "Thông tin đơn hàng không hợp lệ.");
+            }
+
+            var createDate = DateTime.Now;
+            var paymentExpireAt = expireAt ?? createDate.AddMinutes(5);
+
+            if (paymentExpireAt <= createDate)
+            {
+                throw new InvalidOperationException(
+                    "Đơn hàng đã hết thời gian thanh toán.");
             }
 
             long vnpAmount = checked(
@@ -88,7 +100,15 @@ namespace VeSuKienWeb.Services
                 },
                 {
                     "vnp_CreateDate",
-                    DateTime.Now.ToString("yyyyMMddHHmmss")
+                    createDate.ToString(
+                        "yyyyMMddHHmmss",
+                        CultureInfo.InvariantCulture)
+                },
+                {
+                    "vnp_ExpireDate",
+                    paymentExpireAt.ToString(
+                        "yyyyMMddHHmmss",
+                        CultureInfo.InvariantCulture)
                 },
                 { "vnp_CurrCode", "VND" },
                 { "vnp_IpAddr", "127.0.0.1" },
@@ -109,9 +129,10 @@ namespace VeSuKienWeb.Services
                 $"{_settings.BaseUrl}?{hashData}&vnp_SecureHash={secureHash}";
 
             _logger.LogInformation(
-                "[VNPAY] Tao yeu cau thanh toan. DonHang={DonHangId}, SoTien={Amount}",
+                "[VNPAY] Tao yeu cau thanh toan. DonHang={DonHangId}, SoTien={Amount}, HetHan={ExpireAt}",
                 donHangId,
-                amount);
+                amount,
+                paymentExpireAt);
 
             return paymentUrl;
         }
@@ -193,6 +214,7 @@ namespace VeSuKienWeb.Services
             result.IsValidSignature = true;
 
             result.OrderId = GetValue(vnpData, "vnp_TxnRef");
+
             result.TransactionNo = GetValue(
                 vnpData, "vnp_TransactionNo");
 
@@ -230,6 +252,29 @@ namespace VeSuKienWeb.Services
 
             result.Amount = amountValue / 100m;
 
+            var payDateText = GetValue(
+                vnpData, "vnp_PayDate");
+
+            if (!string.IsNullOrWhiteSpace(payDateText))
+            {
+                if (DateTime.TryParseExact(
+                    payDateText,
+                    "yyyyMMddHHmmss",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var payDate))
+                {
+                    result.PayDate = payDate;
+                }
+                else
+                {
+                    result.Message =
+                        "Thời điểm thanh toán VNPay không hợp lệ.";
+
+                    return result;
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(result.OrderId) ||
                 string.IsNullOrWhiteSpace(result.TransactionNo))
             {
@@ -246,9 +291,10 @@ namespace VeSuKienWeb.Services
                 : "Giao dịch VNPay chưa thành công hoặc chưa hoàn tất.";
 
             _logger.LogInformation(
-                "[VNPAY] Nhan ket qua. DonHang={OrderId}, MaGD={TransactionNo}, ResponseCode={ResponseCode}, TransactionStatus={TransactionStatus}",
+                "[VNPAY] Nhan ket qua. DonHang={OrderId}, MaGD={TransactionNo}, PayDate={PayDate}, ResponseCode={ResponseCode}, TransactionStatus={TransactionStatus}",
                 result.OrderId,
                 result.TransactionNo,
+                result.PayDate,
                 result.ResponseCode,
                 result.TransactionStatus);
 

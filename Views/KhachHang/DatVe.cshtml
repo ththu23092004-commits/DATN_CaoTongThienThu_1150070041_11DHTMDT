@@ -4,35 +4,155 @@
 @{
     ViewData["Title"] = "Đặt vé";
     var soDoJson = ViewBag.SoDoJson as string ?? "null";
+
+    bool daMuaVeTrucTuyen =
+        ViewBag.DaMuaVeTrucTuyen is bool daMua && daMua;
+
+    var veDaMua = ViewBag.VeDaMua;
+
+    var onlineTongSoVe = (int?)ViewBag.OnlineTongSoVe ?? 0;
+    var onlineSoVeDaBan = (int?)ViewBag.OnlineSoVeDaBan ?? 0;
+    var onlineSoVeDangGiu = (int?)ViewBag.OnlineSoVeDangGiu ?? 0;
+    var onlineSoVeConLai = (int?)ViewBag.OnlineSoVeConLai ?? 0;
+    var onlineHetVe = (bool?)ViewBag.OnlineHetVe ?? false;
+    var onlineSapHetVe = (bool?)ViewBag.OnlineSapHetVe ?? false;
 }
 
 <link rel="stylesheet"
       href="~/css/khachhang-dat-ve.css"
       asp-append-version="true" />
 
-<div class="booking-page">
-    <div class="booking-heading">
-        <div>
-            <span class="booking-eyebrow">ĐẶT VÉ SỰ KIỆN</span>
-            <h2>@Model.TenSuKien</h2>
-            <p>Chọn vị trí chỗ ngồi phù hợp và hoàn tất đặt vé của bạn.</p>
+<div class="booking-page booking-page--premium">
+@if (daMuaVeTrucTuyen &&
+     !Model.LaSuKienTrucTiep &&
+     !Model.LaWorkshop)
+{
+    <div class="booking-purchased-state">
+
+        <div class="booking-purchased-icon">
+            <i class="bi bi-ticket-perforated-fill"></i>
         </div>
 
-        <a asp-action="ChiTiet" asp-route-id="@Model.SuKienId"
+        <span class="booking-purchased-label">
+            THÔNG TIN ĐĂNG KÝ
+        </span>
+
+        <h2>Bạn đã sở hữu vé sự kiện này!</h2>
+
+        <p class="booking-purchased-description">
+            Mỗi tài khoản chỉ được sở hữu một vé trực tuyến
+            cho mỗi sự kiện. Bạn có thể xem lại vé đã mua bên dưới.
+        </p>
+
+        <div class="booking-purchased-ticket">
+
+            <div class="booking-purchased-ticket-top">
+                <div>
+                    <span>TÊN SỰ KIỆN</span>
+                    <h4>@Model.TenSuKien</h4>
+                </div>
+
+                <span class="booking-purchased-status">
+                    <i class="bi bi-check-circle-fill"></i>
+                    @if ((string)veDaMua.TrangThai == "DaCheckIn")
+                    {
+                        <text>Đã check-in</text>
+                    }
+                    else
+                    {
+                        <text>Đã thanh toán</text>
+                    }
+                </span>
+            </div>
+
+            <div class="booking-purchased-ticket-info">
+
+                <div>
+                    <span>Mã vé</span>
+                    <strong>@veDaMua.MaVe</strong>
+                </div>
+
+                <div>
+                    <span>Loại vé</span>
+                    <strong>@veDaMua.TenLoaiVe</strong>
+                </div>
+
+                <div>
+                    <span>Giá vé</span>
+                    <strong>
+                        @(((decimal)veDaMua.GiaVe).ToString("N0")) đ
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Ngày mua</span>
+                    <strong>
+                        @(((DateTime)veDaMua.NgayDat).ToString("dd/MM/yyyy HH:mm"))
+                    </strong>
+                </div>
+
+            </div>
+
+            <a asp-controller="KhachHang"
+               asp-action="ChiTietVe"
+               asp-route-veId="@veDaMua.VeId"
+               class="booking-view-purchased-ticket">
+
+                <i class="bi bi-ticket-detailed"></i>
+                Xem vé đã mua
+                <i class="bi bi-arrow-right"></i>
+
+            </a>
+
+        </div>
+
+        <a asp-action="ChiTiet"
+           asp-route-id="@Model.SuKienId"
+           class="booking-purchased-back">
+            <i class="bi bi-arrow-left"></i>
+            Quay lại sự kiện
+        </a>
+
+    </div>
+}
+else
+{
+    <div class="booking-heading">
+        <div class="booking-heading-content">
+            <span class="booking-eyebrow">
+                <i class="bi bi-ticket-perforated-fill"></i>
+                EVENT EXPERIENCE
+            </span>
+
+            <h2>Đặt vé sự kiện</h2>
+
+            <p>
+                Hoàn tất lựa chọn của bạn và sẵn sàng cho những trải nghiệm đáng nhớ.
+            </p>
+        </div>
+
+        <a asp-action="ChiTiet"
+           asp-route-id="@Model.SuKienId"
            class="booking-back">
-            <i class="bi bi-arrow-left"></i> Chi tiết sự kiện
+            <i class="bi bi-arrow-left"></i>
+            Quay lại sự kiện
         </a>
     </div>
 
     @if (TempData["ThongBao"] != null)
     {
-        <div class="alert alert-info">
-            @TempData["ThongBao"]
+        <div class="booking-alert">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>@TempData["ThongBao"]</span>
         </div>
     }
 
-    <form asp-action="DatVe" method="post" id="bookingForm">
+    <form asp-action="DatVe"
+          method="post"
+          id="bookingForm">
+
         @Html.AntiForgeryToken()
+
         <input type="hidden" asp-for="SuKienId" />
         <input type="hidden" asp-for="LaSuKienTrucTiep" />
         <input type="hidden" asp-for="LaWorkshop" />
@@ -40,46 +160,102 @@
         @if (Model.LaSuKienTrucTiep)
         {
             <div class="booking-layout">
+
                 <section class="booking-main">
 
-                    <div class="booking-card">
+                    <div class="booking-event-banner">
+                        <div class="booking-event-banner-icon">
+                            <i class="bi bi-ticket-perforated"></i>
+                        </div>
+
+                        <div class="booking-event-banner-content">
+                            <span>SỰ KIỆN CỦA BẠN</span>
+                            <h3>@Model.TenSuKien</h3>
+                            <p>
+                                <i class="bi bi-geo-alt"></i>
+                                Chọn vị trí yêu thích trên sơ đồ chỗ ngồi
+                            </p>
+                        </div>
+
+                        <div class="booking-event-banner-decoration">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                    </div>
+
+                    <div class="booking-card booking-seat-card">
+
                         <div class="booking-card-heading">
                             <div>
+                                <span class="booking-section-label">01 / CHỌN VỊ TRÍ</span>
                                 <h4>Sơ đồ chỗ ngồi</h4>
-                                <p>Chọn ghế trống trực tiếp trên sơ đồ.</p>
+                                <p>Chạm vào ghế còn trống để lựa chọn vị trí.</p>
                             </div>
 
                             <span class="seat-live-label">
-                                <span></span> Sơ đồ sự kiện
+                                <span></span>
+                                Đang cập nhật
                             </span>
                         </div>
 
                         <div class="booking-selection-hint">
-                            <i class="bi bi-info-circle"></i>
-                            Bạn được chọn tối đa <strong>10 ghế</strong> trong một lần đặt.
-                            Ghế màu xám là ghế đã được đặt.
+                            <div class="booking-hint-icon">
+                                <i class="bi bi-lightbulb"></i>
+                            </div>
+
+                            <div>
+                                <strong>Mẹo chọn chỗ ngồi</strong>
+                                <p>
+                                    Bạn có thể chọn tối đa 10 ghế trong một lần đặt.
+                                    Ghế màu xám là ghế không còn khả dụng.
+                                </p>
+                            </div>
                         </div>
 
                         <div class="seat-legend">
-                            <span><i class="legend-vip"></i> Ghế VIP</span>
-                            <span><i class="legend-normal"></i> Ghế thường</span>
-                            <span><i class="legend-booked"></i> Đã đặt</span>
-                            <span><i class="legend-selected"></i> Đang chọn</span>
+                            <span>
+                                <i class="legend-vip"></i>
+                                Ghế VIP
+                            </span>
+
+                            <span>
+                                <i class="legend-normal"></i>
+                                Ghế thường
+                            </span>
+
+                            <span>
+                                <i class="legend-booked"></i>
+                                Đã đặt
+                            </span>
+
+                            <span>
+                                <i class="legend-selected"></i>
+                                Đang chọn
+                            </span>
                         </div>
 
                         <div class="seat-toolbar">
-                            <span>Phóng to sơ đồ để xem rõ vị trí ghế</span>
+                            <span>
+                                <i class="bi bi-zoom-in"></i>
+                                Điều chỉnh kích thước sơ đồ
+                            </span>
 
                             <div>
-                                <button type="button" id="bookingZoomOut"
-                                        title="Thu nhỏ">−</button>
+                                <button type="button"
+                                        id="bookingZoomOut"
+                                        title="Thu nhỏ">
+                                    −
+                                </button>
 
                                 <span id="bookingZoomValue">100%</span>
 
-                                <button type="button" id="bookingZoomIn"
-                                        title="Phóng to">+</button>
+                                <button type="button"
+                                        id="bookingZoomIn"
+                                        title="Phóng to">
+                                    +
+                                </button>
 
-                                <button type="button" id="bookingZoomReset"
+                                <button type="button"
+                                        id="bookingZoomReset"
                                         title="Mặc định">
                                     <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
@@ -89,65 +265,89 @@
                         <div class="booking-canvas" id="bookingCanvas">
                             <div class="booking-map" id="bookingMap">
                                 <div class="booking-map-empty">
-                                    Đang tải sơ đồ chỗ ngồi...
+                                    <i class="bi bi-grid-3x3-gap"></i>
+                                    <span>Đang tải sơ đồ chỗ ngồi...</span>
                                 </div>
                             </div>
                         </div>
 
                         <div id="bookingSeatMessage"
-                             class="booking-empty-message" hidden>
+                             class="booking-empty-message"
+                             hidden>
+                            <i class="bi bi-exclamation-circle"></i>
                             Sơ đồ chưa có dữ liệu. Vui lòng liên hệ Ban tổ chức.
                         </div>
 
                         <div class="booking-seat-count">
                             <span>
-                                Tổng số ghế:
+                                Tổng số ghế
                                 <strong id="totalSeats">0</strong>
                             </span>
 
                             <span>
-                                Ghế còn trống:
+                                Còn trống
                                 <strong id="availableSeats">0</strong>
                             </span>
 
                             <span>
-                                Ghế đã đặt:
+                                Đã đặt
                                 <strong id="bookedSeats">0</strong>
                             </span>
                         </div>
+
                     </div>
 
                 </section>
 
                 <aside class="booking-sidebar">
+
                     <div class="booking-card ticket-card">
+
                         <div class="booking-card-heading">
                             <div>
-                                <h4>Thông tin thanh toán</h4>
-                                <p>Thông tin ghế và chi phí đặt vé.</p>
+                                <span class="booking-section-label">02 / XÁC NHẬN</span>
+                                <h4>Vé của bạn</h4>
+                                <p>Kiểm tra lựa chọn trước khi thanh toán.</p>
                             </div>
+
+                            <div class="booking-ticket-icon">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                        </div>
+
+                        <div class="booking-order-event">
+                            <span>SỰ KIỆN</span>
+                            <strong>@Model.TenSuKien</strong>
                         </div>
 
                         <div class="booking-payment-summary">
+
                             <div class="payment-summary-item">
                                 <span>Số lượng ghế</span>
                                 <strong>
-                                    <span id="selectedCount">0</span>/10
+                                    <span id="selectedCount">0</span>
+                                    <small>/ 10</small>
                                 </strong>
                             </div>
 
-          
+                            <div class="booking-summary-divider"></div>
+
+                            <div class="booking-summary-label">
+                                Danh sách ghế đã chọn
+                            </div>
 
                             <div id="selectedTicketDetails"
                                  class="ticket-details">
-                                <p class="text-muted">
-                                    Chưa có ghế được chọn.
-                                </p>
+                                <div class="ticket-empty">
+                                    <i class="bi bi-ticket"></i>
+                                    <span>Chưa có ghế được chọn</span>
+                                </div>
                             </div>
+
                         </div>
 
                         <div class="ticket-total">
-                            <span>Tổng tiền</span>
+                            <span>Tổng tiền dự kiến</span>
                             <strong id="bookingTotal">0 đ</strong>
                         </div>
 
@@ -156,76 +356,283 @@
                             <i class="bi bi-arrow-right"></i>
                         </button>
 
-                        <p class="booking-note">
-                            Vui lòng kiểm tra mã ghế và tổng tiền trước khi tiếp tục.
-                        </p>
+                        <div class="booking-secure-note">
+                            <i class="bi bi-shield-check"></i>
+                            Kiểm tra thông tin trước khi tạo đơn hàng.
+                        </div>
+
                     </div>
 
-                    <div class="booking-card">
-                        <h5 class="booking-note-title">
-                            <i class="bi bi-info-circle"></i> Lưu ý
-                        </h5>
+                    <div class="booking-card booking-note-card">
+
+                        <div class="booking-note-heading">
+                            <div class="booking-note-icon">
+                                <i class="bi bi-info-lg"></i>
+                            </div>
+
+                            <strong>Lưu ý khi đặt vé</strong>
+                        </div>
 
                         <ul class="booking-notes">
-                            <li>Chỉ có thể chọn ghế còn trống.</li>
-                            <li>Ghế VIP và ghế thường có mức giá khác nhau.</li>
-                            <li>Kiểm tra kỹ vị trí ghế trước khi thanh toán.</li>
+                            <li>Chỉ được chọn những ghế còn trống.</li>
+                            <li>Giá vé VIP và ghế thường có thể khác nhau.</li>
+                            <li>Kiểm tra kỹ vị trí và tổng tiền trước khi tiếp tục.</li>
                         </ul>
+
                     </div>
+
                 </aside>
+
             </div>
 
             <script type="application/json" id="bookingSeatData">@Html.Raw(soDoJson)</script>
         }
         else
         {
-            <div class="booking-layout">
-                <section class="booking-main">
-                    <div class="booking-card">
-                        <h4>Thông tin vé trực tuyến</h4>
+            <div class="booking-online-layout">
 
-                        <p class="text-muted">
-                            Hệ thống áp dụng loại vé mặc định cho sự kiện trực tuyến.
-                        </p>
+                <section class="booking-online-main">
+
+                    <div class="booking-card booking-online-ticket">
+
+                        <div class="booking-card-heading">
+                            <div>
+                                <span class="booking-section-label">01 / THÔNG TIN VÉ</span>
+                                <h4>Đăng ký tham gia</h4>
+                                <p>Đăng ký vé trực tuyến cho sự kiện.</p>
+                            </div>
+
+                            <div class="booking-ticket-icon">
+                                <i class="bi bi-ticket-perforated"></i>
+                            </div>
+                        </div>
+
+                        <div class="online-event-info">
+                            <div class="online-event-icon">
+                                <i class="bi bi-camera-video"></i>
+                            </div>
+
+                            <div class="online-event-text">
+                                <span>TÊN SỰ KIỆN</span>
+                                <strong>@Model.TenSuKien</strong>
+                                <small>
+                                    <i class="bi bi-globe2"></i>
+                                    Hình thức tổ chức trực tuyến
+                                </small>
+                            </div>
+
+                            <span class="online-event-status">
+                                Trực tuyến
+                            </span>
+                        </div>
 
                         <input type="hidden" asp-for="LoaiVeId" />
+                        <input type="hidden" asp-for="SoLuong" value="1" />
 
-                        <label asp-for="SoLuong" class="form-label">
-                            Số lượng vé
-                        </label>
+                        <div class="online-quantity-section online-single-ticket">
 
-                        <input asp-for="SoLuong" type="number"
-                               min="1" max="10"
-                               class="form-control" />
+                            <div class="online-quantity-heading">
+                                <div>
+                                    <label>Số lượng vé đăng ký</label>
+                                    <p>
+                                        Mỗi tài khoản chỉ được đăng ký một vé
+                                        cho sự kiện này.
+                                    </p>
+                                </div>
 
-                        <span asp-validation-for="SoLuong"
-                              class="text-danger"></span>
+                                <span class="online-quantity-limit">
+                                    <i class="bi bi-ticket-perforated"></i>
+                                    1 vé / tài khoản
+                                </span>
+                            </div>
 
-                        <p class="small text-muted mt-2">
-                            Tối đa 10 vé mỗi lần đặt.
-                        </p>
+                            <div class="online-quantity-helper">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Vé được xác nhận sau khi thanh toán thành công.
+                            </div>
 
-                        <button type="submit" class="booking-submit mt-3">
-                            Tiếp tục thanh toán
-                        </button>
+                        </div>
+
+                        <div class="online-booking-action">
+
+                            @if (onlineHetVe)
+                            {
+                                <button type="button"
+                                        class="booking-submit"
+                                        disabled>
+                                    Đã hết vé
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="booking-submit">
+                                    Tiếp tục thanh toán
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            }
+
+                            <a asp-action="ChiTiet"
+                               asp-route-id="@Model.SuKienId"
+                               class="online-back-link">
+                                <i class="bi bi-arrow-left"></i>
+                                Xem lại thông tin sự kiện
+                            </a>
+
+                        </div>
+
                     </div>
+
                 </section>
 
-                <aside class="booking-sidebar">
-                    <div class="booking-card">
-                        <h5>Thông tin</h5>
-                        <p class="small text-muted">
-                            Link tham gia và mật khẩu phòng sẽ được cung cấp
-                            sau khi thanh toán thành công.
-                        </p>
+                <aside class="booking-online-sidebar">
+
+                    <div class="booking-card online-summary-card">
+
+                        <span class="booking-section-label">02 / TÓM TẮT</span>
+
+                        <h4>Thông tin đăng ký</h4>
+
+                        <div class="online-stock-grid">
+
+                            <div class="online-stock-item">
+                                <span>Tổng số vé</span>
+                                <strong>@onlineTongSoVe</strong>
+                            </div>
+
+                            <div class="online-stock-item">
+                                <span>Đã thanh toán</span>
+                                <strong>@onlineSoVeDaBan</strong>
+                            </div>
+
+                            <div class="online-stock-item">
+                                <span>Đang giữ</span>
+                                <strong>@onlineSoVeDangGiu</strong>
+                            </div>
+
+                            <div class="online-stock-item online-stock-remaining">
+                                <span>Còn lại</span>
+                                <strong>@onlineSoVeConLai</strong>
+                            </div>
+
+                        </div>
+
+                        @if (onlineSapHetVe)
+                        {
+                            <div class="online-stock-warning">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span>
+                                    Chỉ còn @onlineSoVeConLai vé.
+                                    Nhanh tay đăng ký nhé!
+                                </span>
+                            </div>
+                        }
+
+                        @if (onlineHetVe)
+                        {
+                            <div class="online-stock-soldout">
+                                <i class="bi bi-x-circle-fill"></i>
+                                <span>
+                                    Sự kiện đã hết vé đăng ký.
+                                </span>
+                            </div>
+                        }
+
+                        <div class="online-summary-event">
+                            <span>CHƯƠNG TRÌNH</span>
+                            <strong>@Model.TenSuKien</strong>
+                        </div>
+
+                        <div class="online-summary-row">
+                            <span>Hình thức</span>
+                            <strong>Trực tuyến</strong>
+                        </div>
+
+                        <div class="online-summary-row">
+                            <span>Số lượng vé</span>
+                            <strong>1 vé / tài khoản</strong>
+                        </div>
+
+                        <div class="online-summary-divider"></div>
+
+                        <div class="online-summary-benefit">
+                            <i class="bi bi-shield-check"></i>
+                            <div>
+                                <strong>Đăng ký an toàn</strong>
+                                <p>
+                                    Thông tin tham gia sẽ được cung cấp
+                                    sau khi thanh toán thành công.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="online-summary-benefit">
+                            <i class="bi bi-envelope-paper"></i>
+                            <div>
+                                <strong>Thông tin tham gia</strong>
+                                <p>
+                                    Link và mật khẩu phòng sẽ được hiển thị
+                                    theo thông tin vé sau khi thanh toán.
+                                </p>
+                            </div>
+                        </div>
+
                     </div>
+
+                    <div class="booking-card online-support-card">
+                        <i class="bi bi-headset"></i>
+                        <div>
+                            <strong>Cần hỗ trợ?</strong>
+                            <p>
+                                Bạn có thể liên hệ Ban tổ chức nếu cần
+                                hỗ trợ trong quá trình đăng ký.
+                            </p>
+                        </div>
+                    </div>
+
                 </aside>
+
             </div>
         }
-    </form>
-</div>
 
+    </form>
+
+@if (!Model.LaSuKienTrucTiep &&
+     !Model.LaWorkshop &&
+     !daMuaVeTrucTuyen &&
+     onlineHetVe)
+    {
+        <div class="online-soldout-overlay" id="onlineSoldOutModal">
+            <div class="online-soldout-modal">
+
+                <div class="online-soldout-icon">
+                    <i class="bi bi-ticket-perforated"></i>
+                </div>
+
+                <span>THÔNG BÁO</span>
+
+                <h3>Sự kiện đã hết vé!</h3>
+
+                <p>
+                    Rất tiếc, toàn bộ vé của sự kiện
+                    <strong>@Model.TenSuKien</strong>
+                    đã được đăng ký. Bạn không thể tiếp tục đặt vé lúc này.
+                </p>
+
+                <a asp-action="ChiTiet"
+                   asp-route-id="@Model.SuKienId"
+                   class="online-soldout-button">
+                    Quay lại sự kiện
+                </a>
+
+            </div>
+        </div>
+    }
+
+}
+</div>
 @section Scripts {
+
     <script src="~/js/khachhang-dat-ve.js"
             asp-append-version="true"></script>
 }

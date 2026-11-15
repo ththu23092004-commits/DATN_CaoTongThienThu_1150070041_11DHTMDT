@@ -1,3 +1,4 @@
+
 @model VeSuKienWeb.Models.KhachHang.SuKienChiTietKhVM
 
 @{
@@ -13,6 +14,17 @@
     bool laKhachHang = User?.IsInRole("KhachHang") ?? false;
 
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
+
+    bool suKienDaKetThuc = sk.ThoiGianKetThuc <= DateTime.Now;
+    bool coTheDatVe = !suKienDaKetThuc;
+
+    bool daMuaVeTrucTuyen =
+        online != null &&
+        laKhachHang &&
+        ViewBag.DaMuaVeTrucTuyen is bool daMua &&
+        daMua;
+
+    bool dangMoDatVe = coTheDatVe && !daMuaVeTrucTuyen;
 }
 
 <link rel="stylesheet"
@@ -23,30 +35,492 @@
       href="~/css/khachhang-chi-tiet.css"
       asp-append-version="true" />
 
-<!-- Đồng bộ font chữ trang chi tiết sự kiện -->
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
       rel="stylesheet" />
 
 <style>
+    .kh-event-detail {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 28px 22px 60px;
+        color: #30264a;
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
     .kh-event-detail,
-    .kh-event-detail h1,
-    .kh-event-detail h2,
-    .kh-event-detail h3,
-    .kh-event-detail h4,
-    .kh-event-detail h5,
-    .kh-event-detail h6,
-    .kh-event-detail p,
-    .kh-event-detail span,
-    .kh-event-detail div,
-    .kh-event-detail strong,
-    .kh-event-detail a,
-    .kh-event-detail button,
-    .kh-event-detail table,
-    .kh-event-detail th,
-    .kh-event-detail td,
-    .kh-event-detail small,
-    .kh-event-detail em {
-        font-family: "Be Vietnam Pro", sans-serif !important;
+    .kh-event-detail * {
+        font-family: "Be Vietnam Pro", sans-serif;
+    }
+
+    .kh-event-hero {
+        position: relative;
+        overflow: hidden;
+        padding: 24px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(159, 111, 198, .17);
+        border-radius: 25px;
+        background: linear-gradient(125deg, #ffffff 0%, #fbf7ff 60%, #f3eaff 100%);
+        box-shadow: 0 12px 35px rgba(91, 56, 130, .09);
+    }
+
+    .kh-event-hero::after {
+        content: "";
+        position: absolute;
+        width: 260px;
+        height: 260px;
+        right: -100px;
+        top: -130px;
+        border-radius: 50%;
+        background: rgba(188, 135, 224, .10);
+        pointer-events: none;
+    }
+
+    .kh-event-hero-body {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+        align-items: center;
+        gap: 30px;
+    }
+
+    .kh-event-photo {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        border-radius: 19px;
+        background: #eee5f7;
+        box-shadow: 0 8px 22px rgba(68, 40, 96, .13);
+    }
+
+    .kh-event-photo img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform .4s ease;
+    }
+
+    .kh-event-photo:hover img {
+        transform: scale(1.035);
+    }
+
+    .kh-event-photo-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 20px;
+        color: #8975a2;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    .kh-event-badges {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-bottom: 15px;
+    }
+
+    .kh-event-badges .badge {
+        padding: 8px 13px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .15px;
+    }
+
+    .kh-event-type-badge {
+        color: #7543a0;
+        background: #f0e3fc;
+    }
+
+    .kh-event-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .kh-event-status.is-open {
+        color: #18794e;
+        background: #e3f7eb;
+    }
+
+    .kh-event-status.is-owned {
+        color: #6741a2;
+        background: #eee5ff;
+    }
+
+    .kh-event-status.is-ended {
+        color: #697080;
+        background: #eceef2;
+    }
+
+    .kh-event-title {
+        margin: 0 0 22px;
+        color: #33234d;
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 800;
+        line-height: 1.35;
+        letter-spacing: -.7px;
+    }
+
+    .kh-event-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .kh-meta-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 77px;
+        padding: 13px 16px;
+        border: 1px solid #ece5f5;
+        border-radius: 13px;
+        background: rgba(255, 255, 255, .85);
+    }
+
+    .kh-meta-box span {
+        margin-bottom: 6px;
+        color: #88799d;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .kh-meta-box strong {
+        color: #403151;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    .kh-detail-grid {
+        align-items: start;
+    }
+
+    .kh-detail-card {
+        overflow: hidden;
+        margin-bottom: 22px;
+        border: 1px solid #eee7f4 !important;
+        border-radius: 17px !important;
+        background: #fff;
+        box-shadow: 0 7px 24px rgba(77, 48, 104, .055) !important;
+    }
+
+    .kh-detail-card .card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 17px 20px;
+        border-bottom: 1px solid #eee7f4;
+        background: #fcfaff !important;
+        color: #3f2d56;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .kh-detail-card .card-header i {
+        color: #9563bd;
+        font-size: 18px;
+    }
+
+    .kh-detail-card .card-body {
+        padding: 21px;
+    }
+
+    .kh-preline {
+        color: #574b65;
+        font-size: 14px;
+        line-height: 1.9;
+        white-space: pre-line;
+    }
+
+    .kh-event-detail .kh-detail-card p {
+        color: #574b65;
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+    .kh-event-detail .kh-detail-card strong {
+        color: #443251;
+    }
+
+    .kh-event-detail .kh-detail-card a:not(.btn) {
+        color: #8851b1;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .kh-event-detail .kh-detail-card a:not(.btn):hover {
+        color: #61358e;
+        text-decoration: underline;
+    }
+
+    .kh-side-sticky {
+        position: sticky;
+        top: 85px;
+    }
+
+    .kh-ticket-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .kh-ticket-table th {
+        padding: 12px 10px;
+        border-bottom: 1px solid #eee7f4;
+        color: #897b9b;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .kh-ticket-table td {
+        padding: 15px 10px;
+        border-bottom: 1px solid #f1edf5;
+        color: #514360;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .kh-ticket-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .kh-ticket-price {
+        color: #8651b0 !important;
+        font-weight: 800 !important;
+        white-space: nowrap;
+    }
+
+    .kh-booking-card .card-body {
+        padding: 23px;
+    }
+
+    .kh-booking-heading {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 18px;
+        text-align: left;
+    }
+
+    .kh-booking-icon {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        border-radius: 14px;
+        background: #f0e6fb;
+        color: #8955b4;
+        font-size: 21px;
+    }
+
+    .kh-booking-heading h3 {
+        margin: 0 0 4px;
+        color: #3c2b50;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .kh-booking-heading p {
+        margin: 0;
+        color: #91849f;
+        font-size: 11px;
+    }
+
+    .kh-booking-message {
+        margin-bottom: 17px;
+        padding: 15px;
+        border: 1px solid #eee5f7;
+        border-radius: 12px;
+        background: #fbf8ff;
+        color: #665576;
+        font-size: 12px;
+        line-height: 1.8;
+        text-align: left;
+    }
+
+    .kh-booking-message.is-success {
+        border-color: #d8eee0;
+        background: #f0faf3;
+        color: #26754d;
+    }
+
+    .kh-booking-message.is-ended {
+        border-color: #e6e8ec;
+        background: #f7f8fa;
+        color: #687080;
+    }
+
+    .kh-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 100%;
+        min-height: 47px;
+        padding: 12px 18px;
+        border: none;
+        border-radius: 12px;
+        color: #fff !important;
+        background: linear-gradient(110deg, #9866c3, #75449e);
+        box-shadow: 0 6px 16px rgba(123, 75, 163, .19);
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none !important;
+        transition: all .2s ease;
+    }
+
+    .kh-action-btn:hover {
+        transform: translateY(-2px);
+        color: #fff !important;
+        background: linear-gradient(110deg, #8552b3, #64378e);
+        box-shadow: 0 9px 20px rgba(123, 75, 163, .25);
+    }
+
+    .kh-action-btn.is-success {
+        background: linear-gradient(110deg, #39a978, #21865b);
+        box-shadow: 0 6px 16px rgba(39, 148, 98, .17);
+    }
+
+    .kh-action-btn.is-success:hover {
+        background: linear-gradient(110deg, #269565, #176f4b);
+    }
+
+    .kh-action-btn.is-outline {
+        border: 1px solid #e4d8ef;
+        background: #fff;
+        color: #8050a8 !important;
+        box-shadow: none;
+    }
+
+    .kh-action-btn.is-outline:hover {
+        background: #f8f2ff;
+    }
+
+    .kh-booking-note {
+        margin-top: 13px;
+        color: #94889f;
+        font-size: 11px;
+        line-height: 1.7;
+        text-align: center;
+    }
+
+    .kh-online-info {
+        padding: 4px 0;
+    }
+
+    .kh-online-platform {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding: 13px;
+        border-radius: 12px;
+        background: #f7f2fc;
+    }
+
+    .kh-online-platform i {
+        color: #9260bb;
+        font-size: 21px;
+    }
+
+    .kh-online-platform span {
+        display: block;
+        color: #93849e;
+        font-size: 10px;
+    }
+
+    .kh-online-platform strong {
+        display: block;
+        margin-top: 3px;
+        color: #4c3760;
+        font-size: 13px;
+    }
+
+    .kh-online-instruction {
+        padding: 13px 15px;
+        border-left: 3px solid #ad82d0;
+        border-radius: 0 10px 10px 0;
+        background: #fbf9fd;
+    }
+
+    .kh-event-detail .alert {
+        border-radius: 11px;
+        font-size: 12px;
+    }
+
+    .kh-event-detail .aed-map-card {
+        overflow: hidden;
+        border: 1px solid #eee7f4;
+        border-radius: 17px;
+        box-shadow: 0 7px 24px rgba(77, 48, 104, .055);
+    }
+
+    @@media (max-width: 991px) {
+        .kh-side-sticky {
+            position: static;
+        }
+
+        .kh-event-hero-body {
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 20px;
+        }
+    }
+
+    @@media (max-width: 767px) {
+        .kh-event-detail {
+            padding: 18px 12px 40px;
+        }
+
+        .kh-event-hero {
+            padding: 15px;
+            border-radius: 19px;
+        }
+
+        .kh-event-hero-body {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .kh-event-photo {
+            max-height: 260px;
+        }
+
+        .kh-event-title {
+            font-size: 24px;
+        }
+
+        .kh-event-meta {
+            gap: 9px;
+        }
+
+        .kh-meta-box {
+            min-height: 72px;
+            padding: 11px;
+        }
+
+        .kh-meta-box strong {
+            font-size: 11px;
+        }
+
+        .kh-detail-card .card-body {
+            padding: 16px;
+        }
+    }
+
+    @@media (max-width: 380px) {
+        .kh-event-meta {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
@@ -54,6 +528,7 @@
 
     <div class="kh-event-hero">
         <div class="kh-event-hero-body">
+
             <div class="kh-event-photo">
                 @if (!string.IsNullOrWhiteSpace(sk.AnhSuKien))
                 {
@@ -64,52 +539,88 @@
                 else
                 {
                     <div class="kh-event-photo-empty">
-                        Sự kiện chưa có ảnh đại diện
+                        <div>
+                            <i class="bi bi-image fs-2 d-block mb-2"></i>
+                            Sự kiện chưa có ảnh đại diện
+                        </div>
                     </div>
                 }
             </div>
 
             <div>
                 <div class="kh-event-badges">
+
                     @if (loai != null)
                     {
-                        <span class="badge bg-secondary">@loai.TenLoai</span>
+                        <span class="badge kh-event-type-badge">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            @loai.TenLoai
+                        </span>
                     }
 
-                    <span class="badge bg-light text-dark border">
-                        Mã sự kiện #@sk.SuKienId
-                    </span>
-
-                    @if (Model.CoTheDatVe)
+                    @if (daMuaVeTrucTuyen && coTheDatVe)
                     {
-                        <span class="badge bg-success">Đang mở đặt vé</span>
+                        <span class="badge kh-event-status is-owned">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                            Đã sở hữu vé
+                        </span>
+                    }
+                    else if (coTheDatVe)
+                    {
+                        <span class="badge kh-event-status is-open">
+                            <i class="bi bi-check-circle-fill"></i>
+                            Đang mở đặt vé
+                        </span>
                     }
                     else
                     {
-                        <span class="badge bg-secondary">Đã kết thúc</span>
+                        <span class="badge kh-event-status is-ended">
+                            <i class="bi bi-clock-history"></i>
+                            Đã kết thúc
+                        </span>
                     }
+
                 </div>
 
                 <h2 class="kh-event-title">@sk.TenSuKien</h2>
 
                 <div class="kh-event-meta">
+
                     <div class="kh-meta-box">
-                        <span>Thời gian bắt đầu</span>
-                        <strong>@sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")</strong>
+                        <span>
+                            <i class="bi bi-calendar-check me-1"></i>
+                            Thời gian bắt đầu
+                        </span>
+                        <strong>
+                            @sk.ThoiGianBatDau.ToString("HH:mm dd/MM/yyyy")
+                        </strong>
                     </div>
 
                     <div class="kh-meta-box">
-                        <span>Thời gian kết thúc</span>
-                        <strong>@sk.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")</strong>
+                        <span>
+                            <i class="bi bi-calendar-x me-1"></i>
+                            Thời gian kết thúc
+                        </span>
+                        <strong>
+                            @sk.ThoiGianKetThuc.ToString("HH:mm dd/MM/yyyy")
+                        </strong>
                     </div>
 
                     <div class="kh-meta-box">
-                        <span>Đơn vị tổ chức</span>
-                        <strong>@(toChuc?.TenToChuc ?? "Chưa cập nhật")</strong>
+                        <span>
+                            <i class="bi bi-building me-1"></i>
+                            Đơn vị tổ chức
+                        </span>
+                        <strong>
+                            @(toChuc?.TenToChuc ?? "Chưa cập nhật")
+                        </strong>
                     </div>
 
                     <div class="kh-meta-box">
-                        <span>Địa điểm / Hình thức</span>
+                        <span>
+                            <i class="bi bi-geo-alt me-1"></i>
+                            Địa điểm / Hình thức
+                        </span>
                         <strong>
                             @(diaDiem != null
                                 ? diaDiem.TenDiaDiem
@@ -118,17 +629,23 @@
                                     : "Chưa cập nhật")
                         </strong>
                     </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 kh-detail-grid">
+
         <div class="col-lg-8">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-light">
-                    <strong>Giới thiệu sự kiện</strong>
+
+            <div class="card kh-detail-card">
+                <div class="card-header">
+                    <i class="bi bi-card-text"></i>
+                    Giới thiệu sự kiện
                 </div>
+
                 <div class="card-body">
                     @if (!string.IsNullOrWhiteSpace(sk.MoTaChiTiet))
                     {
@@ -136,38 +653,62 @@
                     }
                     else
                     {
-                        <p class="text-muted mb-0"><em>Chưa có mô tả chi tiết.</em></p>
+                        <p class="text-muted mb-0">
+                            <em>Chưa có mô tả chi tiết.</em>
+                        </p>
                     }
                 </div>
             </div>
 
             @if (diaDiem != null)
             {
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-header bg-light">
-                        <strong>Thông tin sự kiện trực tiếp</strong>
+                <div class="card kh-detail-card">
+
+                    <div class="card-header">
+                        <i class="bi bi-geo-alt"></i>
+                        Thông tin sự kiện trực tiếp
                     </div>
+
                     <div class="card-body">
-                        <p class="mb-1"><strong>Địa điểm:</strong> @diaDiem.TenDiaDiem</p>
-                        <p class="mb-1"><strong>Địa chỉ:</strong> @diaDiem.DiaChi</p>
-                        <p class="mb-1"><strong>Tổng số ghế:</strong> @diaDiem.SoChoNgoi</p>
+
+                        <p class="mb-2">
+                            <strong>Địa điểm:</strong>
+                            @diaDiem.TenDiaDiem
+                        </p>
+
+                        <p class="mb-2">
+                            <strong>Địa chỉ:</strong>
+                            @diaDiem.DiaChi
+                        </p>
+
+                        <p class="mb-2">
+                            <strong>Tổng số ghế:</strong>
+                            @diaDiem.SoChoNgoi
+                        </p>
 
                         @if (!string.IsNullOrWhiteSpace(diaDiem.BanDo))
                         {
                             <p class="mb-0">
                                 <strong>Bản đồ:</strong>
-                                <a href="@diaDiem.BanDo" target="_blank" rel="noopener noreferrer">
+
+                                <a href="@diaDiem.BanDo"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    <i class="bi bi-map me-1"></i>
                                     Mở Google Maps
                                 </a>
                             </p>
                         }
+
                     </div>
                 </div>
 
                 <div class="aed-card aed-map-card mb-4">
+
                     <div class="aed-card-head">
                         <div>
                             <h2>Sơ đồ chỗ ngồi</h2>
+
                             <div class="aed-map-intro">
                                 Bạn có thể xem sơ đồ ghế trước khi đặt vé.
                                 Muốn đặt vé thì cần đăng nhập tài khoản Khách hàng.
@@ -175,6 +716,7 @@
                         </div>
 
                         <div class="aed-map-tools">
+
                             <button type="button"
                                     id="adminSeatZoomOut"
                                     class="btn btn-outline-secondary btn-sm">
@@ -196,11 +738,14 @@
                                     class="btn btn-outline-secondary btn-sm">
                                 Mặc định
                             </button>
+
                         </div>
                     </div>
 
                     <div class="aed-card-body">
+
                         <div id="adminSeatViewport" class="aed-map-viewport">
+
                             <svg id="adminSeatMap"
                                  class="aed-seat-svg"
                                  viewBox="0 0 1000 700"
@@ -214,29 +759,36 @@
                                  hidden>
                                 Sự kiện này chưa có sơ đồ chỗ ngồi.
                             </div>
+
                         </div>
 
                         <div class="aed-map-legend">
+
                             <div class="aed-legend-item">
                                 <span class="aed-legend-dot"
-                                      style="background:#ffffff;border:2px solid #d4a51e"></span>
+                                      style="background:#ffffff;border:2px solid #d4a51e">
+                                </span>
                                 Ghế VIP
                             </div>
 
                             <div class="aed-legend-item">
                                 <span class="aed-legend-dot"
-                                      style="background:#ffffff;border:2px solid #80c783"></span>
+                                      style="background:#ffffff;border:2px solid #80c783">
+                                </span>
                                 Ghế Thường
                             </div>
 
                             <div class="aed-legend-item">
                                 <span class="aed-legend-dot"
-                                      style="background:#e0e5eb"></span>
+                                      style="background:#e0e5eb">
+                                </span>
                                 Ghế đã đặt
                             </div>
+
                         </div>
 
                         <div class="aed-info-grid mt-3">
+
                             <div class="aed-info">
                                 <span>Tổng số ghế</span>
                                 <strong id="adminSeatTotal">—</strong>
@@ -246,72 +798,120 @@
                                 <span>Số ghế đã đặt</span>
                                 <strong id="adminSeatBooked">—</strong>
                             </div>
+
                         </div>
+
                     </div>
                 </div>
             }
 
             @if (online != null)
             {
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-header bg-light">
-                        <strong>Sự kiện trực tuyến</strong>
+                <div class="card kh-detail-card">
+
+                    <div class="card-header">
+                        <i class="bi bi-camera-video"></i>
+                        Thông tin sự kiện trực tuyến
                     </div>
+
                     <div class="card-body">
-                        <p class="mb-1"><strong>Nền tảng:</strong> @online.NenTang</p>
 
-                        <p class="mb-2 text-muted small">
-                            Link tham gia và mật khẩu phòng sẽ được hiển thị sau khi bạn đặt vé và thanh toán thành công.
-                        </p>
+                        <div class="kh-online-info">
 
-                        @if (!string.IsNullOrWhiteSpace(online.HuongDan))
-                        {
-                            <div>
-                                <strong>Hướng dẫn:</strong>
-                                <div class="kh-preline mt-1">@online.HuongDan</div>
+                            <div class="kh-online-platform">
+
+                                <i class="bi bi-camera-video-fill"></i>
+
+                                <div>
+                                    <span>Nền tảng tổ chức</span>
+                                    <strong>@online.NenTang</strong>
+                                </div>
+
                             </div>
-                        }
+
+                            <div class="kh-booking-message">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Link tham gia và mật khẩu phòng sẽ được hiển thị
+                                sau khi bạn đặt vé và thanh toán thành công.
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(online.HuongDan))
+                            {
+                                <div class="kh-online-instruction">
+                                    <strong>
+                                        <i class="bi bi-list-check me-1"></i>
+                                        Hướng dẫn tham gia
+                                    </strong>
+
+                                    <div class="kh-preline mt-2">
+                                        @online.HuongDan
+                                    </div>
+                                </div>
+                            }
+
+                        </div>
+
                     </div>
                 </div>
             }
+
         </div>
 
         <div class="col-lg-4">
+
             <div class="kh-side-sticky">
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-header bg-light">
-                        <strong>Thông tin vé</strong>
+
+                <div class="card kh-detail-card">
+
+                    <div class="card-header">
+                        <i class="bi bi-ticket-perforated"></i>
+                        Thông tin vé
                     </div>
+
                     <div class="card-body">
+
                         @if (Model.LoaiVes != null && Model.LoaiVes.Any())
                         {
-                            <table class="table table-sm align-middle mb-0">
+                            <table class="kh-ticket-table">
+
                                 <thead>
                                     <tr>
                                         <th>Loại vé</th>
-                                        <th>Giá</th>
+                                        <th class="text-end">Giá vé</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
+
                                     @foreach (var lv in Model.LoaiVes)
                                     {
                                         <tr>
                                             <td>@lv.TenLoai</td>
-                                            <td>@lv.GiaVe.ToString("N0") đ</td>
+
+                                            <td class="text-end kh-ticket-price">
+                                                @lv.GiaVe.ToString("N0") đ
+                                            </td>
                                         </tr>
                                     }
+
                                 </tbody>
+
                             </table>
                         }
                         else
                         {
-                            <p class="text-muted mb-0"><em>Chưa cấu hình loại vé.</em></p>
+                            <p class="text-muted mb-0">
+                                <em>Chưa cấu hình loại vé.</em>
+                            </p>
                         }
+
                     </div>
                 </div>
 
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-body text-center">
+                <div class="card kh-detail-card kh-booking-card">
+
+                    <div class="card-body">
+
                         @if (TempData["ThongBao"] != null)
                         {
                             <div class="alert alert-info py-2 mb-3">
@@ -319,57 +919,152 @@
                             </div>
                         }
 
-                        @if (Model.CoTheDatVe)
+                        @if (!coTheDatVe)
                         {
-                            @if (!daDangNhap)
-                            {
-                                <a asp-controller="TaiKhoan"
-                                   asp-action="DangNhap"
-                                   asp-route-returnUrl="@returnUrl"
-                                   class="btn btn-primary w-100 mb-2">
-                                    Đăng nhập để đặt vé
-                                </a>
+                            <div class="kh-booking-heading">
 
-                                <div class="small text-muted">
-                                    Bạn vẫn có thể xem sơ đồ ghế, nhưng cần đăng nhập tài khoản Khách hàng để đặt vé.
+                                <div class="kh-booking-icon">
+                                    <i class="bi bi-calendar-x"></i>
                                 </div>
-                            }
-                            else if (laKhachHang)
-                            {
-                                <a asp-action="DatVe"
-                                   asp-route-id="@sk.SuKienId"
-                                   class="btn btn-primary w-100 mb-2">
-                                    Đặt vé ngay
-                                </a>
 
-                                <div class="small text-muted">
-                                    Vui lòng chọn vé hoặc ghế ở bước tiếp theo và hoàn tất thanh toán trong thời gian quy định.
+                                <div>
+                                    <h3>Sự kiện đã kết thúc</h3>
+                                    <p>Hiện không còn nhận đăng ký</p>
                                 </div>
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning text-dark mb-2">
-                                    Bạn không phải tài khoản Khách hàng
-                                </span>
 
-                                <div class="small text-muted">
-                                    Vui lòng đăng xuất và đăng nhập bằng tài khoản Khách hàng để đặt vé.
-                                </div>
-                            }
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary mb-2">
-                                Sự kiện đã kết thúc · Không thể đặt vé
-                            </span>
+                            </div>
 
-                            <div class="small text-muted">
+                            <div class="kh-booking-message is-ended">
+                                Thời gian diễn ra sự kiện đã kết thúc.
                                 Bạn vẫn có thể xem thông tin và sơ đồ sự kiện.
                             </div>
                         }
+                        else if (daMuaVeTrucTuyen)
+                        {
+                            <div class="kh-booking-heading">
+
+                                <div class="kh-booking-icon"
+                                     style="background:#e3f6eb;color:#27935e">
+                                    <i class="bi bi-ticket-perforated-fill"></i>
+                                </div>
+
+                                <div>
+                                    <h3>Bạn đã sở hữu vé!</h3>
+                                    <p>Đăng ký sự kiện thành công</p>
+                                </div>
+
+                            </div>
+
+                            <div class="kh-booking-message is-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                Bạn đã thanh toán thành công vé sự kiện trực tuyến này.
+                                Mỗi tài khoản chỉ được sở hữu một vé cho mỗi sự kiện.
+                                Bạn có thể xem lại vé trong mục Vé của tôi.
+                            </div>
+
+                            <a asp-controller="KhachHang"
+                               asp-action="VeCuaToi"
+                               class="kh-action-btn is-success">
+
+                                <i class="bi bi-ticket-detailed"></i>
+                                Xem vé đã mua
+                                <i class="bi bi-arrow-right"></i>
+
+                            </a>
+                        }
+                        else if (!daDangNhap)
+                        {
+                            <div class="kh-booking-heading">
+
+                                <div class="kh-booking-icon">
+                                    <i class="bi bi-person-lock"></i>
+                                </div>
+
+                                <div>
+                                    <h3>Sẵn sàng tham gia?</h3>
+                                    <p>Đăng nhập để đăng ký sự kiện</p>
+                                </div>
+
+                            </div>
+
+                            <div class="kh-booking-message">
+                                Vui lòng đăng nhập bằng tài khoản Khách hàng
+                                để có thể đặt vé và tham gia sự kiện.
+                            </div>
+
+                            <a asp-controller="TaiKhoan"
+                               asp-action="DangNhap"
+                               asp-route-returnUrl="@returnUrl"
+                               class="kh-action-btn">
+
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                Đăng nhập để đặt vé
+                            </a>
+                        }
+                        else if (laKhachHang)
+                        {
+                            <div class="kh-booking-heading">
+
+                                <div class="kh-booking-icon">
+                                    <i class="bi bi-ticket-perforated"></i>
+                                </div>
+
+                                <div>
+                                    <h3>Đăng ký tham gia</h3>
+                                    <p>Vé sự kiện đang mở bán</p>
+                                </div>
+
+                            </div>
+
+                            <div class="kh-booking-message">
+                                Sự kiện đang mở đăng ký.
+                                Hãy chọn loại vé hoặc ghế phù hợp
+                                và hoàn tất thanh toán để xác nhận tham gia.
+                            </div>
+
+                            <a asp-action="DatVe"
+                               asp-route-id="@sk.SuKienId"
+                               class="kh-action-btn">
+
+                                <i class="bi bi-ticket-perforated-fill"></i>
+                                Đặt vé ngay
+                                <i class="bi bi-arrow-right"></i>
+
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="kh-booking-heading">
+
+                                <div class="kh-booking-icon">
+                                    <i class="bi bi-shield-lock"></i>
+                                </div>
+
+                                <div>
+                                    <h3>Không thể đặt vé</h3>
+                                    <p>Yêu cầu tài khoản Khách hàng</p>
+                                </div>
+
+                            </div>
+
+                            <div class="kh-booking-message">
+                                Bạn đang đăng nhập bằng tài khoản không có quyền
+                                đặt vé. Vui lòng sử dụng tài khoản Khách hàng.
+                            </div>
+
+                            <a asp-controller="TaiKhoan"
+                               asp-action="DangXuat"
+                               class="kh-action-btn is-outline">
+                                <i class="bi bi-box-arrow-right"></i>
+                                Đăng xuất
+                            </a>
+                        }
+
                     </div>
                 </div>
+
             </div>
+
         </div>
     </div>
 </div>

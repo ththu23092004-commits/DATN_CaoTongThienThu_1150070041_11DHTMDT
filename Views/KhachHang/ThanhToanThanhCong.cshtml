@@ -3,23 +3,344 @@
 
 @{
     ViewData["Title"] = "Thanh toán thành công";
+
+    var tenSuKien = Model.Ves?
+        .FirstOrDefault()?.SuKien?.TenSuKien
+        ?? "Sự kiện đã đặt";
 }
 
-<div class="card shadow-sm">
-    <div class="card-body text-center">
-        <h3 class="text-success mb-2">Thanh toán thành công</h3>
-        <p class="mb-2">
-            Đơn hàng <strong>#@Model.DonHangId</strong> đã được xác nhận thanh toán.
-        </p>
-        <p class="small text-muted mb-3">
-            Vé của bạn đã được kích hoạt.  
-            Với sự kiện trực tuyến, link tham gia và mật khẩu phòng sẽ hiển thị trong màn hình "Vé của tôi" (sẽ xây dựng sau).
+<style>
+    .payment-success-page {
+        padding: 18px 15px 25px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .payment-success-card {
+        width: 100%;
+        max-width: 560px;
+        background: #fff;
+        border: 1px solid #eee2f7;
+        border-radius: 22px;
+        padding: 27px 34px;
+        text-align: center;
+        box-shadow: 0 12px 35px rgba(91, 55, 125, .08);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .payment-success-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(90deg, #a16bc3, #70428f, #d17bbd);
+    }
+
+    .payment-success-icon {
+        width: 66px;
+        height: 66px;
+        margin: 0 auto 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #e8f7ef;
+        color: #269b66;
+        font-size: 34px;
+        box-shadow: 0 0 0 7px #f4fbf7;
+    }
+
+    .payment-success-label {
+        display: inline-block;
+        padding: 6px 13px;
+        border-radius: 30px;
+        background: #edf8f1;
+        color: #27875d;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 11px;
+    }
+
+    .payment-success-card h2 {
+        color: #38264d;
+        font-size: 25px;
+        font-weight: 800;
+        margin: 0 0 8px;
+    }
+
+    .payment-success-description {
+        max-width: 420px;
+        margin: 0 auto;
+        color: #8790a0;
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    .payment-order-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 17px;
+        margin: 19px 0 14px;
+        background: #faf7fd;
+        border: 1px solid #eee2f7;
+        border-radius: 13px;
+        text-align: left;
+    }
+
+    .payment-order-left {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+    }
+
+    .payment-order-icon {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #efe5f8;
+        color: #8054a3;
+        border-radius: 11px;
+        font-size: 20px;
+    }
+
+    .payment-order-info {
+        min-width: 0;
+    }
+
+    .payment-order-info span {
+        display: block;
+        color: #9290a1;
+        font-size: 11px;
+        margin-bottom: 4px;
+    }
+
+    .payment-order-info strong {
+        display: block;
+        color: #38264d;
+        font-size: 14px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .payment-order-status {
+        padding: 7px 10px;
+        border-radius: 20px;
+        background: #e7f7ee;
+        color: #26885a;
+        font-size: 10px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .payment-success-online {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        margin-bottom: 17px;
+        background: #f7f4fc;
+        border: 1px solid #eee5f7;
+        border-radius: 11px;
+        text-align: left;
+    }
+
+    .payment-success-online > i {
+        color: #9467b6;
+        font-size: 17px;
+        margin-top: 2px;
+    }
+
+    .payment-success-online strong {
+        display: block;
+        color: #51386b;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .payment-success-online p {
+        color: #858195;
+        font-size: 11px;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .payment-success-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .payment-view-ticket {
+        width: 100%;
+        min-height: 46px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 9px;
+        border-radius: 11px;
+        background: linear-gradient(110deg, #9463b5, #654080);
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 750;
+        box-shadow: 0 6px 15px rgba(111, 68, 145, .18);
+        transition: .2s ease;
+    }
+
+    .payment-view-ticket:hover {
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 9px 18px rgba(111, 68, 145, .25);
+    }
+
+    .payment-back-events {
+        min-height: 35px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        color: #77568f;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .payment-back-events:hover {
+        color: #4f326b;
+    }
+
+    @@media (max-width: 576px) {
+        .payment-success-page {
+            padding: 15px 10px;
+        }
+
+        .payment-success-card {
+            padding: 25px 17px;
+            border-radius: 17px;
+        }
+
+        .payment-success-card h2 {
+            font-size: 22px;
+        }
+
+        .payment-order-box {
+            padding: 12px;
+        }
+
+        .payment-order-info strong {
+            font-size: 12px;
+        }
+    }
+
+    @@media (max-height: 700px) {
+        .payment-success-page {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .payment-success-card {
+            padding-top: 19px;
+            padding-bottom: 19px;
+        }
+
+        .payment-success-icon {
+            width: 55px;
+            height: 55px;
+            font-size: 28px;
+            margin-bottom: 9px;
+        }
+
+        .payment-order-box {
+            margin-top: 13px;
+            margin-bottom: 10px;
+        }
+
+        .payment-success-online {
+            margin-bottom: 12px;
+        }
+    }
+</style>
+
+<div class="payment-success-page">
+    <div class="payment-success-card">
+
+        <div class="payment-success-icon">
+            <i class="bi bi-check-lg"></i>
+        </div>
+
+        <span class="payment-success-label">
+            THANH TOÁN THÀNH CÔNG
+        </span>
+
+        <h2>Đặt vé thành công!</h2>
+
+        <p class="payment-success-description">
+            Giao dịch đã được xác nhận.
+            Vé sự kiện của bạn đã được kích hoạt và sẵn sàng sử dụng.
         </p>
 
-        <a asp-controller="KhachHang"
-           asp-action="Index"
-           class="btn btn-primary me-2">
-            Tiếp tục xem sự kiện khác
-        </a>
+        <div class="payment-order-box">
+
+            <div class="payment-order-left">
+                <div class="payment-order-icon">
+                    <i class="bi bi-ticket-perforated"></i>
+                </div>
+
+                <div class="payment-order-info">
+                    <span>Sự kiện bạn đã đăng ký</span>
+                    <strong>@tenSuKien</strong>
+                </div>
+            </div>
+
+            <span class="payment-order-status">
+                <i class="bi bi-check-circle-fill"></i>
+                Đã thanh toán
+            </span>
+
+        </div>
+
+        <div class="payment-success-online">
+            <i class="bi bi-info-circle-fill"></i>
+
+            <div>
+                <strong>Thông tin vé của bạn</strong>
+                <p>
+                    Mã vé, mã QR và thông tin tham gia được lưu trong mục
+                    Vé của tôi. Với sự kiện trực tuyến, link tham gia và
+                    mật khẩu phòng sẽ hiển thị theo thông tin vé.
+                </p>
+            </div>
+        </div>
+
+        <div class="payment-success-actions">
+
+            <a asp-controller="KhachHang"
+               asp-action="VeCuaToi"
+               class="payment-view-ticket">
+                <i class="bi bi-ticket-perforated-fill"></i>
+                Xem vé vừa đặt
+                <i class="bi bi-arrow-right"></i>
+            </a>
+
+            <a asp-controller="KhachHang"
+               asp-action="Index"
+               class="payment-back-events">
+                <i class="bi bi-arrow-left"></i>
+                Tiếp tục khám phá sự kiện
+            </a>
+
+        </div>
+
     </div>
 </div>

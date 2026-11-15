@@ -28,7 +28,7 @@ namespace VeSuKienWeb.Services
             CancellationToken stoppingToken)
         {
             _logger.LogInformation(
-                "Dịch vụ tự động giải phóng ghế đã khởi động.");
+                "Dịch vụ tự động giải phóng ghế và hủy đơn hết hạn đã khởi động.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -45,7 +45,7 @@ namespace VeSuKienWeb.Services
                 {
                     _logger.LogError(
                         ex,
-                        "Lỗi khi tự động giải phóng ghế hết hạn.");
+                        "Lỗi khi tự động xử lý đơn hàng hết hạn.");
                 }
 
                 try
@@ -62,7 +62,7 @@ namespace VeSuKienWeb.Services
             }
 
             _logger.LogInformation(
-                "Dịch vụ tự động giải phóng ghế đã dừng.");
+                "Dịch vụ tự động giải phóng ghế và hủy đơn hết hạn đã dừng.");
         }
 
         private async Task XuLyDonHetHanAsync(
@@ -74,6 +74,7 @@ namespace VeSuKienWeb.Services
                 .GetRequiredService<NguCanhSuKien>();
 
             var now = DateTime.Now;
+            var thoiDiemHetHan = now.AddMinutes(-5);
 
             await using var transaction =
                 await db.Database.BeginTransactionAsync(
@@ -82,69 +83,97 @@ namespace VeSuKienWeb.Services
 
             try
             {
-                int soDonHetHan =
-                    await db.Database.ExecuteSqlInterpolatedAsync($@"
+                await db.Database.ExecuteSqlInterpolatedAsync($@"
 
-                        DECLARE @DonHangHetHan TABLE
-                        (
-                            DonHangId INT PRIMARY KEY
-                        );
+                    SET NOCOUNT ON;
 
-                        INSERT INTO @DonHangHetHan (DonHangId)
-                        SELECT DISTINCT DonHangGiuId
-                        FROM dbo.SoDoChoNgoi
-                        WHERE DonHangGiuId IS NOT NULL
-                          AND (
-                              ThoiGianHetHanGiu IS NULL
-                              OR ThoiGianHetHanGiu <= {now}
-                          );
+                    DECLARE @DonHangHetHan TABLE
+                    (
+                        DonHangId INT PRIMARY KEY
+                    );
 
-                        DECLARE @SoDonHang INT;
-                        SELECT @SoDonHang = COUNT(*)
-                        FROM @DonHangHetHan;
+                    INSERT INTO @DonHangHetHan (DonHangId)
+                    SELECT d.DonHangId
+                    FROM dbo.DonHang d WITH (UPDLOCK, HOLDLOCK)
+                    WHERE d.TrangThai = N'DangXuLy'
+                      AND d.NgayDat <= {thoiDiemHetHan};
 
-                        -- Hủy các vé chưa thanh toán
+                    INSERT INTO @DonHangHetHan (DonHangId)
+                    SELECT DISTINCT g.DonHangGiuId
+                    FROM dbo.SoDoChoNgoi g
+                    INNER JOIN dbo.DonHang d
+                        ON d.DonHangId = g.DonHangGiuId
+                    WHERE g.DonHangGiuId IS NOT NULL
+                      AND d.TrangThai = N'DangXuLy'
+                      AND (
+                          g.ThoiGianHetHanGiu IS NULL
+                          OR g.ThoiGianHetHanGiu <= {now}
+                      )
+                      AND NOT EXISTS
+                      (
+                          SELECT 1
+                          FROM @DonHangHetHan h
+                          WHERE h.DonHangId = g.DonHangGiuId
+                      );
+
+                    UPDATE v
+                    SET v.TrangThai = N'Huy'
+                    FROM dbo.Ve v
+                    INNER JOIN @DonHangHetHan h
+                        ON v.DonHangId = h.DonHangId
+                    WHERE v.TrangThai = N'ChuaThanhToan';
+
+                    UPDATE d
+                    SET d.TrangThai = N'Huy'
+                    FROM dbo.DonHang d
+                    INNER JOIN @DonHangHetHan h
+                        ON d.DonHangId = h.DonHangId
+                    WHERE d.TrangThai = N'DangXuLy';
+
+                    UPDATE g
+                    SET g.DonHangGiuId = NULL,
+                        g.ThoiGianHetHanGiu = NULL
+                    FROM dbo.SoDoChoNgoi g
+                    INNER JOIN @DonHangHetHan h
+                        ON g.DonHangGiuId = h.DonHangId;
+
                         UPDATE v
-                        SET v.TrangThai = N'Huy'
-                        FROM dbo.Ve v
-                        INNER JOIN @DonHangHetHan h
-                            ON v.DonHangId = h.DonHangId
-                        WHERE v.TrangThai = N'ChuaThanhToan';
+SET v.TrangThai = N'Huy'
+FROM dbo.Ve v
+INNER JOIN dbo.DonHang d
+    ON v.DonHangId = d.DonHangId
+WHERE d.TrangThai = N'Huy'
+  AND v.TrangThai = N'ChuaThanhToan'
+  AND NOT EXISTS
+  (
+      SELECT 1
+      FROM dbo.ThanhToan tt
+      WHERE tt.VeId = v.VeId
+        AND tt.TrangThai = N'ThanhCong'
+  );
 
-                        -- Hủy các đơn đang xử lý
-                        UPDATE d
-                        SET d.TrangThai = N'Huy'
-                        FROM dbo.DonHang d
-                        INNER JOIN @DonHangHetHan h
-                            ON d.DonHangId = h.DonHangId
-                        WHERE d.TrangThai = N'DangXuLy';
+UPDATE g
+SET g.DonHangGiuId = NULL,
+    g.ThoiGianHetHanGiu = NULL
+FROM dbo.SoDoChoNgoi g
+INNER JOIN dbo.DonHang d
+    ON g.DonHangGiuId = d.DonHangId
+WHERE d.TrangThai = N'Huy';
 
-                        -- Giải phóng toàn bộ ghế của đơn hết hạn
-                        UPDATE g
-                        SET g.DonHangGiuId = NULL,
-                            g.ThoiGianHetHanGiu = NULL
-                        FROM dbo.SoDoChoNgoi g
-                        INNER JOIN @DonHangHetHan h
-                            ON g.DonHangGiuId = h.DonHangId;
-
-                        SELECT @SoDonHang;
-                    ", cancellationToken);
+                ", cancellationToken);
 
                 await transaction.CommitAsync(cancellationToken);
-
-                if (soDonHetHan > 0)
-                {
-                    _logger.LogInformation(
-                        "Đã xử lý {SoDon} đơn hàng hết hạn.",
-                        soDonHetHan);
-                }
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
+
+                _logger.LogError(
+                    ex,
+                    "Không thể xử lý đơn hàng hết hạn.");
+
                 throw;
             }
         }
     }
 }
-
